@@ -131,6 +131,26 @@ def delete_student(student_id: int, db: Session = Depends(get_db)):
     db.delete(student)
     db.commit()
     return {"status": "success", "message": f"Student '{student.student_name}' deleted"}
+# Add a single student
+@app.post("/admin/add_student")
+def add_student(
+    student_name: str = Form(...),
+    class_name: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # Check if student already exists
+    existing = db.query(Student).filter(
+        Student.student_name == student_name,
+        Student.class_name == class_name
+    ).first()
+    if existing:
+        return {"status": "error", "message": "Student already exists"}
+
+    # Add new student
+    student = Student(student_name=student_name, class_name=class_name)
+    db.add(student)
+    db.commit()
+    return {"status": "success", "student_id": student.id, "message": "Student added successfully"}
 
 import threading
 import time

@@ -11,12 +11,30 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .blur-bg { filter: blur(4px); pointer-events: none; transition: filter 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
+
+    <div id="delete-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40" onclick="closeDeleteModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 animate-fade-in">
+            <div class="text-center">
+                <div class="bg-red-100 text-red-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Are you sure?</h3>
+                <p id="modal-text" class="text-gray-500 text-sm mb-6">This action cannot be undone. This will permanently delete the selected student(s).</p>
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">Cancel</button>
+                    <button id="confirm-delete-btn" class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition shadow-lg shadow-red-200">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="loading-page" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-50 transition-opacity duration-500">
         <div class="text-center">
@@ -29,7 +47,7 @@
     </div>
 
     <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 hidden">
-        <header class="mb-8 text-center md:text-left">
+        <header id="header-area" class="mb-8 text-center md:text-left">
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
                 <span class="text-blue-600">A</span>dmin <span class="text-blue-600">D</span>ashboard
             </h1>
@@ -49,22 +67,27 @@
         </div>
 
         <div id="manager-step" class="hidden mt-8 animate-fade-in space-y-6">
-            <button onclick="resetSelection()" class="flex items-center py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
+            <div class="flex justify-between items-center">
+                <button onclick="resetSelection()" class="flex items-center py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
+                <button id="bulk-delete-btn" onclick="askBulkDelete()" class="hidden py-2 px-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white font-bold transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Delete Selected (<span id="selected-count">0</span>)
+                </button>
+            </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1 space-y-6">
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4">Add Single Student</h4>
                         <div class="space-y-3">
-                            <input type="text" id="new-student-name" placeholder="Full Name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="text" id="new-student-class" placeholder="Class (e.g. S1A)" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="Student_name" placeholder="Full Name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="class_name" placeholder="Class (e.g. S1A)" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                             <button onclick="addSingleStudent()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Add Student</button>
                         </div>
                     </div>
-
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4">Bulk Upload (Excel)</h4>
-                        <input type="file" id="excel-file-manager" accept=".xlsx" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition mb-4">
+                        <input type="file" id="excel-file-manager" accept=".xlsx" class="w-full text-xs text-gray-500 mb-4">
                         <button onclick="uploadStudents('manager')" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition">Upload File</button>
                         <p id="manager-upload-feedback" class="mt-2 text-xs font-medium"></p>
                     </div>
@@ -74,7 +97,7 @@
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                         <div class="p-4 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <h3 class="text-xl font-bold text-gray-800">Student Directory</h3>
-                            <select id="class-filter" onchange="filterStudentsByClass()" class="border rounded-lg px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                            <select id="class-filter" onchange="filterStudentsByClass()" class="border rounded-lg px-3 py-1.5 text-sm bg-white outline-none">
                                 <option value="all">All Classes</option>
                             </select>
                         </div>
@@ -82,6 +105,9 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50 sticky top-0">
                                     <tr>
+                                        <th class="px-6 py-3 text-left w-10">
+                                            <input type="checkbox" id="select-all-checkbox" onchange="toggleAllSelection()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        </th>
                                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th>
                                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Class</th>
                                         <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Action</th>
@@ -98,7 +124,7 @@
         <div id="data-step" class="hidden mt-8 animate-fade-in">
             <button onclick="resetSelection()" class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
             <h3 id="data-title" class="text-3xl font-bold mb-6"></h3>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div id="stats-area" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                         <h4 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Overview Statistics</h4>
@@ -110,7 +136,6 @@
                     </div>
                 </div>
                 <div id="classes-container" class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg border border-gray-200 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                    <h4 class="sticky top-0 bg-white pt-1 pb-3 text-2xl font-semibold text-gray-700 border-b z-10">Detailed Breakdown</h4>
                 </div>
             </div>
         </div>
@@ -118,6 +143,7 @@
 
     <script>
         let allStudents = [];
+        let selectedIds = new Set();
         let chartInstance = null;
 
         window.onload = () => {
@@ -126,6 +152,26 @@
                 document.getElementById('main-content').classList.remove('hidden');
             }, 1000);
         };
+
+        // --- UI MODAL LOGIC ---
+        function showDeleteModal(onConfirm, text) {
+            document.getElementById('main-content').classList.add('blur-bg');
+            document.getElementById('delete-modal').classList.remove('hidden');
+            document.getElementById('modal-text').innerText = text || "This action cannot be undone. This will permanently delete the selected record(s).";
+            const btn = document.getElementById('confirm-delete-btn');
+            // Remove old listeners to prevent double-firing
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', () => {
+                onConfirm();
+                closeDeleteModal();
+            });
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('main-content').classList.remove('blur-bg');
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
 
         function resetSelection() {
             document.getElementById('data-step').classList.add('hidden');
@@ -142,8 +188,7 @@
 
         async function loadAllStudents() {
             const list = document.getElementById('manager-student-list');
-            list.innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-blue-500 animate-pulse">Loading database...</td></tr>';
-            
+            list.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-blue-500">Loading database...</td></tr>';
             try {
                 const res = await fetch('/admin/students');
                 const result = await res.json();
@@ -151,37 +196,90 @@
                     allStudents = result.students;
                     updateClassFilterDropdown();
                     renderStudentTable(allStudents);
+                    updateBulkUI();
                 }
-            } catch (err) {
-                list.innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-red-500">Connection Error.</td></tr>';
-            }
-        }
-
-        function updateClassFilterDropdown() {
-            const dropdown = document.getElementById('class-filter');
-            const classes = [...new Set(allStudents.map(s => s.class_name))].sort();
-            dropdown.innerHTML = '<option value="all">All Classes</option>';
-            classes.forEach(c => {
-                dropdown.innerHTML += `<option value="${c}">${c}</option>`;
-            });
+            } catch (err) { list.innerHTML = '<tr><td colspan="4" class="text-red-500 text-center">Connection Error.</td></tr>'; }
         }
 
         function renderStudentTable(students) {
             const list = document.getElementById('manager-student-list');
-            list.innerHTML = students.length ? '' : '<tr><td colspan="3" class="px-6 py-10 text-center text-gray-400 italic">No records found.</td></tr>';
+            list.innerHTML = students.length ? '' : '<tr><td colspan="4" class="px-6 py-10 text-center text-gray-400">No records found.</td></tr>';
             
             students.forEach(s => {
+                const isChecked = selectedIds.has(s.id);
                 const row = document.createElement('tr');
-                row.className = "hover:bg-gray-50 transition";
+                row.className = `hover:bg-blue-50 transition ${isChecked ? 'bg-blue-50' : ''}`;
                 row.innerHTML = `
+                    <td class="px-6 py-4">
+                        <input type="checkbox" onchange="toggleSelect(${s.id})" ${isChecked ? 'checked' : ''} class="rounded border-gray-300 text-blue-600">
+                    </td>
                     <td class="px-6 py-4 text-sm font-bold text-gray-900">${s.student_name}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${s.class_name}</td>
                     <td class="px-6 py-4 text-right">
-                        <button onclick="deleteStudent(${s.id}, '${s.student_name}')" class="text-red-600 hover:text-red-900 font-bold px-3 py-1 bg-red-50 rounded-lg text-xs transition">Delete</button>
+                        <button onclick="askSingleDelete(${s.id}, '${s.student_name}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">Delete</button>
                     </td>
                 `;
                 list.appendChild(row);
             });
+        }
+
+        // --- SELECTION LOGIC ---
+        function toggleSelect(id) {
+            if (selectedIds.has(id)) selectedIds.delete(id);
+            else selectedIds.add(id);
+            updateBulkUI();
+            renderStudentTable(allStudents); // Re-render to show background color
+        }
+
+        function toggleAllSelection() {
+            const isAllChecked = document.getElementById('select-all-checkbox').checked;
+            if (isAllChecked) allStudents.forEach(s => selectedIds.add(s.id));
+            else selectedIds.clear();
+            updateBulkUI();
+            renderStudentTable(allStudents);
+        }
+
+        function updateBulkUI() {
+            const count = selectedIds.size;
+            const btn = document.getElementById('bulk-delete-btn');
+            document.getElementById('selected-count').innerText = count;
+            if (count > 0) btn.classList.remove('hidden');
+            else btn.classList.add('hidden');
+        }
+
+        // --- DELETE ACTIONS ---
+        function askSingleDelete(id, name) {
+            showDeleteModal(() => executeDelete([id]), `Are you sure you want to delete ${name}? This will remove all their records from the system.`);
+        }
+
+        function askBulkDelete() {
+            const count = selectedIds.size;
+            showDeleteModal(() => executeDelete(Array.from(selectedIds)), `Are you sure you want to delete ${count} selected students? This action is permanent.`);
+        }
+
+        async function executeDelete(ids) {
+            try {
+                // Adjusting to your backend expectation (some backends take list, some loop)
+                // For a multi-delete endpoint:
+                const res = await fetch('/admin/students/bulk-delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ ids: ids })
+                });
+                // If your backend only supports single delete, use:
+                // await Promise.all(ids.map(id => fetch(`/admin/students/${id}`, {method:'DELETE'})));
+                
+                selectedIds.clear();
+                loadAllStudents();
+            } catch (err) { alert("Delete failed. Check connection."); }
+        }
+
+        // --- UTILS ---
+        function updateClassFilterDropdown() {
+            const dropdown = document.getElementById('class-filter');
+            const classes = [...new Set(allStudents.map(s => s.class_name))].sort();
+            dropdown.innerHTML = '<option value="all">All Classes</option>';
+            classes.forEach(c => dropdown.innerHTML += `<option value="${c}">${c}</option>`);
         }
 
         function filterStudentsByClass() {
@@ -190,101 +288,89 @@
             renderStudentTable(filtered);
         }
 
-        async function addSingleStudent() {
-            const name = document.getElementById('new-student-name').value;
-            const className = document.getElementById('new-student-class').value;
-            if(!name || !className) return alert("Fill all fields");
+       async function addSingleStudent() {
+    const nameInput = document.getElementById('Student_name');
+    const classInput = document.getElementById('class_name');
+    
+    const studentName = nameInput.value.trim();
+    const className = classInput.value.trim();
 
-            // Assuming endpoint exists or handling via common upload logic
-            // For now, using typical POST pattern
-            try {
-                const res = await fetch('/admin/add-student', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name, class_name: className })
-                });
-                const data = await res.json();
-                if(data.status === "success") {
-                    document.getElementById('new-student-name').value = '';
-                    document.getElementById('new-student-class').value = '';
-                    loadAllStudents();
-                }
-            } catch (err) { alert("Failed to add student"); }
+    if (!studentName || !className) {
+        alert("Please enter both Name and Class.");
+        return;
+    }
+
+    // Create FormData object to match FastAPI Form(...) requirements
+    const formData = new FormData();
+    formData.append('student_name', studentName);
+    formData.append('class_name', className);
+
+    try {
+        const res = await fetch('/admin/add_student', {
+            method: 'POST',
+            body: formData // Sending as FormData, not JSON
+        });
+
+        const result = await res.json();
+
+        if (result.status === "success") {
+            // Clear inputs
+            nameInput.value = '';
+            classInput.value = '';
+            
+            // Refresh the table to show the new student
+            await loadAllStudents();
+            
+            // Optional: Provide feedback
+            console.log("Student added:", result.student_id);
+        } else {
+            alert(result.message); // Shows "Student already exists" or other errors
         }
+    } catch (err) {
+        console.error(err);
+        alert("Connection error. Could not add student.");
+    }
+}
 
-        async function deleteStudent(id, name) {
-            if (!confirm(`Delete ${name}?`)) return;
-            try {
-                const res = await fetch(`/admin/students/${id}`, { method: 'DELETE' });
-                if ((await res.json()).status === "success") loadAllStudents();
-            } catch (err) { alert("Delete failed"); }
-        }
-
-        // --- UPLOAD LOGIC ---
         async function uploadStudents(source) {
             const inputId = source === 'manager' ? 'excel-file-manager' : 'excel-file';
-            const feedbackId = source === 'manager' ? 'manager-upload-feedback' : 'upload-feedback';
+            const feedback = document.getElementById('manager-upload-feedback');
             const fileInput = document.getElementById(inputId);
-            const feedback = document.getElementById(feedbackId);
-
             if(!fileInput.files.length) return;
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            feedback.innerText = "Processing...";
-            
             try {
                 const res = await fetch('/admin/upload-students', { method: 'POST', body: formData });
-                const data = await res.json();
-                if(data.status === "success") {
-                    feedback.className = "mt-2 text-xs font-medium text-green-600";
-                    feedback.innerText = `Successfully added ${data.added} students!`;
-                    if(source === 'manager') loadAllStudents(); else fetchData();
-                } else {
-                    feedback.className = "mt-2 text-xs font-medium text-red-600";
-                    feedback.innerText = "Error: " + data.error;
-                }
-            } catch (err) { feedback.innerText = "Connection error."; }
+                if((await res.json()).status === "success") loadAllStudents();
+            } catch (err) { feedback.innerText = "Error uploading."; }
         }
 
-        // --- ATTENDANCE LOGIC (Keep original) ---
         function selectType(type) {
             selectedType = type;
             document.getElementById('choice-step').classList.add('hidden');
             document.getElementById('data-step').classList.remove('hidden');
-            const dt = document.getElementById('data-title');
-            dt.innerText = type === 'visit_day' ? "Visit Day Overview" : "Parent Meeting Overview";
-            dt.className = `text-3xl font-bold mb-6 ${type === 'visit_day' ? 'text-blue-600' : 'text-red-600'}`;
+            document.getElementById('data-title').innerText = type === 'visit_day' ? "Visit Day Data" : "Parent Meeting Data";
             fetchData();
         }
 
         async function fetchData() {
             const statsDiv = document.getElementById('stats');
             const container = document.getElementById('classes-container');
-            statsDiv.innerHTML = '<p class="col-span-2 text-blue-500 animate-pulse">Loading...</p>';
+            statsDiv.innerHTML = 'Loading...';
             try {
                 const res = await fetch(`/admin/data/${selectedType}`);
                 const result = await res.json();
-                statsDiv.innerHTML = `<div class="p-3 bg-gray-50 rounded-lg border text-center"><p class="text-xs font-bold text-gray-400 uppercase">Total</p><p class="text-2xl font-black">${result.total}</p></div>`;
-                for (const cls in result.stats) {
-                    statsDiv.innerHTML += `<div class="p-3 bg-gray-50 rounded-lg border text-center"><p class="text-xs font-bold text-gray-400 uppercase">${cls}</p><p class="text-2xl font-black">${result.stats[cls]}</p></div>`;
-                }
-                container.innerHTML = '<h4 class="sticky top-0 bg-white pt-1 pb-3 text-2xl font-semibold text-gray-700 border-b z-10">Detailed Breakdown</h4>';
+                statsDiv.innerHTML = `<div class="p-3 bg-gray-50 border rounded text-center"><p class="text-xs uppercase font-bold text-gray-400">Total</p><p class="text-2xl font-black">${result.total}</p></div>`;
+                container.innerHTML = '<h4 class="text-xl font-bold mb-4">Class Detail</h4>';
                 for (const cls in result.data) {
-                    const section = document.createElement('div');
-                    section.className = 'p-4 bg-white border rounded-lg mb-4 shadow-sm';
-                    section.innerHTML = `<h4 class="font-bold mb-2 text-gray-800 border-b pb-1">${cls}</h4>`;
-                    const table = document.createElement('table');
-                    table.className = 'w-full text-left text-xs';
-                    table.innerHTML = `<tbody></tbody>`;
-                    const tbody = table.querySelector('tbody');
-                    result.data[cls].forEach(s => {
-                        tbody.innerHTML += `<tr><td class="py-1 font-medium">${s.student_name}</td><td class="py-1 text-right text-gray-400">${s.date}</td></tr>`;
-                    });
-                    section.appendChild(table);
-                    container.appendChild(section);
+                    const div = document.createElement('div');
+                    div.className = "mb-4 p-4 bg-white border rounded shadow-sm";
+                    div.innerHTML = `<h5 class="font-bold border-b mb-2">${cls}</h5>`;
+                    result.data[cls].forEach(s => div.innerHTML += `<div class="flex justify-between text-xs py-1"><span>${s.student_name}</span><span class="text-gray-400">${s.date}</span></div>`);
+                    container.appendChild(div);
                 }
                 drawChart(result.stats);
-            } catch(err) { statsDiv.innerHTML = '<p class="text-red-500">Error.</p>'; }
+            } catch(err) { statsDiv.innerHTML = "Error."; }
         }
 
         function drawChart(stats) {
@@ -297,11 +383,10 @@
                     datasets: [{
                         label: 'Records',
                         data: Object.values(stats),
-                        backgroundColor: selectedType === 'visit_day' ? '#2563eb' : '#dc2626',
-                        borderRadius: 6
+                        backgroundColor: '#2563eb',
+                        borderRadius: 4
                     }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
+                }
             });
         }
     </script>
