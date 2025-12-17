@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Portal | Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/style.css"> 
+    <style>
+        /* Custom Keyframes and Styles (Same as before) */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+        .powered-logo {
+            font-size: 3rem; 
+            font-weight: 700; 
+            background: linear-gradient(90deg, #3b82f6, #10b981); 
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent; 
+            letter-spacing: -2px;
+        }
+        /* New style for the logo screen text */
+        .portal-logo-text {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1f2937; /* Gray-800 */
+            letter-spacing: -1px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div id="logo-page" class="fixed inset-0 flex items-center justify-center bg-white z-50 transition-opacity duration-500">
+        <h1 class="portal-logo-text">
+            <span class="text-blue-600">P</span>arent <span class="text-blue-600">P</span>ortal
+        </h1>
+    </div>
+
+    <div id="powered-by-page" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-40 transition-opacity duration-500 hidden opacity-0">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600 text-lg">Initializing modules...</p>
+        </div>
+        <p class="absolute bottom-6 text-sm text-gray-400">Powered by <span class="powered-logo">1%</span></p>
+    </div>
+
+    <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg hidden">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
+                <span class="text-blue-600">P</span>arent <span class="text-blue-600">P</span>ortal
+            </h1>
+            <p class="text-gray-500 mt-2">Manage appointments and student interactions.</p>
+        </header>
+
+        <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+            <h3 class="text-xl font-semibold mb-5 text-gray-700">Select Interaction Type:</h3>
+            <div class="flex flex-col space-y-4">
+                <button onclick="selectType('visit_day')" class="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-calendar-alt mr-2"></i> Visit Day
+                </button>
+                <button onclick="selectType('parent_meeting')" class="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-handshake mr-2"></i> Parent Meeting
+                </button>
+            </div>
+        </div>
+
+        <div id="form-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hidden">
+            <h3 id="form-title" class="text-xl font-semibold mb-4 text-gray-700"></h3>
+
+            <input type="text" id="search-input" placeholder="Search student by name..." oninput="searchStudents()"
+                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4 transition duration-150 ease-in-out">
+
+            <div id="student-results" class="student-list max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4">
+                <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student's name...</p>
+            </div>
+
+            <button id="submit-btn" onclick="submitVisit()" disabled
+                    class="w-full py-3 px-6 bg-gray-400 text-white font-medium rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                </button>
+
+            <p id="feedback" class="mt-4 text-sm text-center font-medium"></p>
+        </div>
+
+    </div>
+
+    <script>
+        let selectedType = '';
+        let selectedStudentId = null;
+
+        // --- Core UI State Management ---
+        const mainContent = document.getElementById('main-content');
+        const logoPage = document.getElementById('logo-page');
+        const poweredByPage = document.getElementById('powered-by-page'); // Renamed ID
+
+        // Function to handle the dual loading transition
+        window.onload = function() {
+            const logoDuration = 1000; // Show logo for 1 second
+            const poweredByDuration = 1000; // Show 1% for 1 second
+
+            // STEP 1: Show Logo, then transition to 1% screen
+            setTimeout(() => {
+                // Fade out logo page
+                logoPage.classList.add('opacity-0');
+                
+                // After fade-out (0.5s CSS transition), hide and show next screen
+                setTimeout(() => {
+                    logoPage.classList.add('hidden');
+                    poweredByPage.classList.remove('hidden');
+                    // Start fade-in for 1% screen
+                    setTimeout(() => {
+                        poweredByPage.classList.remove('opacity-0');
+                    }, 10); 
+                    
+                    // STEP 2: Show 1% screen, then transition to Main Content
+                    setTimeout(() => {
+                        poweredByPage.classList.add('opacity-0');
+                        
+                        // After fade-out, hide and show main content
+                        setTimeout(() => {
+                            poweredByPage.classList.add('hidden');
+                            mainContent.classList.remove('hidden');
+                            mainContent.classList.add('animate-fade-in'); 
+                        }, 500); 
+
+                    }, poweredByDuration); 
+
+                }, 500); // Matches CSS transition duration for opacity
+
+            }, logoDuration); 
+        };
+        
+        // --- Portal Logic (Remains the same as the corrected version) ---
+
+        function selectType(type) {
+            selectedType = type;
+            document.getElementById('choice-step').classList.add('hidden');
+            document.getElementById('form-step').classList.remove('hidden');
+            const formTitle = document.getElementById('form-title');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (type === 'visit_day') {
+                formTitle.innerText = "Visit Day Announcement";
+                submitBtn.innerText = "Announce Visit";
+                submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            } else {
+                formTitle.innerText = "Parent Meeting Attendance";
+                submitBtn.innerText = "Confirm Attendance";
+                submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+        }
+
+        async function searchStudents() {
+            const query = document.getElementById('search-input').value.trim();
+            const resultsDiv = document.getElementById('student-results');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            let searchPrompt = document.getElementById('search-prompt');
+            
+            resultsDiv.querySelectorAll('.student-item').forEach(el => el.remove());
+            if (searchPrompt) searchPrompt.remove(); 
+            
+            selectedStudentId = null;
+            submitBtn.disabled = true;
+
+            if(query.length < 2) { 
+                resultsDiv.innerHTML = '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p class="p-3 text-center text-blue-500 animate-pulse">Searching...</p>';
+
+            try {
+                // NOTE: Replace with your actual endpoint
+                const res = await fetch(`/students/search?q=${encodeURIComponent(query)}`); 
+                const data = await res.json();
+                
+                resultsDiv.innerHTML = ''; 
+
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">No students found matching your query.</p>';
+                    return;
+                }
+
+                data.forEach(student => {
+                    const div = document.createElement('div');
+                    div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
+                    div.setAttribute('data-student-id', student.id);
+                    div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span>`;
+                    div.onclick = () => selectStudent(student.id, div);
+                    resultsDiv.appendChild(div);
+                });
+            } catch(err) {
+                console.error(err);
+                resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">Error connecting to search service.</p>';
+            }
+        }
+
+        function selectStudent(id, element) {
+            selectedStudentId = id;
+            const submitBtn = document.getElementById('submit-btn');
+            
+            document.querySelectorAll('.student-item').forEach(el => {
+                el.classList.remove('bg-blue-200', 'border-blue-400', 'font-semibold');
+                el.classList.add('hover:bg-blue-50', 'bg-white');
+            });
+            element.classList.remove('hover:bg-blue-50', 'bg-white');
+            element.classList.add('bg-blue-200', 'border-blue-400', 'font-semibold');
+
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('bg-gray-400');
+            const isVisitDay = selectedType === 'visit_day';
+            submitBtn.classList.add(isVisitDay ? 'bg-blue-600' : 'bg-green-600', isVisitDay ? 'hover:bg-blue-700' : 'hover:bg-green-700');
+        }
+
+        async function submitVisit() {
+            if(!selectedStudentId) return;
+
+            const feedbackEl = document.getElementById('feedback');
+            const submitBtn = document.getElementById('submit-btn');
+
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = 'Processing...';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('animate-pulse');
+            feedbackEl.innerText = ''; 
+
+            const formData = new FormData();
+            formData.append('student_id', selectedStudentId);
+            formData.append('visit_type', selectedType);
+
+            try {
+                // NOTE: Replace with your actual endpoint
+                const res = await fetch('/visits/add', { 
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    feedbackEl.innerText = 'Success! Your request has been recorded.';
+                    feedbackEl.classList.remove('text-red-500');
+                    feedbackEl.classList.add('text-green-600');
+                } else {
+                    feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
+                    feedbackEl.classList.remove('text-green-600');
+                    feedbackEl.classList.add('text-red-500');
+                }
+            } catch(err) {
+                console.error(err);
+                feedbackEl.innerText = 'A network error occurred while submitting.';
+                feedbackEl.classList.remove('text-green-600');
+                feedbackEl.classList.add('text-red-500');
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.classList.remove('animate-pulse');
+                selectedStudentId = null;
+                document.querySelectorAll('.student-item').forEach(el => {
+                    el.classList.remove('bg-blue-200', 'border-blue-400', 'font-semibold');
+                    el.classList.add('hover:bg-blue-50', 'bg-white');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

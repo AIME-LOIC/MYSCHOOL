@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Portal | Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    
+    <style>
+        /* Custom Keyframes and Styles */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+        .powered-logo {
+            font-size: 3rem; 
+            font-weight: 700; 
+            background: linear-gradient(90deg, #3b82f6, #10b981); 
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent; 
+            letter-spacing: -2px;
+        }
+        .portal-logo-text {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1f2937; /* Gray-800 */
+            letter-spacing: -1px;
+        }
+
+        /* NEW TOUR GUIDE STYLES: Blur the background */
+        #tour-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4); 
+            /* THE BLUR EFFECT: BLURS EVERYTHING BELOW THE OVERLAY */
+            backdrop-filter: blur(4px); 
+            z-index: 90;
+            pointer-events: none; 
+        }
+
+        #tour-popup {
+            position: fixed;
+            /* No need for fixed center position here, will be calculated by JS */
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            max-width: 400px; 
+            text-align: left; 
+        }
+        
+        /* Class to draw attention to the current guided element */
+        .tour-highlight {
+            position: relative;
+            z-index: 95; /* Above the overlay */
+            /* Add a temporary transparent background to prevent the element from being blurred */
+            background: white; 
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.8), 0 0 0 6px #f59e0b; 
+            transition: box-shadow 0.3s ease-in-out;
+            /* Ensures border radius is consistent with the element */
+            border-radius: 0.5rem; 
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div id="logo-page" class="fixed inset-0 flex items-center justify-center bg-white z-50 transition-opacity duration-500">
+        <h1 class="portal-logo-text">
+            <span class="text-blue-600">P</span>arent <span class="text-blue-600">P</span>ortal
+        </h1>
+    </div>
+
+    <div id="powered-by-page" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-40 transition-opacity duration-500 hidden opacity-0">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600 text-lg">Initializing modules...</p>
+        </div>
+        <p class="absolute bottom-6 text-sm text-gray-400">Powered by <span class="powered-logo">1%</span></p>
+    </div>
+
+    <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg hidden">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
+                <span class="text-blue-600">P</span>arent <span class="text-blue-600">P</span>ortal
+            </h1>
+            <p class="text-gray-500 mt-2">Manage appointments and student interactions.</p>
+        </header>
+
+        <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+            <h3 class="text-xl font-semibold mb-5 text-gray-700">Select Interaction Type:</h3>
+            <div id="choice-buttons" class="flex flex-col space-y-4">
+                <button id="btn-visit-day" onclick="selectType('visit_day')" class="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-calendar-alt mr-2"></i> Visit Day
+                </button>
+                <button id="btn-parent-meeting" onclick="selectType('parent_meeting')" class="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-handshake mr-2"></i> Parent Meeting
+                </button>
+                <button id="btn-tour-guide" onclick="showTourGuide()" class="w-full py-3 px-6 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-map-marker-alt mr-2"></i> School Tour Guide
+                </button>
+                <button id="btn-start-tour" onclick="startTour()" class="w-full py-3 px-6 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg mt-4">
+                    <i class="fas fa-route mr-2"></i> Start Interactive Guide
+                </button>
+            </div>
+        </div>
+        
+        <div id="tour-guide-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hidden">
+            <button onclick="goBackToChoice()" 
+                    class="mb-4 flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition duration-150">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Return to Selection
+            </button>
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">School Tour Guide</h3>
+            <p class="text-gray-600 mb-4">Welcome! Here are key locations for your visit:</p>
+            <ul class="list-disc list-inside space-y-2 text-sm text-gray-700">
+                <li>**Main Office:** Check-in and visitor badges. (Building A, Ground Floor)</li>
+                <li>**Parent Meeting Room:** For scheduled consultations. (Library Annex, 2nd Floor)</li>
+                <li>**Student Drop-off/Pickup:** Designated zone C, accessible via North Gate.</li>
+                <li>**Canteen/Cafeteria:** Located near the Gymnasium.</li>
+            </ul>
+            <p class="mt-4 text-sm text-blue-600 font-medium">Please ask at the Main Office for a printed map.</p>
+        </div>
+
+        <div id="form-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hidden">
+            
+            <button id="btn-back-to-choice" onclick="goBackToChoice()" 
+                    class="mb-4 flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition duration-150">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Return to Selection
+            </button>
+            
+            <h3 id="form-title" class="text-xl font-semibold mb-4 text-gray-700"></h3>
+
+            <input type="text" id="search-input" placeholder="Search student by name..." oninput="searchStudents()"
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4 transition duration-150 ease-in-out">
+
+            <div id="student-results" class="student-list max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4">
+                <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student's name...</p>
+            </div>
+
+            <button id="submit-btn" onclick="submitVisit()" disabled
+                    class="w-full py-3 px-6 bg-gray-400 text-white font-medium rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                </button>
+
+            <p id="feedback" class="mt-4 text-sm text-center font-medium"></p>
+        </div>
+    </div>
+
+    <div id="tour-overlay" class="hidden"></div>
+    <div id="tour-popup" class="hidden">
+        <p id="tour-text" class="text-gray-700 mb-4 font-medium"></p>
+        <div class="flex justify-end space-x-2">
+            <button id="tour-end-btn" onclick="endTour()" class="py-2 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg text-sm transition duration-150 ease-in-out">
+                End Tour
+            </button>
+            <button id="tour-next-btn" onclick="nextTourStep()" class="py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg text-sm transition duration-150 ease-in-out">
+                Next
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let selectedType = '';
+        let selectedStudentId = null;
+        let tourStep = 0; // 0: Tour is inactive, 1+: Current step of the tour
+
+        // --- DOM Elements ---
+        const mainContent = document.getElementById('main-content');
+        const logoPage = document.getElementById('logo-page');
+        const poweredByPage = document.getElementById('powered-by-page');
+        const choiceStep = document.getElementById('choice-step');
+        const formStep = document.getElementById('form-step');
+        const tourGuideStep = document.getElementById('tour-guide-step');
+        
+        const tourOverlay = document.getElementById('tour-overlay');
+        const tourPopup = document.getElementById('tour-popup');
+        const tourText = document.getElementById('tour-text');
+        const tourNextBtn = document.getElementById('tour-next-btn');
+        const tourEndBtn = document.getElementById('tour-end-btn');
+
+        // --- Tour Guide Steps Definition ---
+        const tourSteps = [
+            { id: 'btn-start-tour', text: "Welcome to the Parent Portal! We will guide you through the process.", placement: 'right' }, 
+            { id: 'btn-visit-day', text: "Step 1: Choose 'Visit Day' if you need to announce a future visit and check your child out.", placement: 'right' }, 
+            { id: 'btn-parent-meeting', text: "Step 2: Choose 'Parent Meeting' to confirm attendance for a scheduled consultation with a teacher.", placement: 'right' }, 
+            { id: 'btn-tour-guide', text: "Step 3: This option displays useful campus location information, like the Main Office.", placement: 'right' }, 
+            { id: 'btn-visit-day', text: "Let's try creating a Visit Day request. Click the 'Visit Day' button now.", placement: 'right', action: 'click' }, 
+            { id: 'search-input', text: "Step 5: Type your child's name here. The system will search your registered students.", placement: 'bottom', action: 'input' }, 
+            { id: 'btn-back-to-choice', text: "Step 6: Use 'Return to Selection' to go back and change your choice or start over.", placement: 'bottom', action: 'final' } 
+        ];
+
+        function highlightElement(id) {
+            // Remove highlight from all elements
+            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+            
+            // Add highlight to the specific element
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('tour-highlight');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        function movePopupToElement(id, placement = 'right') {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            const rect = el.getBoundingClientRect();
+            const popupWidth = tourPopup.offsetWidth;
+            const popupHeight = tourPopup.offsetHeight;
+            const padding = 20; // Space between element and popup
+
+            let popupX;
+            let popupY;
+
+            if (placement === 'right') {
+                popupX = rect.right + padding + popupWidth / 2;
+                popupY = rect.top + rect.height / 2;
+            } else if (placement === 'bottom') {
+                popupX = rect.left + rect.width / 2;
+                popupY = rect.bottom + padding + popupHeight / 2;
+            } else if (placement === 'top') {
+                popupX = rect.left + rect.width / 2;
+                popupY = rect.top - padding - popupHeight / 2;
+            } else {
+                popupX = rect.left + rect.width / 2;
+                popupY = rect.top + rect.height / 2;
+            }
+            
+            // Clamp X position to screen bounds 
+            popupX = Math.max(popupWidth / 2 + 10, Math.min(window.innerWidth - popupWidth / 2 - 10, popupX));
+            // Clamp Y position to screen bounds
+            popupY = Math.max(popupHeight / 2 + 10, Math.min(window.innerHeight - popupHeight / 2 - 10, popupY));
+
+
+            // Apply the new position
+            tourPopup.style.left = `${popupX}px`;
+            tourPopup.style.top = `${popupY}px`;
+            tourPopup.style.transform = `translate(-50%, -50%)`;
+        }
+
+        function startTour() {
+            tourStep = 1;
+            choiceStep.classList.remove('hidden'); 
+            formStep.classList.add('hidden');
+            tourGuideStep.classList.add('hidden');
+            
+            tourOverlay.classList.remove('hidden');
+            tourPopup.classList.remove('hidden');
+            
+            nextTourStep(); // Start the first step
+        }
+        
+        function endTour() {
+            tourStep = 0;
+            tourOverlay.classList.add('hidden');
+            tourPopup.classList.add('hidden');
+            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+            
+            // If user left the form incomplete, return to the start screen
+            goBackToChoice();
+        }
+
+        function nextTourStep() {
+            if (tourStep >= tourSteps.length) {
+                tourText.innerText = "Tour complete! You now know how to navigate the portal.";
+                tourNextBtn.classList.add('hidden');
+                highlightElement(null); // Clear highlight
+                tourStep++;
+                return;
+            }
+            
+            const currentStep = tourSteps[tourStep];
+            
+            // 1. Update text and button state
+            tourText.innerText = currentStep.text;
+            tourNextBtn.classList.remove('hidden');
+            
+            // 2. Handle highlighting and positioning
+            highlightElement(currentStep.id);
+            // Must wait a tick for the popup width/height to be correct for positioning
+            setTimeout(() => movePopupToElement(currentStep.id, currentStep.placement), 50); 
+            
+            // 3. Handle action/user interaction
+            if (currentStep.action === 'click') {
+                tourNextBtn.classList.add('hidden');
+                const targetEl = document.getElementById(currentStep.id);
+                
+                // Temporarily overwrite the click handler to advance the tour
+                const originalOnclick = targetEl.onclick;
+                targetEl.onclick = function() {
+                    selectType(targetEl.id === 'btn-visit-day' ? 'visit_day' : 'parent_meeting');
+                    setTimeout(() => nextTourStep(), 100); 
+                    // Restore original function logic after the click
+                    targetEl.onclick = originalOnclick;
+                };
+            } else if (currentStep.action === 'input') {
+                tourNextBtn.classList.add('hidden');
+                tourText.innerHTML += "<p class='mt-2 text-sm text-red-600 font-bold'>(Please type 'Jane Doe' and click one of the search results to continue.)</p>";
+                
+                // Allow the user to continue after selecting a student (handled by selectStudent)
+            } else if (currentStep.action === 'final') {
+                tourNextBtn.innerText = "Finish";
+                tourStep++; // Go past the last step to trigger completion text on next click
+            } else {
+                // Regular progression
+                tourStep++;
+            }
+        }
+        
+        // --- Portal Logic ---
+
+        window.onload = function() {
+            const logoDuration = 1000; 
+            const poweredByDuration = 1000; 
+
+            // Simulating app loading sequence with splash screens
+            setTimeout(() => {
+                logoPage.classList.add('opacity-0');
+                setTimeout(() => {
+                    logoPage.classList.add('hidden');
+                    poweredByPage.classList.remove('hidden');
+                    setTimeout(() => {
+                        poweredByPage.classList.remove('opacity-0');
+                    }, 10); 
+                    
+                    setTimeout(() => {
+                        poweredByPage.classList.add('opacity-0');
+                        
+                        setTimeout(() => {
+                            poweredByPage.classList.add('hidden');
+                            mainContent.classList.remove('hidden');
+                            mainContent.classList.add('animate-fade-in'); 
+                        }, 500); 
+                    }, poweredByDuration); 
+                }, 500); 
+            }, logoDuration); 
+        };
+
+        function goBackToChoice() {
+            // Stop the tour if running
+            if (tourStep > 0) endTour(); 
+
+            // Hide all sub-steps
+            formStep.classList.add('hidden');
+            tourGuideStep.classList.add('hidden');
+            
+            // Show the main selection step
+            choiceStep.classList.remove('hidden');
+
+            // Reset form state (cleanup)
+            selectedType = '';
+            selectedStudentId = null;
+            document.getElementById('search-input').value = '';
+            document.getElementById('student-results').innerHTML = '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('feedback').innerText = '';
+        }
+
+        function showTourGuide() {
+            // Stop the tour if running
+            if (tourStep > 0) endTour(); 
+            
+            choiceStep.classList.add('hidden');
+            tourGuideStep.classList.remove('hidden');
+        }
+
+        function selectType(type) {
+            // If tour is running and this is not step 4, stop the tour
+            if (tourStep > 0 && tourStep !== 4) endTour();
+            
+            selectedType = type;
+            choiceStep.classList.add('hidden');
+            formStep.classList.remove('hidden');
+            
+            const formTitle = document.getElementById('form-title');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (type === 'visit_day') {
+                formTitle.innerText = "Visit Day Announcement";
+                submitBtn.innerText = "Announce Visit";
+                submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            } else {
+                formTitle.innerText = "Parent Meeting Attendance";
+                submitBtn.innerText = "Confirm Attendance";
+                submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+            
+            // Highlight the search input if the tour is active (Step 5)
+            if (tourStep === 5) {
+                highlightElement('search-input');
+                movePopupToElement('search-input', 'bottom');
+            }
+        }
+
+        async function searchStudents() {
+    const query = document.getElementById('search-input').value.trim();
+    const resultsDiv = document.getElementById('student-results');
+    const submitBtn = document.getElementById('submit-btn');
+
+    resultsDiv.innerHTML = '';
+    selectedStudentId = null;
+    submitBtn.disabled = true;
+
+    if(query.length < 2) {
+        resultsDiv.innerHTML = '<p class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
+        return;
+    }
+
+    resultsDiv.innerHTML = '<p class="p-3 text-center text-blue-500 animate-pulse">Searching...</p>';
+
+    try {
+        const res = await fetch(`/students/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if(data.length === 0){
+            resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">No students found matching your query.</p>';
+            return;
+        }
+
+        resultsDiv.innerHTML = '';
+        data.forEach(student => {
+            const div = document.createElement('div');
+            div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
+            div.setAttribute('data-student-id', student.id);
+            div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span>`;
+            div.onclick = () => selectStudent(student.id, div);
+            resultsDiv.appendChild(div);
+        });
+
+    } catch (err) {
+        console.error(err);
+        resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">Error connecting to search service.</p>';
+    }
+}
+
+
+        function selectStudent(id, element) {
+            selectedStudentId = id;
+            const submitBtn = document.getElementById('submit-btn');
+            
+            document.querySelectorAll('.student-item').forEach(el => {
+                el.classList.remove('bg-blue-200', 'border-blue-400', 'font-semibold');
+                el.classList.add('hover:bg-blue-50', 'bg-white');
+            });
+            element.classList.remove('hover:bg-blue-50', 'bg-white');
+            element.classList.add('bg-blue-200', 'border-blue-400', 'font-semibold');
+
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('bg-gray-400');
+            const isVisitDay = selectedType === 'visit_day';
+            submitBtn.classList.add(isVisitDay ? 'bg-blue-600' : 'bg-green-600', isVisitDay ? 'hover:bg-blue-700' : 'hover:bg-green-700');
+            
+            // If tour is active and we are on the search step, advance the tour
+            if (tourStep === 5) {
+                // If user correctly clicked a student after searching, advance
+                tourStep++; 
+                nextTourStep(); 
+            }
+        }
+
+        async function submitVisit() {
+    if(!selectedStudentId || !selectedType) return;
+
+    const feedbackEl = document.getElementById('feedback');
+    const submitBtn = document.getElementById('submit-btn');
+
+    const originalText = submitBtn.innerText;
+    submitBtn.innerText = 'Processing...';
+    submitBtn.disabled = true;
+    submitBtn.classList.add('animate-pulse');
+    feedbackEl.innerText = '';
+
+    try {
+        const formData = new FormData();
+        formData.append('student_id', selectedStudentId);
+        formData.append('visit_type', selectedType);
+
+        const res = await fetch('/visits/add', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            feedbackEl.innerText = 'Success! Your request has been recorded.';
+            feedbackEl.classList.remove('text-red-500');
+            feedbackEl.classList.add('text-green-600');
+        } else {
+            feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
+            feedbackEl.classList.remove('text-green-600');
+            feedbackEl.classList.add('text-red-500');
+        }
+    } catch(err) {
+        console.error(err);
+        feedbackEl.innerText = 'A network error occurred while submitting.';
+        feedbackEl.classList.remove('text-green-600');
+        feedbackEl.classList.add('text-red-500');
+    } finally {
+        submitBtn.innerText = originalText;
+        submitBtn.classList.remove('animate-pulse');
+        selectedStudentId = null;
+        document.getElementById('search-input').value = '';
+        document.getElementById('student-results').innerHTML =
+            '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
+        submitBtn.disabled = true;
+        setTimeout(goBackToChoice, 1500);
+    }
+}
+async function fetchVisits(visitType) {
+    try {
+        const res = await fetch(`/admin/data/${visitType}`);
+        const data = await res.json();
+        // Update your table/UI here
+        renderVisits(data);
+    } catch (err) {
+        console.error("Failed to fetch visits:", err);
+    }
+}
+
+// Call every 5 seconds
+setInterval(() => {
+    if (currentVisitType) fetchVisits(currentVisitType);
+}, 5000);
+
+
+    </script>
+</body>
+</html>
