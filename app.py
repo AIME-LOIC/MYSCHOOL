@@ -113,6 +113,24 @@ def upload_students(file: UploadFile = File(...), db: Session = Depends(get_db))
         added += 1
     db.commit()
     return {"status": "success", "added": added, "skipped": skipped}
+# Get all students
+@app.get("/admin/students")
+def get_all_students(db: Session = Depends(get_db)):
+    students = db.query(Student).all()
+    result = [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in students]
+    return {"status": "success", "students": result}
+
+
+# Delete a student by ID
+@app.delete("/admin/students/{student_id}")
+def delete_student(student_id: int, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        return {"status": "error", "message": "Student not found"}
+
+    db.delete(student)
+    db.commit()
+    return {"status": "success", "message": f"Student '{student.student_name}' deleted"}
 
 import threading
 import time

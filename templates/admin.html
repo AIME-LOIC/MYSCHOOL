@@ -3,21 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Pro</title>
+    <title>Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css"> 
     <style>
-        /* Custom Keyframes for the loading screen and main content */
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-            animation: fade-in 0.5s ease-out forwards;
-        }
-        /* Custom class for the sleek loading logo style */
-       
+        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -30,312 +26,284 @@
             </svg>
             <p class="text-gray-600 text-lg font-medium">Initializing Dashboard...</p>
         </div>
-        <p class="absolute bottom-6 text-sm text-gray-400">Powered by <span class="text-green-600"><a href="https://onepercent-rwanda.onrender.com">1%</a></span></p>
     </div>
 
     <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 hidden">
-
         <header class="mb-8 text-center md:text-left">
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
                 <span class="text-blue-600">A</span>dmin <span class="text-blue-600">D</span>ashboard
             </h1>
-            <p class="text-gray-500 mt-1">Centralized portal for attendance and student management.</p>
+            <p class="text-gray-500 mt-1">Attendance tracking and student database management.</p>
         </header>
 
-        <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-            <h3 class="text-xl font-semibold mb-5 text-gray-700">Select Data View:</h3>
-            <div class="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-                <button onclick="selectType('visit_day')" class="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
-                    Visit Day Data
-                </button>
-                <button onclick="selectType('parent_meeting')" class="w-full py-3 px-6 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
-                    Parent Meeting Data
+        <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 animate-fade-in">
+            <h3 class="text-xl font-semibold mb-5 text-gray-700">Main Menu:</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <button onclick="selectType('visit_day')" class="py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md">Visit Day Data</button>
+                <button onclick="selectType('parent_meeting')" class="py-4 px-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition shadow-md">Parent Meeting Data</button>
+                <button onclick="openManager()" class="py-4 px-6 bg-gray-800 hover:bg-black text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    Manage Students
                 </button>
             </div>
         </div>
 
-        <div id="data-step" class="hidden mt-8">
-
-            <button onclick="resetSelection()" 
-                    class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 ease-in-out font-medium">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Selection
-            </button>
-            <h3 id="data-title" class="text-3xl font-bold text-gray-800 mb-6"></h3>
+        <div id="manager-step" class="hidden mt-8 animate-fade-in space-y-6">
+            <button onclick="resetSelection()" class="flex items-center py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
             
-            <div id="upload-section" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-8">
-                <h3 class="text-xl font-semibold mb-3 text-gray-700">Upload Students via Excel (.xlsx)</h3>
-                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 items-center">
-                    <input type="file" id="excel-file" accept=".xlsx" 
-                           class="w-full sm:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition duration-150">
-                    <button onclick="uploadStudents()" id="upload-btn"
-                            class="w-full sm:w-auto py-2 px-6 bg-green-500 hover:bg-green-600 text-white font-medium rounded-full transition duration-150 ease-in-out shadow-md">
-                        <span id="upload-btn-text">Upload Students</span>
-                    </button>
-                </div>
-                <p id="upload-feedback" class="mt-3 text-sm font-medium"></p>
-            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">Add Single Student</h4>
+                        <div class="space-y-3">
+                            <input type="text" id="new-student-name" placeholder="Full Name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="new-student-class" placeholder="Class (e.g. S1A)" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <button onclick="addSingleStudent()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Add Student</button>
+                        </div>
+                    </div>
 
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">Bulk Upload (Excel)</h4>
+                        <input type="file" id="excel-file-manager" accept=".xlsx" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition mb-4">
+                        <button onclick="uploadStudents('manager')" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition">Upload File</button>
+                        <p id="manager-upload-feedback" class="mt-2 text-xs font-medium"></p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                        <div class="p-4 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <h3 class="text-xl font-bold text-gray-800">Student Directory</h3>
+                            <select id="class-filter" onchange="filterStudentsByClass()" class="border rounded-lg px-3 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="all">All Classes</option>
+                            </select>
+                        </div>
+                        <div class="overflow-x-auto max-h-[600px] custom-scrollbar">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Class</th>
+                                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="manager-student-list" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="data-step" class="hidden mt-8 animate-fade-in">
+            <button onclick="resetSelection()" class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
+            <h3 id="data-title" class="text-3xl font-bold mb-6"></h3>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                         <h4 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Overview Statistics</h4>
-                        <div id="stats" class="grid grid-cols-2 gap-4 text-gray-600">
-                            <p class="text-center text-gray-400">Loading statistics...</p>
-                        </div>
+                        <div id="stats" class="grid grid-cols-2 gap-4 text-gray-600"></div>
                     </div>
-                    
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                          <h4 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Attendance By Class</h4>
                         <canvas id="classChart" class="w-full"></canvas>
                     </div>
                 </div>
-
-                <div id="classes-container" class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg border border-gray-200 max-h-[80vh] overflow-y-auto space-y-6">
+                <div id="classes-container" class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg border border-gray-200 max-h-[80vh] overflow-y-auto custom-scrollbar">
                     <h4 class="sticky top-0 bg-white pt-1 pb-3 text-2xl font-semibold text-gray-700 border-b z-10">Detailed Breakdown</h4>
-                    <p class="text-center text-gray-400">Select an option to load data...</p>
-                    </div>
-
+                </div>
             </div>
         </div>
     </div>
 
-<script>
-    let selectedType = '';
-    let chartInstance = null;
+    <script>
+        let allStudents = [];
+        let chartInstance = null;
 
-    // --- Core UI State Management ---
-    const mainContent = document.getElementById('main-content');
-    const loadingPage = document.getElementById('loading-page');
-
-    // Simulate network latency for the loading screen (remove in production)
-    window.onload = function() {
-        setTimeout(() => {
-            loadingPage.classList.add('opacity-0');
+        window.onload = () => {
             setTimeout(() => {
-                loadingPage.classList.add('hidden');
-                mainContent.classList.remove('hidden');
-                mainContent.classList.add('animate-fade-in'); 
-            }, 500);
-        }, 1500); 
-    };
-    
-    // --- Dashboard Logic ---
+                document.getElementById('loading-page').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+            }, 1000);
+        };
 
-    function selectType(type) {
-        selectedType = type;
-        document.getElementById('choice-step').classList.add('hidden');
-        document.getElementById('data-step').classList.remove('hidden');
-        
-        const dataTitle = document.getElementById('data-title');
-        
-        if (type === 'visit_day') {
-            dataTitle.innerText = "Visit Day Data Overview";
-            dataTitle.classList.remove('text-red-500');
-            dataTitle.classList.add('text-blue-600');
-        } else {
-            dataTitle.innerText = "Parent Meeting Data Overview";
-            dataTitle.classList.remove('text-blue-600');
-            dataTitle.classList.add('text-red-500');
-        }
-        fetchData();
-    }
-
-    function resetSelection() {
-        selectedType = ''; // Clear selected type
-        document.getElementById('data-step').classList.add('hidden');
-        document.getElementById('choice-step').classList.remove('hidden');
-        
-        // Clear the data step content
-        document.getElementById('stats').innerHTML = '<p class="text-center text-gray-400">Loading statistics...</p>';
-        
-        const container = document.getElementById('classes-container');
-        // Reset the detailed breakdown container to its initial state
-        container.innerHTML = `
-            <h4 class="sticky top-0 bg-white pt-1 pb-3 text-2xl font-semibold text-gray-700 border-b z-10">Detailed Breakdown</h4>
-            <p class="text-center text-gray-400">Select an option to load data...</p>
-        `;
-        if(chartInstance) chartInstance.destroy();
-    }
-
-
-    // Fetch data & update table + stats + chart
-    async function fetchData() {
-        const statsDiv = document.getElementById('stats');
-        const container = document.getElementById('classes-container');
-        
-        statsDiv.innerHTML = '<p class="text-center col-span-2 text-blue-500 animate-pulse">Fetching data...</p>';
-        container.innerHTML = '<p class="text-center text-blue-500 animate-pulse">Loading detailed tables...</p>';
-
-        try {
-            const res = await fetch(`/admin/data/${selectedType}`);
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-            const result = await res.json();
-
-            // 1. Update Stats
-            statsDiv.innerHTML = `
-                <div class="p-3 bg-gray-50 rounded-lg shadow-sm border">
-                    <p class="text-sm font-semibold text-gray-500">Total Records</p>
-                    <p class="text-2xl font-bold text-gray-900">${result.total}</p>
-                </div>
-            `;
-            for (const cls in result.stats) {
-                statsDiv.innerHTML += `
-                    <div class="p-3 bg-gray-50 rounded-lg shadow-sm border">
-                        <p class="text-sm font-semibold text-gray-500">${cls} Records</p>
-                        <p class="text-2xl font-bold text-gray-900">${result.stats[cls]}</p>
-                    </div>
-                `;
-            }
-            if (result.total === 0) {
-                statsDiv.innerHTML = '<p class="text-center col-span-2 text-gray-500 italic">No data found for this period.</p>';
-                container.innerHTML = '<p class="text-center text-gray-500 italic">No data found.</p>';
-                drawChart({}); // Draw empty chart
-                return;
-            }
-
-            // 2. Classes & Students Table
-            container.innerHTML = '';
-            // Re-add the sticky header
-            container.innerHTML = '<h4 class="sticky top-0 bg-white pt-1 pb-3 text-2xl font-semibold text-gray-700 border-b z-10">Detailed Breakdown</h4>';
-
-            for (const cls in result.data) {
-                const section = document.createElement('div');
-                section.className = 'class-section p-4 bg-white border border-gray-200 rounded-lg shadow-sm';
-                
-                const title = document.createElement('h4');
-                title.className = 'text-lg font-semibold mb-3 text-gray-800';
-                title.innerText = `Class: ${cls} (${result.data[cls].length} Records)`;
-                section.appendChild(title);
-
-                const table = document.createElement('table');
-                table.className = 'min-w-full divide-y divide-gray-200 border border-gray-100 rounded-lg overflow-hidden';
-                
-                // Table Header
-                table.innerHTML = `
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200"></tbody>
-                `;
-                
-                const tbody = table.querySelector('tbody');
-
-                result.data[cls].forEach(student => {
-                    const row = tbody.insertRow();
-                    row.className = 'hover:bg-gray-50 transition duration-100';
-                    row.insertCell().innerHTML = `<div class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.student_name}</div>`;
-                    row.insertCell().innerHTML = `<div class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.date}</div>`;
-                });
-
-                section.appendChild(table);
-                container.appendChild(section);
-            }
-
-            // 3. Draw Chart
-            drawChart(result.stats);
-
-        } catch(err) {
-            console.error(err);
-            statsDiv.innerHTML = '<p class="text-center col-span-2 text-red-500">Error fetching data. Check console.</p>';
-            container.innerHTML = '<p class="text-center text-red-500">Could not load detailed data.</p>';
-            drawChart({}); // Draw empty chart
-        }
-    }
-
-    // Draw bar chart using Chart.js
-    function drawChart(stats) {
-        const ctx = document.getElementById('classChart').getContext('2d');
-        const labels = Object.keys(stats);
-        const data = Object.values(stats);
-
-        if(chartInstance) chartInstance.destroy(); // destroy previous chart
-
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '# of Records',
-                    data: data,
-                    backgroundColor: selectedType === 'visit_day' ? 'rgba(59, 130, 246, 0.7)' : 'rgba(239, 68, 68, 0.7)', // Blue or Red based on type
-                    borderColor: selectedType === 'visit_day' ? 'rgb(59, 130, 246)' : 'rgb(239, 68, 68)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: false }
-                },
-                scales: { 
-                    y: { 
-                        beginAtZero: true,
-                        title: { display: true, text: 'Number of Records' }
-                    }
-                }
-            }
-        });
-    }
-
-    // Upload Excel file
-    async function uploadStudents() {
-        const fileInput = document.getElementById('excel-file');
-        const feedback = document.getElementById('upload-feedback');
-        const uploadBtn = document.getElementById('upload-btn');
-        const uploadBtnText = document.getElementById('upload-btn-text');
-
-        if(!fileInput.files.length) {
-            feedback.innerText = "Please select an Excel file (.xlsx) first.";
-            feedback.className = 'mt-3 text-sm font-medium text-red-500';
-            return; // Added return here
+        function resetSelection() {
+            document.getElementById('data-step').classList.add('hidden');
+            document.getElementById('manager-step').classList.add('hidden');
+            document.getElementById('choice-step').classList.remove('hidden');
         }
 
-        // Set loading state
-        uploadBtn.disabled = true;
-        uploadBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
-        uploadBtn.classList.add('bg-gray-400', 'animate-pulse');
-        uploadBtnText.innerText = 'Uploading...';
-        feedback.innerText = 'Processing file...';
-        feedback.className = 'mt-3 text-sm font-medium text-blue-500';
+        // --- MANAGER LOGIC ---
+        async function openManager() {
+            document.getElementById('choice-step').classList.add('hidden');
+            document.getElementById('manager-step').classList.remove('hidden');
+            await loadAllStudents();
+        }
 
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-
-        try {
-            const res = await fetch('/admin/upload-students', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
+        async function loadAllStudents() {
+            const list = document.getElementById('manager-student-list');
+            list.innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-blue-500 animate-pulse">Loading database...</td></tr>';
             
-            if(data.status === "success") {
-                feedback.innerHTML = `**Upload Complete:** Added <span class="text-green-600">${data.added}</span>, Skipped <span class="text-yellow-600">${data.skipped}</span> records.`;
-                feedback.className = 'mt-3 text-sm font-medium';
-                fetchData(); // refresh data
-            } else {
-                feedback.innerText = data.error || "Upload failed: Invalid file format or server error.";
-                feedback.className = 'mt-3 text-sm font-medium text-red-500';
+            try {
+                const res = await fetch('/admin/students');
+                const result = await res.json();
+                if (result.status === "success") {
+                    allStudents = result.students;
+                    updateClassFilterDropdown();
+                    renderStudentTable(allStudents);
+                }
+            } catch (err) {
+                list.innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-red-500">Connection Error.</td></tr>';
             }
-        } catch(err) {
-            console.error(err);
-            feedback.innerText = "Error uploading file. Check network connection.";
-            feedback.className = 'mt-3 text-sm font-medium text-red-500';
-        } finally {
-            // Reset button state
-            uploadBtn.disabled = false;
-            uploadBtn.classList.remove('bg-gray-400', 'animate-pulse');
-            uploadBtn.classList.add('bg-green-500', 'hover:bg-green-600');
-            uploadBtnText.innerText = 'Upload Students';
-            fileInput.value = ''; // Clear file input
         }
-    }
-</script>
 
+        function updateClassFilterDropdown() {
+            const dropdown = document.getElementById('class-filter');
+            const classes = [...new Set(allStudents.map(s => s.class_name))].sort();
+            dropdown.innerHTML = '<option value="all">All Classes</option>';
+            classes.forEach(c => {
+                dropdown.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+        }
+
+        function renderStudentTable(students) {
+            const list = document.getElementById('manager-student-list');
+            list.innerHTML = students.length ? '' : '<tr><td colspan="3" class="px-6 py-10 text-center text-gray-400 italic">No records found.</td></tr>';
+            
+            students.forEach(s => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-gray-50 transition";
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-sm font-bold text-gray-900">${s.student_name}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${s.class_name}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteStudent(${s.id}, '${s.student_name}')" class="text-red-600 hover:text-red-900 font-bold px-3 py-1 bg-red-50 rounded-lg text-xs transition">Delete</button>
+                    </td>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function filterStudentsByClass() {
+            const val = document.getElementById('class-filter').value;
+            const filtered = val === "all" ? allStudents : allStudents.filter(s => s.class_name === val);
+            renderStudentTable(filtered);
+        }
+
+        async function addSingleStudent() {
+            const name = document.getElementById('new-student-name').value;
+            const className = document.getElementById('new-student-class').value;
+            if(!name || !className) return alert("Fill all fields");
+
+            // Assuming endpoint exists or handling via common upload logic
+            // For now, using typical POST pattern
+            try {
+                const res = await fetch('/admin/add-student', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, class_name: className })
+                });
+                const data = await res.json();
+                if(data.status === "success") {
+                    document.getElementById('new-student-name').value = '';
+                    document.getElementById('new-student-class').value = '';
+                    loadAllStudents();
+                }
+            } catch (err) { alert("Failed to add student"); }
+        }
+
+        async function deleteStudent(id, name) {
+            if (!confirm(`Delete ${name}?`)) return;
+            try {
+                const res = await fetch(`/admin/students/${id}`, { method: 'DELETE' });
+                if ((await res.json()).status === "success") loadAllStudents();
+            } catch (err) { alert("Delete failed"); }
+        }
+
+        // --- UPLOAD LOGIC ---
+        async function uploadStudents(source) {
+            const inputId = source === 'manager' ? 'excel-file-manager' : 'excel-file';
+            const feedbackId = source === 'manager' ? 'manager-upload-feedback' : 'upload-feedback';
+            const fileInput = document.getElementById(inputId);
+            const feedback = document.getElementById(feedbackId);
+
+            if(!fileInput.files.length) return;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            feedback.innerText = "Processing...";
+            
+            try {
+                const res = await fetch('/admin/upload-students', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.status === "success") {
+                    feedback.className = "mt-2 text-xs font-medium text-green-600";
+                    feedback.innerText = `Successfully added ${data.added} students!`;
+                    if(source === 'manager') loadAllStudents(); else fetchData();
+                } else {
+                    feedback.className = "mt-2 text-xs font-medium text-red-600";
+                    feedback.innerText = "Error: " + data.error;
+                }
+            } catch (err) { feedback.innerText = "Connection error."; }
+        }
+
+        // --- ATTENDANCE LOGIC (Keep original) ---
+        function selectType(type) {
+            selectedType = type;
+            document.getElementById('choice-step').classList.add('hidden');
+            document.getElementById('data-step').classList.remove('hidden');
+            const dt = document.getElementById('data-title');
+            dt.innerText = type === 'visit_day' ? "Visit Day Overview" : "Parent Meeting Overview";
+            dt.className = `text-3xl font-bold mb-6 ${type === 'visit_day' ? 'text-blue-600' : 'text-red-600'}`;
+            fetchData();
+        }
+
+        async function fetchData() {
+            const statsDiv = document.getElementById('stats');
+            const container = document.getElementById('classes-container');
+            statsDiv.innerHTML = '<p class="col-span-2 text-blue-500 animate-pulse">Loading...</p>';
+            try {
+                const res = await fetch(`/admin/data/${selectedType}`);
+                const result = await res.json();
+                statsDiv.innerHTML = `<div class="p-3 bg-gray-50 rounded-lg border text-center"><p class="text-xs font-bold text-gray-400 uppercase">Total</p><p class="text-2xl font-black">${result.total}</p></div>`;
+                for (const cls in result.stats) {
+                    statsDiv.innerHTML += `<div class="p-3 bg-gray-50 rounded-lg border text-center"><p class="text-xs font-bold text-gray-400 uppercase">${cls}</p><p class="text-2xl font-black">${result.stats[cls]}</p></div>`;
+                }
+                container.innerHTML = '<h4 class="sticky top-0 bg-white pt-1 pb-3 text-2xl font-semibold text-gray-700 border-b z-10">Detailed Breakdown</h4>';
+                for (const cls in result.data) {
+                    const section = document.createElement('div');
+                    section.className = 'p-4 bg-white border rounded-lg mb-4 shadow-sm';
+                    section.innerHTML = `<h4 class="font-bold mb-2 text-gray-800 border-b pb-1">${cls}</h4>`;
+                    const table = document.createElement('table');
+                    table.className = 'w-full text-left text-xs';
+                    table.innerHTML = `<tbody></tbody>`;
+                    const tbody = table.querySelector('tbody');
+                    result.data[cls].forEach(s => {
+                        tbody.innerHTML += `<tr><td class="py-1 font-medium">${s.student_name}</td><td class="py-1 text-right text-gray-400">${s.date}</td></tr>`;
+                    });
+                    section.appendChild(table);
+                    container.appendChild(section);
+                }
+                drawChart(result.stats);
+            } catch(err) { statsDiv.innerHTML = '<p class="text-red-500">Error.</p>'; }
+        }
+
+        function drawChart(stats) {
+            const ctx = document.getElementById('classChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stats),
+                    datasets: [{
+                        label: 'Records',
+                        data: Object.values(stats),
+                        backgroundColor: selectedType === 'visit_day' ? '#2563eb' : '#dc2626',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+    </script>
 </body>
 </html>
