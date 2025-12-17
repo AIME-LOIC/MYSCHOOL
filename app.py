@@ -113,3 +113,19 @@ def upload_students(file: UploadFile = File(...), db: Session = Depends(get_db))
         added += 1
     db.commit()
     return {"status": "success", "added": added, "skipped": skipped}
+
+import threading
+import time
+import requests
+import os
+
+def keep_awake():
+    url = os.environ.get("https://myschool-rw-web.onrender.com")  # set your deployed URL in env variables
+    while True:
+        try:
+            requests.get(url)
+        except:
+            pass
+        time.sleep(10 * 60)  # ping every 10 minutes
+
+threading.Thread(target=keep_awake, daemon=True).start()
