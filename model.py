@@ -9,6 +9,7 @@ class Student(Base):
     id = Column(Integer, primary_key=True, index=True)
     student_name = Column(String(100), nullable=False, index=True)
     class_name = Column(String(50), nullable=False)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, default=1)  # Made nullable for migration compatibility
 
     # One-to-many relationship with visits
     visits = relationship(

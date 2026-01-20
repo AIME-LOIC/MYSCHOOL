@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Admin - School Management</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #764ba2;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        .schools-list {
+            margin-top: 20px;
+        }
+        
+        .school-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .school-info h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .school-info p {
+            color: #666;
+            font-size: 13px;
+            margin: 2px 0;
+        }
+        
+        .school-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 12px;
+        }
+        
+        .stat {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .message {
+            padding: 12px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 System Admin Dashboard</h1>
+            <p>Manage all schools and their data</p>
+        </div>
+        
+        <div class="main-grid">
+            <!-- Create School Section -->
+            <div class="card">
+                <h2>Create New School</h2>
+                <form id="createSchoolForm">
+                    <div class="form-group">
+                        <label for="schoolName">School Name *</label>
+                        <input type="text" id="schoolName" name="school_name" required placeholder="e.g., ABC High School">
+                    </div>
+                    <div class="form-group">
+                        <label for="schoolCode">School Code *</label>
+                        <input type="text" id="schoolCode" name="school_code" required placeholder="e.g., AHS-001">
+                    </div>
+                    <button type="submit" class="btn btn-full">Create School</button>
+                </form>
+                <div id="formMessage"></div>
+                
+                <div class="stat">
+                    <div class="stat-number" id="totalSchools">0</div>
+                    <div class="stat-label">Total Schools</div>
+                </div>
+            </div>
+            
+            <!-- Schools List Section -->
+            <div class="card">
+                <h2>Registered Schools</h2>
+                <div id="schoolsList" class="schools-list"></div>
+                <div id="noSchools" style="color: #999; text-align: center; padding: 20px;">
+                    No schools registered yet
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Fetch and display all schools
+        async function loadSchools() {
+            try {
+                const response = await fetch('/myadmin/schools');
+                const data = await response.json();
+                
+                const schoolsList = document.getElementById('schoolsList');
+                const noSchools = document.getElementById('noSchools');
+                const totalSchools = document.getElementById('totalSchools');
+                
+                totalSchools.textContent = data.total;
+                
+                if (data.schools && data.schools.length > 0) {
+                    noSchools.style.display = 'none';
+                    schoolsList.innerHTML = data.schools.map(school => `
+                        <div class="school-item">
+                            <div class="school-info">
+                                <h3>${school.school_name}</h3>
+                                <p><strong>Code:</strong> ${school.school_code}</p>
+                                <p><strong>Created:</strong> ${new Date(school.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div class="school-actions">
+                                <a href="/${school.school_name}/admin" class="btn btn-small">Admin Panel</a>
+                                <button class="btn btn-small btn-danger" onclick="deleteSchool(${school.id}, '${school.school_name}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    noSchools.style.display = 'block';
+                    schoolsList.innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error loading schools:', error);
+            }
+        }
+        
+        // Create school
+        document.getElementById('createSchoolForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(document.getElementById('createSchoolForm'));
+            const formMessage = document.getElementById('formMessage');
+            
+            try {
+                const response = await fetch('/myadmin/create-school', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    formMessage.innerHTML = `<div class="message success">✓ ${data.message}</div>`;
+                    document.getElementById('createSchoolForm').reset();
+                    setTimeout(() => loadSchools(), 1000);
+                } else {
+                    formMessage.innerHTML = `<div class="message error">✗ ${data.message}</div>`;
+                }
+            } catch (error) {
+                formMessage.innerHTML = `<div class="message error">✗ Error creating school</div>`;
+                console.error('Error:', error);
+            }
+        });
+        
+        // Delete school
+        async function deleteSchool(schoolId, schoolName) {
+            if (confirm(`Are you sure you want to delete "${schoolName}" and all its data?`)) {
+                try {
+                    const response = await fetch(`/myadmin/schools/${schoolId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        loadSchools();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    alert('Error deleting school');
+                    console.error('Error:', error);
+                }
+            }
+        }
+        
+        // Load schools on page load
+        loadSchools();
+        
+        // Refresh schools every 5 seconds
+        setInterval(loadSchools, 5000);
+    </script>
+</body>
+</html>

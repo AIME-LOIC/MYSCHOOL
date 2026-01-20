@@ -176,6 +176,7 @@
         let selectedType = '';
         let selectedStudentId = null;
         let tourStep = 0; // 0: Tour is inactive, 1+: Current step of the tour
+        let schoolname = "{{ school_name }}";
 
         // --- DOM Elements ---
         const mainContent = document.getElementById('main-content');
@@ -425,7 +426,7 @@
     resultsDiv.innerHTML = '<p class="p-3 text-center text-blue-500 animate-pulse">Searching...</p>';
 
     try {
-        const res = await fetch(`/students/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/${schoolname}/students/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
 
         if(data.length === 0){
@@ -491,7 +492,7 @@
         formData.append('student_id', selectedStudentId);
         formData.append('visit_type', selectedType);
 
-        const res = await fetch('/visits/add', {
+        const res = await fetch(`/visits/add`, {
             method: 'POST',
             body: formData
         });
