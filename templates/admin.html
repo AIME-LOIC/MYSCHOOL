@@ -56,12 +56,16 @@
 
         <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 animate-fade-in">
             <h3 class="text-xl font-semibold mb-5 text-gray-700">Main Menu:</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button onclick="selectType('visit_day')" class="py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md">Visit Day Data</button>
                 <button onclick="selectType('parent_meeting')" class="py-4 px-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition shadow-md">Parent Meeting Data</button>
                 <button onclick="openManager()" class="py-4 px-6 bg-gray-800 hover:bg-black text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     Manage Students
+                </button>
+                <button onclick="openLiveTrack()" class="py-4 px-6 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition shadow-md flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Live Track
                 </button>
             </div>
         </div>
@@ -139,6 +143,34 @@
                 </div>
             </div>
         </div>
+
+        <div id="live-track-step" class="hidden mt-8 animate-fade-in">
+            <button onclick="resetSelection()" class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
+            <h3 class="text-3xl font-bold mb-6">Live Track - Real-time Attendance</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+                <select id="live-class-filter" onchange="filterLiveByClass()" class="border rounded-lg px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">All Classes</option>
+                </select>
+                <input type="text" id="live-search" placeholder="Search by name..." onkeyup="filterLiveBySearch()" class="border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="refreshLiveData()" class="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold">Refresh</button>
+                <button onclick="toggleAutoRefresh()" class="py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold" id="auto-refresh-btn">Start Auto-Refresh</button>
+            </div>
+            <div id="live-table-container" class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Student Name</th>
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Class</th>
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Visit Type</th>
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Date</th>
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-700">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-data-list" class="divide-y">
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -179,6 +211,7 @@
         function resetSelection() {
             document.getElementById('data-step').classList.add('hidden');
             document.getElementById('manager-step').classList.add('hidden');
+            document.getElementById('live-track-step').classList.add('hidden');
             document.getElementById('choice-step').classList.remove('hidden');
         }
 
@@ -382,6 +415,145 @@
                     }]
                 }
             });
+        }
+
+        // --- LIVE TRACK LOGIC ---
+        let liveTrackData = [];
+        let filteredLiveData = [];
+        let autoRefreshInterval = null;
+        let isAutoRefreshEnabled = false;
+
+        async function openLiveTrack() {
+            document.getElementById('choice-step').classList.add('hidden');
+            document.getElementById('live-track-step').classList.remove('hidden');
+            await refreshLiveData();
+        }
+
+        async function refreshLiveData() {
+            const container = document.getElementById('live-data-list');
+            container.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-blue-500">Loading live data...</td></tr>';
+            try {
+                const students = await fetch(`/${schoolName}/admin/students`).then(r => r.json()).then(r => r.students || []);
+                const studentMap = Object.fromEntries(students.map(s => [s.id, s]));
+                
+                // Fetch visit data for both types
+                const visitDayRes = await fetch(`/${schoolName}/admin/data/visit_day`);
+                const pmRes = await fetch(`/${schoolName}/admin/data/parent_meeting`);
+                
+                const visitDayData = await visitDayRes.json();
+                const pmData = await pmRes.json();
+                
+                liveTrackData = [];
+                
+                // Process visit_day data
+                for (const cls in visitDayData.data) {
+                    visitDayData.data[cls].forEach(visit => {
+                        const student = Object.values(studentMap).find(s => s.student_name === visit.student_name);
+                        if (student) {
+                            liveTrackData.push({
+                                student_name: visit.student_name,
+                                class_name: student.class_name,
+                                visit_type: 'Visit Day',
+                                visit_date: visit.date,
+                                status: 'Recorded'
+                            });
+                        }
+                    });
+                }
+                
+                // Process parent_meeting data
+                for (const cls in pmData.data) {
+                    pmData.data[cls].forEach(visit => {
+                        const student = Object.values(studentMap).find(s => s.student_name === visit.student_name);
+                        if (student) {
+                            liveTrackData.push({
+                                student_name: visit.student_name,
+                                class_name: student.class_name,
+                                visit_type: 'Parent Meeting',
+                                visit_date: visit.date,
+                                status: 'Recorded'
+                            });
+                        }
+                    });
+                }
+                
+                // Sort by date (newest first)
+                liveTrackData.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
+                filteredLiveData = [...liveTrackData];
+                
+                updateLiveClassFilter();
+                renderLiveTrackTable();
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-red-500">Error loading data. Check connection.</td></tr>';
+            }
+        }
+
+        function renderLiveTrackTable() {
+            const list = document.getElementById('live-data-list');
+            if (filteredLiveData.length === 0) {
+                list.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400">No records found.</td></tr>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            filteredLiveData.forEach(record => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-blue-50 transition';
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-sm font-bold text-gray-900">${record.student_name}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${record.class_name}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${record.visit_type}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${record.visit_date}</td>
+                    <td class="px-6 py-4 text-sm"><span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">${record.status}</span></td>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function updateLiveClassFilter() {
+            const dropdown = document.getElementById('live-class-filter');
+            const classes = [...new Set(liveTrackData.map(r => r.class_name))].sort();
+            dropdown.innerHTML = '<option value="all">All Classes</option>';
+            classes.forEach(c => dropdown.innerHTML += `<option value="${c}">${c}</option>`);
+        }
+
+        function filterLiveByClass() {
+            const selectedClass = document.getElementById('live-class-filter').value;
+            const searchTerm = document.getElementById('live-search').value.toLowerCase();
+            
+            filteredLiveData = liveTrackData.filter(record => {
+                const matchClass = selectedClass === 'all' || record.class_name === selectedClass;
+                const matchSearch = searchTerm === '' || record.student_name.toLowerCase().includes(searchTerm);
+                return matchClass && matchSearch;
+            });
+            
+            renderLiveTrackTable();
+        }
+
+        function filterLiveBySearch() {
+            filterLiveByClass();
+        }
+
+        function toggleAutoRefresh() {
+            isAutoRefreshEnabled = !isAutoRefreshEnabled;
+            const btn = document.getElementById('auto-refresh-btn');
+            
+            if (isAutoRefreshEnabled) {
+                btn.innerText = 'Stop Auto-Refresh';
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-red-600', 'hover:bg-red-700');
+                
+                autoRefreshInterval = setInterval(() => {
+                    refreshLiveData();
+                }, 5000); // Refresh every 5 seconds
+            } else {
+                btn.innerText = 'Start Auto-Refresh';
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            }
         }
     </script>
 </body>
