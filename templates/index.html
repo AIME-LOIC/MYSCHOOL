@@ -504,9 +504,16 @@
             feedbackEl.classList.remove('text-red-500');
             feedbackEl.classList.add('text-green-600');
         } else {
-            feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
-            feedbackEl.classList.remove('text-green-600');
-            feedbackEl.classList.add('text-red-500');
+            // Hide "Already recorded today" message from parents - only show success
+            if (data.message === 'Already recorded today') {
+                feedbackEl.innerText = 'Success! Your request has been recorded.';
+                feedbackEl.classList.remove('text-red-500');
+                feedbackEl.classList.add('text-green-600');
+            } else {
+                feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
+                feedbackEl.classList.remove('text-green-600');
+                feedbackEl.classList.add('text-red-500');
+            }
         }
     } catch(err) {
         console.error(err);

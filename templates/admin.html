@@ -15,6 +15,32 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
         .blur-bg { filter: blur(4px); pointer-events: none; transition: filter 0.3s ease; }
+        
+        /* Toast Animations */
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px) translateX(-50%);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) translateX(-50%);
+            }
+        }
+        
+        @keyframes slideDown {
+            from { 
+                opacity: 1; 
+                transform: translateY(0) translateX(-50%);
+            }
+            to { 
+                opacity: 0; 
+                transform: translateY(30px) translateX(-50%);
+            }
+        }
+        
+        .toast-enter { animation: slideUp 0.4s ease-out forwards; }
+        .toast-exit { animation: slideDown 0.4s ease-out forwards; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -147,6 +173,13 @@
         <div id="live-track-step" class="hidden mt-8 animate-fade-in">
             <button onclick="resetSelection()" class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
             <h3 class="text-3xl font-bold mb-6">Live Track - Real-time Attendance</h3>
+            
+            <!-- Type Selection Tabs -->
+            <div class="flex gap-4 mb-6">
+                <button onclick="setLiveTrackType('visit_day')" id="btn-visit-day" class="py-3 px-6 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md">Visit Day</button>
+                <button onclick="setLiveTrackType('parent_meeting')" id="btn-parent-meeting" class="py-3 px-6 bg-gray-400 text-white font-bold rounded-lg hover:bg-gray-500 transition shadow-md">Parent Meeting</button>
+            </div>
+            
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
                 <select id="live-class-filter" onchange="filterLiveByClass()" class="border rounded-lg px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="all">All Classes</option>
@@ -173,13 +206,52 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 left-1/2 hidden z-50 px-6 py-4 rounded-lg shadow-2xl font-semibold text-white whitespace-nowrap flex items-center gap-3">
+        <svg id="toast-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+        <span id="toast-message">Message</span>
+    </div>
+
     <script>
         let allStudents = [];
         let selectedIds = new Set();
         let chartInstance = null;
+        let toastTimeout = null;
         
         // Extract school name from URL path
         const schoolName = window.location.pathname.split('/')[1];
+
+        // --- TOAST NOTIFICATION LOGIC ---
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+            
+            msg.innerText = message;
+            
+            if (type === 'success') {
+                toast.classList.remove('bg-red-500');
+                toast.classList.add('bg-green-500');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+            } else if (type === 'error') {
+                toast.classList.remove('bg-green-500');
+                toast.classList.add('bg-red-500');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+            }
+            
+            toast.classList.remove('hidden', 'toast-exit');
+            toast.classList.add('toast-enter');
+            
+            if (toastTimeout) clearTimeout(toastTimeout);
+            
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 400);
+            }, 3500);
+        }
 
         window.onload = () => {
             setTimeout(() => {
@@ -388,12 +460,14 @@
                 const res = await fetch(`/${schoolName}/admin/data/${selectedType}`);
                 const result = await res.json();
                 statsDiv.innerHTML = `<div class="p-3 bg-gray-50 border rounded text-center"><p class="text-xs uppercase font-bold text-gray-400">Total</p><p class="text-2xl font-black">${result.total}</p></div>`;
-                container.innerHTML = '<h4 class="text-xl font-bold mb-4">Class Detail</h4>';
+                container.innerHTML = '<h4 class="text-xl font-bold mb-4">Class Detail (Newest First)</h4>';
                 for (const cls in result.data) {
                     const div = document.createElement('div');
                     div.className = "mb-4 p-4 bg-white border rounded shadow-sm";
                     div.innerHTML = `<h5 class="font-bold border-b mb-2">${cls}</h5>`;
-                    result.data[cls].forEach(s => div.innerHTML += `<div class="flex justify-between text-xs py-1"><span>${s.student_name}</span><span class="text-gray-400">${s.date}</span></div>`);
+                    // Sort by date - newest first
+                    const sorted = result.data[cls].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    sorted.forEach(s => div.innerHTML += `<div class="flex justify-between text-xs py-1"><span>${s.student_name}</span><span class="text-gray-400">${s.date}</span></div>`);
                     container.appendChild(div);
                 }
                 drawChart(result.stats);
@@ -422,70 +496,114 @@
         let filteredLiveData = [];
         let autoRefreshInterval = null;
         let isAutoRefreshEnabled = false;
+        let currentLiveTrackType = 'visit_day';
+        let previousDataCount = 0;
+        let previousDataString = '';
 
         async function openLiveTrack() {
             document.getElementById('choice-step').classList.add('hidden');
             document.getElementById('live-track-step').classList.remove('hidden');
+            currentLiveTrackType = 'visit_day';
+            updateLiveTrackTypeButtons();
+            previousDataCount = 0;
+            previousDataString = '';
             await refreshLiveData();
+        }
+
+        function setLiveTrackType(type) {
+            currentLiveTrackType = type;
+            updateLiveTrackTypeButtons();
+            filterLiveByClass();
+        }
+
+        function updateLiveTrackTypeButtons() {
+            const visitDayBtn = document.getElementById('btn-visit-day');
+            const pmBtn = document.getElementById('btn-parent-meeting');
+            
+            if (currentLiveTrackType === 'visit_day') {
+                visitDayBtn.classList.remove('bg-gray-400', 'hover:bg-gray-500');
+                visitDayBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                pmBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                pmBtn.classList.add('bg-gray-400', 'hover:bg-gray-500');
+            } else {
+                visitDayBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                visitDayBtn.classList.add('bg-gray-400', 'hover:bg-gray-500');
+                pmBtn.classList.remove('bg-gray-400', 'hover:bg-gray-500');
+                pmBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            }
         }
 
         async function refreshLiveData() {
             const container = document.getElementById('live-data-list');
-            container.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-blue-500">Loading live data...</td></tr>';
+            
             try {
                 const students = await fetch(`/${schoolName}/admin/students`).then(r => r.json()).then(r => r.students || []);
                 const studentMap = Object.fromEntries(students.map(s => [s.id, s]));
                 
-                // Fetch visit data for both types
-                const visitDayRes = await fetch(`/${schoolName}/admin/data/visit_day`);
-                const pmRes = await fetch(`/${schoolName}/admin/data/parent_meeting`);
+                // Fetch data for current type
+                const dataRes = await fetch(`/${schoolName}/admin/data/${currentLiveTrackType}`);
+                const data = await dataRes.json();
                 
-                const visitDayData = await visitDayRes.json();
-                const pmData = await pmRes.json();
+                // Get today's date
+                const today = new Date().toISOString().split('T')[0];
                 
                 liveTrackData = [];
                 
-                // Process visit_day data
-                for (const cls in visitDayData.data) {
-                    visitDayData.data[cls].forEach(visit => {
-                        const student = Object.values(studentMap).find(s => s.student_name === visit.student_name);
-                        if (student) {
-                            liveTrackData.push({
-                                student_name: visit.student_name,
-                                class_name: student.class_name,
-                                visit_type: 'Visit Day',
-                                visit_date: visit.date,
-                                status: 'Recorded'
-                            });
-                        }
-                    });
-                }
-                
-                // Process parent_meeting data
-                for (const cls in pmData.data) {
-                    pmData.data[cls].forEach(visit => {
-                        const student = Object.values(studentMap).find(s => s.student_name === visit.student_name);
-                        if (student) {
-                            liveTrackData.push({
-                                student_name: visit.student_name,
-                                class_name: student.class_name,
-                                visit_type: 'Parent Meeting',
-                                visit_date: visit.date,
-                                status: 'Recorded'
-                            });
+                // Process data for current type - ONLY TODAY'S DATA
+                for (const cls in data.data) {
+                    data.data[cls].forEach(visit => {
+                        // Only show today's visits
+                        if (visit.date === today) {
+                            const student = Object.values(studentMap).find(s => s.student_name === visit.student_name);
+                            if (student) {
+                                const typeLabel = currentLiveTrackType === 'visit_day' ? 'Visit Day' : 'Parent Meeting';
+                                liveTrackData.push({
+                                    student_name: visit.student_name,
+                                    class_name: student.class_name,
+                                    visit_type: typeLabel,
+                                    visit_date: visit.date,
+                                    status: 'Recorded'
+                                });
+                            }
                         }
                     });
                 }
                 
                 // Sort by date (newest first)
                 liveTrackData.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
-                filteredLiveData = [...liveTrackData];
                 
-                updateLiveClassFilter();
-                renderLiveTrackTable();
+                // Create a string representation of the data to compare
+                const currentDataString = JSON.stringify(liveTrackData);
+                
+                // Check if data has changed
+                if (currentDataString !== previousDataString || liveTrackData.length !== previousDataCount) {
+                    previousDataString = currentDataString;
+                    previousDataCount = liveTrackData.length;
+                    
+                    // Check for duplicate visits today
+                    const visitCounts = {};
+                    liveTrackData.forEach(record => {
+                        const key = `${record.student_name}-${record.visit_date}`;
+                        visitCounts[key] = (visitCounts[key] || 0) + 1;
+                    });
+                    
+                    filteredLiveData = liveTrackData.map(record => ({
+                        ...record,
+                        isDuplicate: visitCounts[`${record.student_name}-${record.visit_date}`] > 1
+                    }));
+                    
+                    updateLiveClassFilter();
+                    renderLiveTrackTable();
+                    showToast(`📍 New arrival! Total: ${liveTrackData.length} record${liveTrackData.length !== 1 ? 's' : ''} today.`, 'success');
+                } else if (isAutoRefreshEnabled) {
+                    // No new data during auto-refresh, don't show toast
+                    updateLiveClassFilter();
+                    renderLiveTrackTable();
+                }
             } catch (err) {
                 console.error(err);
                 container.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-red-500">Error loading data. Check connection.</td></tr>';
+                showToast('Failed to load data. Please check your connection.', 'error');
             }
         }
 
@@ -499,13 +617,16 @@
             list.innerHTML = '';
             filteredLiveData.forEach(record => {
                 const row = document.createElement('tr');
-                row.className = 'hover:bg-blue-50 transition';
+                const bgClass = record.isDuplicate ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-blue-50';
+                row.className = `${bgClass} transition`;
+                const statusColor = record.isDuplicate ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+                const statusText = record.isDuplicate ? '⚠️ Multiple' : record.status;
                 row.innerHTML = `
-                    <td class="px-6 py-4 text-sm font-bold text-gray-900">${record.student_name}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${record.class_name}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${record.visit_type}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${record.visit_date}</td>
-                    <td class="px-6 py-4 text-sm"><span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">${record.status}</span></td>
+                    <td class="px-6 py-4 text-sm font-bold ${record.isDuplicate ? 'text-red-900' : 'text-gray-900'}">${record.student_name}</td>
+                    <td class="px-6 py-4 text-sm ${record.isDuplicate ? 'text-red-600' : 'text-gray-600'}">${record.class_name}</td>
+                    <td class="px-6 py-4 text-sm ${record.isDuplicate ? 'text-red-600' : 'text-gray-600'}">${record.visit_type}</td>
+                    <td class="px-6 py-4 text-sm ${record.isDuplicate ? 'text-red-500' : 'text-gray-500'}">${record.visit_date}</td>
+                    <td class="px-6 py-4 text-sm"><span class="${statusColor} px-3 py-1 rounded-full text-xs font-bold">${statusText}</span></td>
                 `;
                 list.appendChild(row);
             });
@@ -546,7 +667,7 @@
                 
                 autoRefreshInterval = setInterval(() => {
                     refreshLiveData();
-                }, 5000); // Refresh every 5 seconds
+                }, 10000); // Refresh every 10 seconds - only shows toast on NEW data
             } else {
                 btn.innerText = 'Start Auto-Refresh';
                 btn.classList.remove('bg-red-600', 'hover:bg-red-700');
