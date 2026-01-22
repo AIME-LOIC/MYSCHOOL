@@ -492,7 +492,7 @@
         formData.append('student_id', selectedStudentId);
         formData.append('visit_type', selectedType);
 
-        const res = await fetch(`/visits/add`, {
+        const res = await fetch(`/${schoolname}/visits/add`, {
             method: 'POST',
             body: formData
         });

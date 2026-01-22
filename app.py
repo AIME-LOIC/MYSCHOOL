@@ -170,7 +170,6 @@ def search_students(school_name: str, q: str = Query(..., min_length=1), db: Ses
 
 
 @app.post("/{school_name}/visits/add")
-@app.post("/{school_name}/visits/add")
 def add_visit(
     school_name: str,
     student_id: int = Form(...),
@@ -207,7 +206,6 @@ def add_visit(
 
 
 @app.get("/{school_name}/admin/data/{visit_type}")
-@app.get("/{school_name}/admin/data/{visit_type}")
 def admin_data(school_name: str, visit_type: str, db: Session = Depends(get_db)):
     """
     Get visit data for a specific school
@@ -234,7 +232,6 @@ def admin_data(school_name: str, visit_type: str, db: Session = Depends(get_db))
     return {"data": result, "stats": stats, "total": len(visits)}
 
 
-@app.post("/{school_name}/admin/upload-students")
 @app.post("/{school_name}/admin/upload-students")
 def upload_students(school_name: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Upload students for a specific school from Excel file"""
@@ -266,7 +263,6 @@ def upload_students(school_name: str, file: UploadFile = File(...), db: Session 
 
 # Get all students for a specific school
 @app.get("/{school_name}/admin/students")
-@app.get("/{school_name}/admin/students")
 def get_all_students(school_name: str, db: Session = Depends(get_db)):
     """Get all students for a specific school"""
     school = db.query(School).filter(School.school_name == school_name).first()
@@ -281,7 +277,6 @@ def get_all_students(school_name: str, db: Session = Depends(get_db)):
 
 
 # Delete a student by ID from a specific school
-@app.delete("/{school_name}/admin/students/{student_id}")
 @app.delete("/{school_name}/admin/students/{student_id}")
 def delete_student(school_name: str, student_id: int, db: Session = Depends(get_db)):
     """Delete a student from a specific school"""
@@ -299,7 +294,6 @@ def delete_student(school_name: str, student_id: int, db: Session = Depends(get_
 
 
 # Add a single student to a specific school
-@app.post("/{school_name}/admin/add_student")
 @app.post("/{school_name}/admin/add_student")
 def add_student(
     school_name: str,
