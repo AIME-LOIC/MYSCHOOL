@@ -327,7 +327,7 @@ import requests
 import os
 
 def keep_awake():
-    url = os.environ.get("RENDER_URL", "https://myschool-rw-web.onrender.com")  # set your deployed URL in env variables
+    url = os.environ.get("RENDER_URL", "https://myschool-web-rw.onrender.com")  # set your deployed URL in env variables
     while True:
         try:
             requests.get(url)
