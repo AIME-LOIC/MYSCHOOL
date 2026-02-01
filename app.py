@@ -207,28 +207,26 @@ def add_visit(
 
 @app.get("/{school_name}/admin/data/{visit_type}")
 def admin_data(school_name: str, visit_type: str, db: Session = Depends(get_db)):
-    """
-    Get visit data for a specific school
-    visit_type: 'visit_day' or 'parent_meeting'
-    Returns all visits of that type grouped by class with stats
-    """
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     
     visits = db.query(Visit).join(Student).filter(Visit.visit_type == visit_type).all()
 
-    # Prepare structured data
     result = {}
     for v in visits:
         cls = v.student.class_name
         if cls not in result:
             result[cls] = []
-        result[cls].append({"student_name": v.student.student_name, "date": v.visit_date.strftime("%Y-%m-%d")})
+        
+        result[cls].append({
+            "student_name": v.student.student_name, 
+            "date": v.visit_date.strftime("%Y-%m-%d"),
+            "timestamp": v.created_at.isoformat() if hasattr(v, 'created_at') and v.created_at else None,
+            "id": v.id  # This is the key for FIFO ordering!
+        })
 
-    # Stats
     stats = {cls: len(students) for cls, students in result.items()}
-
     return {"data": result, "stats": stats, "total": len(visits)}
 
 

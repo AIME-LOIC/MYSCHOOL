@@ -491,7 +491,7 @@
             });
         }
 
-        // --- LIVE TRACK LOGIC ---
+      // --- LIVE TRACK LOGIC (FIXED - TRUE FIFO WITH ID FALLBACK) ---
         let liveTrackData = [];
         let filteredLiveData = [];
         let autoRefreshInterval = null;
@@ -547,21 +547,23 @@
                 // Get today's date
                 const today = new Date().toISOString().split('T')[0];
                 
-                liveTrackData = [];
+                // Collect ALL visits from ALL classes
+                const allVisits = [];
                 
-                // Process data for current type - ONLY TODAY'S DATA
                 for (const cls in data.data) {
-                    data.data[cls].forEach(visit => {
+                    data.data[cls].forEach((visit) => {
                         // Only show today's visits
                         if (visit.date === today) {
                             const student = Object.values(studentMap).find(s => s.student_name === visit.student_name);
                             if (student) {
                                 const typeLabel = currentLiveTrackType === 'visit_day' ? 'Visit Day' : 'Parent Meeting';
-                                liveTrackData.push({
+                                allVisits.push({
                                     student_name: visit.student_name,
                                     class_name: student.class_name,
                                     visit_type: typeLabel,
                                     visit_date: visit.date,
+                                    timestamp: visit.timestamp, // From backend
+                                    id: visit.id, // Database ID for ordering
                                     status: 'Recorded'
                                 });
                             }
@@ -569,8 +571,17 @@
                     });
                 }
                 
-                // Sort by date (newest first)
-                liveTrackData.sort((a, b) => new Date(b.visit_date) - new Date(a.visit_date));
+                // FIFO Sort: Use timestamp if available, otherwise use ID (database insertion order)
+                allVisits.sort((a, b) => {
+                    // If both have timestamps, use them
+                    if (a.timestamp && b.timestamp) {
+                        return new Date(a.timestamp) - new Date(b.timestamp);
+                    }
+                    // If no timestamps, use ID (lower ID = earlier insertion = FIFO)
+                    return (a.id || 0) - (b.id || 0);
+                });
+                
+                liveTrackData = allVisits;
                 
                 // Create a string representation of the data to compare
                 const currentDataString = JSON.stringify(liveTrackData);
@@ -615,14 +626,18 @@
             }
             
             list.innerHTML = '';
-            filteredLiveData.forEach(record => {
+            filteredLiveData.forEach((record, index) => {
                 const row = document.createElement('tr');
                 const bgClass = record.isDuplicate ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-blue-50';
                 row.className = `${bgClass} transition`;
                 const statusColor = record.isDuplicate ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
                 const statusText = record.isDuplicate ? '⚠️ Multiple' : record.status;
+                
+                // Add position indicator for FIFO
+                const positionBadge = `<span class="text-xs text-gray-400 mr-2">#${index + 1}</span>`;
+                
                 row.innerHTML = `
-                    <td class="px-6 py-4 text-sm font-bold ${record.isDuplicate ? 'text-red-900' : 'text-gray-900'}">${record.student_name}</td>
+                    <td class="px-6 py-4 text-sm font-bold ${record.isDuplicate ? 'text-red-900' : 'text-gray-900'}">${positionBadge}${record.student_name}</td>
                     <td class="px-6 py-4 text-sm ${record.isDuplicate ? 'text-red-600' : 'text-gray-600'}">${record.class_name}</td>
                     <td class="px-6 py-4 text-sm ${record.isDuplicate ? 'text-red-600' : 'text-gray-600'}">${record.visit_type}</td>
                     <td class="px-6 py-4 text-sm ${record.isDuplicate ? 'text-red-500' : 'text-gray-500'}">${record.visit_date}</td>
