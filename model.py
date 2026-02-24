@@ -27,6 +27,9 @@ class Visit(Base):
     visit_type = Column(String(30), nullable=False)  # e.g., 'visit_day', 'parent_meeting'
     visit_date = Column(Date, nullable=False)
     status = Column(String(20), default="waiting")
+    movement_method = Column(String(20), nullable=True)  # with_car | without_car
+    arrival_plate_number = Column(String(30), nullable=True)
+    assigned_plate_number = Column(String(30), nullable=True)
 
     # Link back to Student
     student = relationship("Student", back_populates="visits")

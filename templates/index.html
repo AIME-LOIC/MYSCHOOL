@@ -154,6 +154,19 @@
                 <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student's name...</p>
             </div>
 
+            <div id="movement-section" class="hidden border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
+                <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">Method of movement (SOS only)</label>
+                <select id="movement-method" onchange="onMovementMethodChange()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select movement method</option>
+                    <option value="with_car">By private car</option>
+                    <option value="without_car">Without car</option>
+                </select>
+                <div id="plate-number-wrap" class="hidden mt-3">
+                    <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">Plate number</label>
+                    <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. UBA 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
             <button id="submit-btn" onclick="submitVisit()" disabled
                     class="w-full py-3 px-6 bg-gray-400 text-white font-medium rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
                 </button>
@@ -180,6 +193,8 @@
         let selectedStudentId = null;
         let tourStep = 0; // 0: Tour is inactive, 1+: Current step of the tour
         let schoolname = "{{ school_name }}";
+        let schoolCode = "{{ school_code }}";
+        const isSOSSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('sos');
 
         // --- DOM Elements ---
         const mainContent = document.getElementById('main-content');
@@ -372,6 +387,14 @@
             document.getElementById('student-results').innerHTML = '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('feedback').innerText = '';
+            document.getElementById('movement-method').value = '';
+            document.getElementById('plate-number').value = '';
+            document.getElementById('plate-number-wrap').classList.add('hidden');
+            if (isSOSSchool) {
+                document.getElementById('movement-section').classList.remove('hidden');
+            } else {
+                document.getElementById('movement-section').classList.add('hidden');
+            }
         }
 
         function showTourGuide() {
@@ -404,6 +427,16 @@
                 submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
             }
+
+            document.getElementById('movement-method').value = '';
+            document.getElementById('plate-number').value = '';
+            document.getElementById('plate-number-wrap').classList.add('hidden');
+            if (isSOSSchool) {
+                document.getElementById('movement-section').classList.remove('hidden');
+            } else {
+                document.getElementById('movement-section').classList.add('hidden');
+            }
+            validateSubmitState();
             
             // Highlight the search input if the tour is active (Step 5)
             if (tourStep === 5) {
@@ -415,11 +448,10 @@
         async function searchStudents() {
     const query = document.getElementById('search-input').value.trim();
     const resultsDiv = document.getElementById('student-results');
-    const submitBtn = document.getElementById('submit-btn');
 
     resultsDiv.innerHTML = '';
     selectedStudentId = null;
-    submitBtn.disabled = true;
+    validateSubmitState();
 
     if(query.length < 2) {
         resultsDiv.innerHTML = '<p class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
@@ -456,7 +488,6 @@
 
         function selectStudent(id, element) {
             selectedStudentId = id;
-            const submitBtn = document.getElementById('submit-btn');
             
             document.querySelectorAll('.student-item').forEach(el => {
                 el.classList.remove('bg-blue-200', 'border-blue-400', 'font-semibold');
@@ -465,10 +496,7 @@
             element.classList.remove('hover:bg-blue-50', 'bg-white');
             element.classList.add('bg-blue-200', 'border-blue-400', 'font-semibold');
 
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('bg-gray-400');
-            const isVisitDay = selectedType === 'visit_day';
-            submitBtn.classList.add(isVisitDay ? 'bg-blue-600' : 'bg-green-600', isVisitDay ? 'hover:bg-blue-700' : 'hover:bg-green-700');
+            validateSubmitState();
             
             // If tour is active and we are on the search step, advance the tour
             if (tourStep === 5) {
@@ -494,6 +522,12 @@
         const formData = new FormData();
         formData.append('student_id', selectedStudentId);
         formData.append('visit_type', selectedType);
+        if (isSOSSchool) {
+            const movementMethod = document.getElementById('movement-method').value;
+            const plateNumber = document.getElementById('plate-number').value.trim();
+            formData.append('movement_method', movementMethod);
+            formData.append('plate_number', plateNumber);
+        }
 
         const res = await fetch(`/${schoolname}/visits/add`, {
             method: 'POST',
@@ -528,11 +562,50 @@
         submitBtn.classList.remove('animate-pulse');
         selectedStudentId = null;
         document.getElementById('search-input').value = '';
+        document.getElementById('movement-method').value = '';
+        document.getElementById('plate-number').value = '';
+        document.getElementById('plate-number-wrap').classList.add('hidden');
         document.getElementById('student-results').innerHTML =
             '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
-        submitBtn.disabled = true;
+        validateSubmitState();
         setTimeout(goBackToChoice, 1500);
     }
+}
+function onMovementMethodChange() {
+    const movementMethod = document.getElementById('movement-method').value;
+    const plateWrap = document.getElementById('plate-number-wrap');
+    if (movementMethod === 'with_car') {
+        plateWrap.classList.remove('hidden');
+    } else {
+        plateWrap.classList.add('hidden');
+        document.getElementById('plate-number').value = '';
+    }
+    validateSubmitState();
+}
+
+function validateSubmitState() {
+    const submitBtn = document.getElementById('submit-btn');
+    let canSubmit = !!selectedStudentId && !!selectedType;
+    if (canSubmit && isSOSSchool) {
+        const movementMethod = document.getElementById('movement-method').value;
+        const plateNumber = document.getElementById('plate-number').value.trim();
+        if (!movementMethod) {
+            canSubmit = false;
+        } else if (movementMethod === 'with_car' && !plateNumber) {
+            canSubmit = false;
+        }
+    }
+
+    submitBtn.disabled = !canSubmit;
+    if (!canSubmit) {
+        submitBtn.classList.add('bg-gray-400');
+        submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-green-600', 'hover:bg-green-700');
+        return;
+    }
+
+    submitBtn.classList.remove('bg-gray-400');
+    const isVisitDay = selectedType === 'visit_day';
+    submitBtn.classList.add(isVisitDay ? 'bg-blue-600' : 'bg-green-600', isVisitDay ? 'hover:bg-blue-700' : 'hover:bg-green-700');
 }
 async function fetchVisits(visitType) {
     try {

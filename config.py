@@ -46,6 +46,8 @@ def init_db():
     
     # Ensure school_id column exists in students table (for existing databases)
     _ensure_student_school_id_column()
+    # Ensure transport/car columns exist in visits table (for existing databases)
+    _ensure_visit_transport_columns()
 
 def _ensure_student_school_id_column():
     """Add school_id column to students table if it doesn't exist"""
@@ -85,4 +87,41 @@ def _ensure_student_school_id_column():
                         
                 except Exception as e:
                     print(f"Warning: Could not add school_id column: {e}")
+                    connection.rollback()
+
+def _ensure_visit_transport_columns():
+    """Add transport/car columns to visits table if they don't exist"""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+
+        if 'visits' in inspector.get_table_names():
+            columns = {col['name'] for col in inspector.get_columns('visits')}
+
+            if 'movement_method' not in columns:
+                try:
+                    connection.execute(text("ALTER TABLE visits ADD COLUMN movement_method VARCHAR(20)"))
+                    connection.commit()
+                    print("✓ Added movement_method column to visits table")
+                except Exception as e:
+                    print(f"Warning: Could not add movement_method column: {e}")
+                    connection.rollback()
+
+            if 'arrival_plate_number' not in columns:
+                try:
+                    connection.execute(text("ALTER TABLE visits ADD COLUMN arrival_plate_number VARCHAR(30)"))
+                    connection.commit()
+                    print("✓ Added arrival_plate_number column to visits table")
+                except Exception as e:
+                    print(f"Warning: Could not add arrival_plate_number column: {e}")
+                    connection.rollback()
+
+            if 'assigned_plate_number' not in columns:
+                try:
+                    connection.execute(text("ALTER TABLE visits ADD COLUMN assigned_plate_number VARCHAR(30)"))
+                    connection.commit()
+                    print("✓ Added assigned_plate_number column to visits table")
+                except Exception as e:
+                    print(f"Warning: Could not add assigned_plate_number column: {e}")
                     connection.rollback()

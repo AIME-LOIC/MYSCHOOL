@@ -174,6 +174,8 @@ def add_visit(
     school_name: str,
     student_id: int = Form(...),
     visit_type: str = Form(...),
+    movement_method: str | None = Form(None),
+    plate_number: str | None = Form(None),
     db: Session = Depends(get_db)
 ):
     """Add a visit for a student in a specific school"""
@@ -185,6 +187,30 @@ def add_visit(
         student = db.query(Student).filter(Student.id == student_id).first()
         if not student:
             return {"status": "error", "message": "Student not found"}
+        if student.school_id is not None and student.school_id != school.id:
+            return {"status": "error", "message": "Student does not belong to this school"}
+
+        if visit_type not in {"visit_day", "parent_meeting"}:
+            return {"status": "error", "message": "Invalid visit type"}
+
+        is_sos_school = (
+            (school.school_code or "").strip().lower() == "sos"
+            or "sos" in (school.school_name or "").strip().lower()
+        )
+
+        movement_method_clean = None
+        plate_number_clean = None
+        if is_sos_school:
+            movement_method_clean = (movement_method or "").strip().lower()
+            if movement_method_clean not in {"with_car", "without_car"}:
+                return {"status": "error", "message": "Please select movement method"}
+
+            if movement_method_clean == "with_car":
+                plate_number_clean = (plate_number or "").strip().upper()
+                if not plate_number_clean:
+                    return {"status": "error", "message": "Plate number is required"}
+            else:
+                plate_number_clean = None
 
         today = datetime.now().date()
 
@@ -196,7 +222,14 @@ def add_visit(
         if existing:
             return {"status": "error", "message": "Already recorded today"}
 
-        visit = Visit(student_id=student.id, visit_type=visit_type, visit_date=today, status="done")
+        visit = Visit(
+            student_id=student.id,
+            visit_type=visit_type,
+            visit_date=today,
+            status="done",
+            movement_method=movement_method_clean,
+            arrival_plate_number=plate_number_clean,
+        )
         db.add(visit)
         db.commit()
         return {"status": "success", "visit_id": visit.id}
@@ -211,7 +244,10 @@ def admin_data(school_name: str, visit_type: str, db: Session = Depends(get_db))
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     
-    visits = db.query(Visit).join(Student).filter(Visit.visit_type == visit_type).all()
+    visits = db.query(Visit).join(Student).filter(
+        Visit.visit_type == visit_type,
+        (Student.school_id == school.id) | (Student.school_id.is_(None))
+    ).all()
 
     result = {}
     for v in visits:
@@ -223,7 +259,10 @@ def admin_data(school_name: str, visit_type: str, db: Session = Depends(get_db))
             "student_name": v.student.student_name, 
             "date": v.visit_date.strftime("%Y-%m-%d"),
             "timestamp": v.created_at.isoformat() if hasattr(v, 'created_at') and v.created_at else None,
-            "id": v.id  # This is the key for FIFO ordering!
+            "id": v.id,  # This is the key for FIFO ordering!
+            "movement_method": v.movement_method,
+            "arrival_plate_number": v.arrival_plate_number,
+            "assigned_plate_number": v.assigned_plate_number,
         })
 
     stats = {cls: len(students) for cls, students in result.items()}
@@ -318,6 +357,90 @@ def add_student(
     db.add(student)
     db.commit()
     return {"status": "success", "student_id": student.id, "message": "Student added successfully"}
+
+
+@app.get("/{school_name}/admin/car-management")
+def get_car_management_data(
+    school_name: str,
+    visit_type: str = Query(..., pattern="^(visit_day|parent_meeting)$"),
+    visit_date: str | None = Query(None),
+    db: Session = Depends(get_db)
+):
+    """List SOS visits (default today) with car movement details for admin assignment."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    is_sos_school = (
+        (school.school_code or "").strip().lower() == "sos"
+        or "sos" in (school.school_name or "").strip().lower()
+    )
+    if not is_sos_school:
+        return {"status": "error", "message": "Car management is available only for SOS school"}
+
+    target_date = datetime.now().date()
+    if visit_date:
+        try:
+            target_date = datetime.strptime(visit_date, "%Y-%m-%d").date()
+        except ValueError:
+            return {"status": "error", "message": "Invalid date format. Use YYYY-MM-DD"}
+
+    visits = db.query(Visit).join(Student).filter(
+        Visit.visit_type == visit_type,
+        Visit.visit_date == target_date,
+        (Student.school_id == school.id) | (Student.school_id.is_(None))
+    ).order_by(Visit.id.asc()).all()
+
+    return {
+        "status": "success",
+        "records": [
+            {
+                "visit_id": v.id,
+                "student_id": v.student.id,
+                "student_name": v.student.student_name,
+                "class_name": v.student.class_name,
+                "visit_type": v.visit_type,
+                "visit_date": v.visit_date.strftime("%Y-%m-%d"),
+                "movement_method": v.movement_method,
+                "arrival_plate_number": v.arrival_plate_number,
+                "assigned_plate_number": v.assigned_plate_number,
+            }
+            for v in visits
+        ],
+    }
+
+
+@app.post("/{school_name}/admin/car-management/assign")
+def assign_car_plate(
+    school_name: str,
+    visit_id: int = Form(...),
+    assigned_plate_number: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Assign a managed car plate to a specific student visit."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    is_sos_school = (
+        (school.school_code or "").strip().lower() == "sos"
+        or "sos" in (school.school_name or "").strip().lower()
+    )
+    if not is_sos_school:
+        return {"status": "error", "message": "Car management is available only for SOS school"}
+
+    visit = db.query(Visit).join(Student).filter(
+        Visit.id == visit_id,
+        (Student.school_id == school.id) | (Student.school_id.is_(None))
+    ).first()
+    if not visit:
+        return {"status": "error", "message": "Visit record not found"}
+
+    plate = assigned_plate_number.strip().upper()
+    if not plate:
+        return {"status": "error", "message": "Assigned plate number is required"}
+
+    visit.assigned_plate_number = plate
+    db.commit()
+    return {"status": "success", "message": "Car plate assigned successfully", "visit_id": visit.id}
 
 import threading
 import time

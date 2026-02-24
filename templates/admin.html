@@ -93,6 +93,9 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     Live Track
                 </button>
+                <button id="btn-car-management" onclick="openCarManagement()" class="py-4 px-6 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition shadow-md">
+                    Car Management
+                </button>
             </div>
         </div>
 
@@ -204,6 +207,38 @@
                 </table>
             </div>
         </div>
+
+        <div id="car-management-step" class="hidden mt-8 animate-fade-in">
+            <button onclick="resetSelection()" class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
+            <h3 class="text-3xl font-bold mb-6">Car Management</h3>
+
+            <div class="bg-white p-4 rounded-xl shadow-lg border border-gray-200 mb-4">
+                <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
+                    <select id="car-visit-type" onchange="loadCarManagementData()" class="border rounded-lg px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="visit_day">Visit Day</option>
+                        <option value="parent_meeting">Parent Meeting</option>
+                    </select>
+                    <input id="car-visit-date" type="date" onchange="loadCarManagementData()" class="border rounded-lg px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-amber-500">
+                    <button onclick="loadCarManagementData()" class="py-2 px-4 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition font-bold">Refresh</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-sm font-bold text-gray-700">Student</th>
+                            <th class="px-4 py-3 text-left text-sm font-bold text-gray-700">Class</th>
+                            <th class="px-4 py-3 text-left text-sm font-bold text-gray-700">Movement</th>
+                            <th class="px-4 py-3 text-left text-sm font-bold text-gray-700">Arrival Plate</th>
+                            <th class="px-4 py-3 text-left text-sm font-bold text-gray-700">Assigned Plate</th>
+                            <th class="px-4 py-3 text-left text-sm font-bold text-gray-700">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="car-management-list" class="divide-y"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification -->
@@ -220,6 +255,8 @@
         
         // Extract school name from URL path
         const schoolName = window.location.pathname.split('/')[1];
+        const schoolCode = "{{ school_code }}";
+        const isSOSSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolName || '').trim().toLowerCase().includes('sos');
 
         // --- TOAST NOTIFICATION LOGIC ---
         function showToast(message, type = 'success') {
@@ -257,6 +294,9 @@
             setTimeout(() => {
                 document.getElementById('loading-page').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
+                if (!isSOSSchool) {
+                    document.getElementById('btn-car-management')?.classList.add('hidden');
+                }
             }, 1000);
         };
 
@@ -284,6 +324,7 @@
             document.getElementById('data-step').classList.add('hidden');
             document.getElementById('manager-step').classList.add('hidden');
             document.getElementById('live-track-step').classList.add('hidden');
+            document.getElementById('car-management-step').classList.add('hidden');
             document.getElementById('choice-step').classList.remove('hidden');
         }
 
@@ -499,6 +540,7 @@
         let currentLiveTrackType = 'visit_day';
         let previousDataCount = 0;
         let previousDataString = '';
+        let carManagementData = [];
 
         async function openLiveTrack() {
             document.getElementById('choice-step').classList.add('hidden');
@@ -689,6 +731,102 @@
                 btn.classList.add('bg-green-600', 'hover:bg-green-700');
                 
                 if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            }
+        }
+
+        function openCarManagement() {
+            if (!isSOSSchool) {
+                showToast('Car management is only available for SOS school.', 'error');
+                return;
+            }
+            document.getElementById('choice-step').classList.add('hidden');
+            document.getElementById('car-management-step').classList.remove('hidden');
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('car-visit-date').value = today;
+            loadCarManagementData();
+        }
+
+        async function loadCarManagementData() {
+            const visitType = document.getElementById('car-visit-type').value;
+            const visitDate = document.getElementById('car-visit-date').value;
+            const list = document.getElementById('car-management-list');
+            list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-blue-500">Loading...</td></tr>';
+
+            try {
+                const res = await fetch(`/${schoolName}/admin/car-management?visit_type=${encodeURIComponent(visitType)}&visit_date=${encodeURIComponent(visitDate)}`);
+                const result = await res.json();
+                if (result.status !== 'success') {
+                    list.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-red-500">${result.message || 'Error loading data'}</td></tr>`;
+                    return;
+                }
+                carManagementData = result.records || [];
+                renderCarManagementTable();
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-red-500">Connection error.</td></tr>';
+            }
+        }
+
+        function renderCarManagementTable() {
+            const list = document.getElementById('car-management-list');
+            if (!carManagementData.length) {
+                list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">No visit records found for this date/type.</td></tr>';
+                return;
+            }
+            list.innerHTML = '';
+
+            carManagementData.forEach((record) => {
+                const movementLabel = record.movement_method === 'with_car'
+                    ? 'By private car'
+                    : record.movement_method === 'without_car'
+                        ? 'Without car'
+                        : '-';
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-amber-50 transition';
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm font-semibold text-gray-900">${record.student_name}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${record.class_name}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${movementLabel}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${record.arrival_plate_number || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${record.assigned_plate_number || '-'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <div class="flex gap-2">
+                            <input id="assign-plate-${record.visit_id}" type="text" placeholder="Plate no." value="${record.assigned_plate_number || ''}" class="border rounded px-2 py-1 text-sm w-36">
+                            <button onclick="assignCarPlate(${record.visit_id})" class="bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700 font-semibold">Assign</button>
+                        </div>
+                    </td>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        async function assignCarPlate(visitId) {
+            const input = document.getElementById(`assign-plate-${visitId}`);
+            const plate = (input?.value || '').trim();
+            if (!plate) {
+                showToast('Enter a plate number before assigning.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('visit_id', String(visitId));
+            formData.append('assigned_plate_number', plate);
+
+            try {
+                const res = await fetch(`/${schoolName}/admin/car-management/assign`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    showToast('Car plate assigned.', 'success');
+                    await loadCarManagementData();
+                } else {
+                    showToast(result.message || 'Failed to assign plate.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Connection error while assigning plate.', 'error');
             }
         }
     </script>
