@@ -111,6 +111,9 @@
                 <button id="btn-parent-meeting" onclick="selectType('parent_meeting')" class="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
                     <i class="fas fa-handshake mr-2"></i> Parent Meeting
                 </button>
+                <button id="btn-support" onclick="openDonationModal()" class="w-full py-3 px-6 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-heart mr-2"></i> Support
+                </button>
                 <button id="btn-tour-guide" onclick="showTourGuide()" class="w-full py-3 px-6 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
                     <i class="fas fa-map-marker-alt mr-2"></i> School Tour Guide
                 </button>
@@ -155,7 +158,7 @@
             </div>
 
             <div id="movement-section" class="hidden border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
-                <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">Method of movement (SOS only)</label>
+                <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">Method of movement</label>
                 <select id="movement-method" onchange="onMovementMethodChange()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Select movement method</option>
                     <option value="with_car">By private car</option>
@@ -163,7 +166,7 @@
                 </select>
                 <div id="plate-number-wrap" class="hidden mt-3">
                     <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">Plate number</label>
-                    <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. UBA 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. REA 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
             </div>
 
@@ -188,6 +191,51 @@
         </div>
     </div>
 
+    <div id="donation-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" onclick="closeDonationModal()"></div>
+        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Thanks For Visiting</h3>
+            <p class="text-sm text-gray-700 leading-6">
+                ITEME CHARITY FAMILY IS A CHARITY FAMILY THAT HELP KID IN NEED BUT WE ARE STILL IN THE START AND WE NEED SUPPORT.
+            </p>
+            <p class="text-sm text-gray-700 leading-6 mt-2">
+                IF YOU FEEL LIKE YOU WANT TO HELP, CLICK THE LINK BELOW.
+            </p>
+
+            <div class="mt-4">
+                <a href="javascript:void(0)" onclick="openSupportPopup()" class="text-blue-700 font-semibold underline">Give your support</a>
+            </div>
+
+            <div class="mt-5 flex gap-3">
+                <button onclick="closeDonationModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="support-popup" class="hidden fixed inset-0 z-[121] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" onclick="closeSupportPopup()"></div>
+        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Give Your Support</h3>
+            <div class="mt-2">
+                <label for="donation-amount" class="block text-sm font-semibold text-gray-700 mb-1">Amount</label>
+                <input id="donation-amount" type="number" min="1" step="1" placeholder="Enter amount" oninput="updateDonationLinkPreview()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mt-3">
+                <label for="donation-company" class="block text-sm font-semibold text-gray-700 mb-1">Company</label>
+                <select id="donation-company" onchange="updateDonationLinkPreview()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="airtel">Airtel</option>
+                    <option value="mtn">MTN</option>
+                </select>
+            </div>
+            <p id="donation-ussd-preview" class="mt-3 text-xs text-gray-500"></p>
+
+            <div class="mt-5 flex gap-3">
+                <button onclick="startDonationUSSD()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">Open Phone USSD</button>
+                <button onclick="closeSupportPopup()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let selectedType = '';
         let selectedStudentId = null;
@@ -195,6 +243,10 @@
         let schoolname = "{{ school_name }}";
         let schoolCode = "{{ school_code }}";
         const isSOSSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('sos');
+        const donationUSSDTemplates = {
+            airtel: "*182*8*1*0780000000*{amount}#",
+            mtn: "*182*8*1*0780000000*{amount}#"
+        };
 
         // --- DOM Elements ---
         const mainContent = document.getElementById('main-content');
@@ -518,6 +570,7 @@
     submitBtn.classList.add('animate-pulse');
     feedbackEl.innerText = '';
 
+    let shouldShowDonationModal = false;
     try {
         const formData = new FormData();
         formData.append('student_id', selectedStudentId);
@@ -540,12 +593,14 @@
             feedbackEl.innerText = 'Success! Your request has been recorded.';
             feedbackEl.classList.remove('text-red-500');
             feedbackEl.classList.add('text-green-600');
+            shouldShowDonationModal = isSOSSchool;
         } else {
             // Hide "Already recorded today" message from parents - only show success
             if (data.message === 'Already recorded today') {
                 feedbackEl.innerText = 'Success! Your request has been recorded.';
                 feedbackEl.classList.remove('text-red-500');
                 feedbackEl.classList.add('text-green-600');
+                shouldShowDonationModal = isSOSSchool;
             } else {
                 feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
                 feedbackEl.classList.remove('text-green-600');
@@ -568,8 +623,63 @@
         document.getElementById('student-results').innerHTML =
             '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
         validateSubmitState();
-        setTimeout(goBackToChoice, 1500);
+        if (shouldShowDonationModal) {
+            setTimeout(openDonationModal, 500);
+        } else {
+            setTimeout(goBackToChoice, 1500);
+        }
     }
+}
+function openDonationModal() {
+    document.getElementById('support-popup').classList.add('hidden');
+    document.getElementById('donation-modal').classList.remove('hidden');
+}
+
+function openSupportPopup() {
+    document.getElementById('donation-modal').classList.add('hidden');
+    document.getElementById('support-popup').classList.remove('hidden');
+    document.getElementById('donation-amount').value = '';
+    document.getElementById('donation-company').value = 'airtel';
+    updateDonationLinkPreview();
+}
+
+function closeDonationModal() {
+    document.getElementById('donation-modal').classList.add('hidden');
+    document.getElementById('support-popup').classList.add('hidden');
+    goBackToChoice();
+}
+
+function closeSupportPopup() {
+    document.getElementById('support-popup').classList.add('hidden');
+    goBackToChoice();
+}
+
+function updateDonationLinkPreview() {
+    const raw = document.getElementById('donation-amount').value;
+    const amount = parseInt(raw, 10);
+    const company = document.getElementById('donation-company').value;
+    const preview = document.getElementById('donation-ussd-preview');
+    if (!amount || amount <= 0) {
+        preview.innerText = 'Enter an amount to generate the USSD link.';
+        return;
+    }
+    const template = donationUSSDTemplates[company] || donationUSSDTemplates.airtel;
+    const ussd = template.replace('{amount}', String(amount));
+    preview.innerText = `${company.toUpperCase()} USSD: ${ussd}`;
+}
+
+function startDonationUSSD() {
+    const raw = document.getElementById('donation-amount').value;
+    const amount = parseInt(raw, 10);
+    const company = document.getElementById('donation-company').value;
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid amount first.');
+        return;
+    }
+    const template = donationUSSDTemplates[company] || donationUSSDTemplates.airtel;
+    const ussd = template.replace('{amount}', String(amount));
+    const dial = `tel:${ussd.replace('#', '%23')}`;
+    window.location.href = dial;
 }
 function onMovementMethodChange() {
     const movementMethod = document.getElementById('movement-method').value;
