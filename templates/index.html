@@ -70,6 +70,16 @@
             /* Ensures border radius is consistent with the element */
             border-radius: 0.5rem; 
         }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) translateX(-50%); }
+            to { opacity: 1; transform: translateY(0) translateX(-50%); }
+        }
+        @keyframes slideDown {
+            from { opacity: 1; transform: translateY(0) translateX(-50%); }
+            to { opacity: 0; transform: translateY(20px) translateX(-50%); }
+        }
+        .toast-enter { animation: slideUp 0.35s ease-out forwards; }
+        .toast-exit { animation: slideDown 0.35s ease-out forwards; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -220,12 +230,19 @@
                 <label for="donation-amount" class="block text-sm font-semibold text-gray-700 mb-1">Amount</label>
                 <input id="donation-amount" type="number" min="1" step="1" placeholder="Enter amount" oninput="updateDonationLinkPreview()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
             </div>
+            
             <div class="mt-3">
                 <label for="donation-company" class="block text-sm font-semibold text-gray-700 mb-1">Company</label>
                 <select id="donation-company" onchange="updateDonationLinkPreview()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <option value="airtel">Airtel</option>
                     <option value="mtn">MTN</option>
                 </select>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-700">Phone number : 0795802380</p>
+                <p class="text-sm text-gray-700">Registered name: Mudasubwa  Isimbi Leilla</p>
+                <button onclick="copyPhoneNumber()" class="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm">Copy the number</button>
+                 <!-- <a id="donation-ussd-link" href="javascript:void(0)" class="text-blue-600 font-medium mt-2 block"></a> -->
             </div>
             <p id="donation-ussd-preview" class="mt-3 text-xs text-gray-500"></p>
 
@@ -236,16 +253,19 @@
         </div>
     </div>
 
+    <div id="toast" class="fixed bottom-8 left-1/2 hidden z-[130] px-5 py-3 rounded-lg shadow-2xl font-semibold text-white whitespace-nowrap"></div>
+
     <script>
         let selectedType = '';
         let selectedStudentId = null;
         let tourStep = 0; // 0: Tour is inactive, 1+: Current step of the tour
+        let toastTimeout = null;
         let schoolname = "{{ school_name }}";
         let schoolCode = "{{ school_code }}";
         const isSOSSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('sos');
         const donationUSSDTemplates = {
-            airtel: "*182*8*1*0780000000*{amount}#",
-            mtn: "*182*8*1*0780000000*{amount}#"
+            airtel: "*182*8*1*0795802380*{amount}#",
+            mtn: "*182*8*1*0795802380*{amount}#"
         };
 
         // --- DOM Elements ---
@@ -261,6 +281,19 @@
         const tourText = document.getElementById('tour-text');
         const tourNextBtn = document.getElementById('tour-next-btn');
         const tourEndBtn = document.getElementById('tour-end-btn');
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.remove('hidden', 'toast-exit', 'bg-red-500', 'bg-green-600');
+            toast.classList.add(type === 'error' ? 'bg-red-500' : 'bg-green-600', 'toast-enter');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.classList.add('hidden'), 350);
+            }, 3000);
+        }
 
         // --- Tour Guide Steps Definition ---
         const tourSteps = [
@@ -673,7 +706,7 @@ function startDonationUSSD() {
     const amount = parseInt(raw, 10);
     const company = document.getElementById('donation-company').value;
     if (!amount || amount <= 0) {
-        alert('Please enter a valid amount first.');
+        showToast('Please enter a valid amount first.', 'error');
         return;
     }
     const template = donationUSSDTemplates[company] || donationUSSDTemplates.airtel;
@@ -716,6 +749,15 @@ function validateSubmitState() {
     submitBtn.classList.remove('bg-gray-400');
     const isVisitDay = selectedType === 'visit_day';
     submitBtn.classList.add(isVisitDay ? 'bg-blue-600' : 'bg-green-600', isVisitDay ? 'hover:bg-blue-700' : 'hover:bg-green-700');
+}
+function copyPhoneNumber() {
+    const phoneNumber = '0795802380';
+    navigator.clipboard.writeText(phoneNumber).then(() => {
+        showToast('Phone number copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy phone number:', err);
+        showToast('Failed to copy phone number. Please try manually: ' + phoneNumber, 'error');
+    });
 }
 async function fetchVisits(visitType) {
     try {

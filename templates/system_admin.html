@@ -193,6 +193,28 @@
             border: 1px solid #f5c6cb;
         }
         
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toast-success {
+            background: #2e7d32;
+        }
+        
+        .toast-error {
+            background: #c62828;
+        }
+        
         @media (max-width: 768px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -201,6 +223,7 @@
     </style>
 </head>
 <body>
+    <div id="toast" style="display:none"></div>
     <div class="container">
         <div class="header">
             <h1>🎓 System Admin Dashboard</h1>
@@ -242,6 +265,18 @@
     </div>
     
     <script>
+        let toastTimeout = null;
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.className = `toast ${type === 'error' ? 'toast-error' : 'toast-success'}`;
+            toast.textContent = message;
+            toast.style.display = 'block';
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
         // Fetch and display all schools
         async function loadSchools() {
             try {
@@ -317,13 +352,13 @@
                     const data = await response.json();
                     
                     if (data.status === 'success') {
-                        alert(data.message);
+                        showToast(data.message, 'success');
                         loadSchools();
                     } else {
-                        alert('Error: ' + data.message);
+                        showToast('Error: ' + data.message, 'error');
                     }
                 } catch (error) {
-                    alert('Error deleting school');
+                    showToast('Error deleting school', 'error');
                     console.error('Error:', error);
                 }
             }

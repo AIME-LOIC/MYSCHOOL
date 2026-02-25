@@ -412,7 +412,7 @@
                 await Promise.all(ids.map(id => fetch(`/${schoolName}/admin/students/${id}`, {method:'DELETE'})));
                 selectedIds.clear();
                 loadAllStudents();
-            } catch (err) { alert("Delete failed. Check connection."); }
+            } catch (err) { showToast("Delete failed. Check connection.", "error"); }
         }
 
         // --- UTILS ---
@@ -437,7 +437,7 @@
     const className = classInput.value.trim();
 
     if (!studentName || !className) {
-        alert("Please enter both Name and Class.");
+        showToast("Please enter both Name and Class.", "error");
         return;
     }
 
@@ -464,12 +464,13 @@
             
             // Optional: Provide feedback
             console.log("Student added:", result.student_id);
+            showToast("Student added successfully.", "success");
         } else {
-            alert(result.message); // Shows "Student already exists" or other errors
+            showToast(result.message || "Could not add student.", "error");
         }
     } catch (err) {
         console.error(err);
-        alert("Connection error. Could not add student.");
+        showToast("Connection error. Could not add student.", "error");
     }
 }
 
