@@ -248,7 +248,7 @@ def admin_data(school_name: str, visit_type: str, db: Session = Depends(get_db))
     visits = db.query(Visit).join(Student).filter(
         Visit.visit_type == visit_type,
         (Student.school_id == school.id) | (Student.school_id.is_(None))
-    ).all()
+    ).order_by(Visit.visit_date.desc(), Visit.id.desc()).all()
 
     result = {}
     for v in visits:
