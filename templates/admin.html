@@ -881,17 +881,22 @@
         async function exportVisitData() {
             try {
                 const currentType = selectedType || 'visit_day';
-                const response = await fetch(`/${schoolName}/export/visits?visit_type=${currentType}`);
+                let url = `/${schoolName}/export/visits?visit_type=${currentType}`;
+                const dateInput = document.getElementById('data-visit-date').value;
+                if (dateInput) {
+                    url += `&visit_date=${dateInput}`;
+                }
+                const response = await fetch(url);
                 if (response.ok) {
                     const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
+                    const urlObj = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url;
+                    a.href = urlObj;
                     const typeLabel = currentType === 'visit_day' ? 'visit_day' : 'parent_meeting';
                     a.download = `${typeLabel}_${schoolName}_${new Date().toISOString().split('T')[0]}.xlsx`;
                     document.body.appendChild(a);
                     a.click();
-                    window.URL.revokeObjectURL(url);
+                    window.URL.revokeObjectURL(urlObj);
                     a.remove();
                     showToast('Visit data downloaded successfully.', 'success');
                 } else {

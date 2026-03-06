@@ -522,6 +522,7 @@ def export_students_to_excel(school_name: str, db: Session = Depends(get_db)):
 def export_visits_to_excel(
     school_name: str, 
     visit_type: str = Query(..., pattern="^(visit_day|parent_meeting)$"),
+    visit_date: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
     """Export visit data for a specific school and visit type to Excel file"""
@@ -530,10 +531,17 @@ def export_visits_to_excel(
         raise HTTPException(status_code=404, detail="School not found")
     
     try:
-        visits = db.query(Visit).join(Student).filter(
+        query = db.query(Visit).join(Student).filter(
             Visit.visit_type == visit_type,
             (Student.school_id == school.id) | (Student.school_id.is_(None))
-        ).all()
+        )
+        if visit_date:
+            try:
+                target = datetime.strptime(visit_date, "%Y-%m-%d").date()
+                query = query.filter(Visit.visit_date == target)
+            except ValueError:
+                pass
+        visits = query.all()
         
         # Prepare data for Excel
         data = []
