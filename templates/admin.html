@@ -131,9 +131,15 @@
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                         <div class="p-4 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <h3 class="text-xl font-bold text-gray-800">Student Directory</h3>
-                            <select id="class-filter" onchange="filterStudentsByClass()" class="border rounded-lg px-3 py-1.5 text-sm bg-white outline-none">
-                                <option value="all">All Classes</option>
-                            </select>
+                            <div class="flex gap-2">
+                                <button onclick="exportStudentList()" class="flex items-center gap-1 py-1.5 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-semibold">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Export
+                                </button>
+                                <select id="class-filter" onchange="filterStudentsByClass()" class="border rounded-lg px-3 py-1.5 text-sm bg-white outline-none">
+                                    <option value="all">All Classes</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="overflow-x-auto max-h-[600px] custom-scrollbar">
                             <table class="min-w-full divide-y divide-gray-200">
@@ -157,7 +163,13 @@
 
         <div id="data-step" class="hidden mt-8 animate-fade-in">
             <button onclick="resetSelection()" class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
-            <h3 id="data-title" class="text-3xl font-bold mb-6"></h3>
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="data-title" class="text-3xl font-bold"></h3>
+                <button onclick="exportVisitData()" class="flex items-center gap-2 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0 0V8m0 4h4m-4 0H8m9-11H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2zm0 2v12H7V7h10z"></path></svg>
+                    Download Excel
+                </button>
+            </div>
             <div id="stats-area" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
@@ -829,6 +841,56 @@
             } catch (err) {
                 console.error(err);
                 showToast('Connection error while assigning plate.', 'error');
+            }
+        }
+
+        // ==================== EXPORT FUNCTIONS ====================
+        
+        async function exportStudentList() {
+            try {
+                const response = await fetch(`/${schoolName}/export/students`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `students_${schoolName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    showToast('Student list downloaded successfully.', 'success');
+                } else {
+                    showToast('Failed to export student list.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error exporting student list.', 'error');
+            }
+        }
+
+        async function exportVisitData() {
+            try {
+                const currentType = selectedType || 'visit_day';
+                const response = await fetch(`/${schoolName}/export/visits?visit_type=${currentType}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const typeLabel = currentType === 'visit_day' ? 'visit_day' : 'parent_meeting';
+                    a.download = `${typeLabel}_${schoolName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    showToast('Visit data downloaded successfully.', 'success');
+                } else {
+                    showToast('Failed to export visit data.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error exporting visit data.', 'error');
             }
         }
     </script>

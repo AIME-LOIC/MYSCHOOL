@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, Query, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -7,6 +7,7 @@ from typing import List, Dict
 import pandas as pd
 import threading, time, requests, os, signal
 from datetime import datetime
+from openpyxl.styles import Font, PatternFill
 
 from config import get_db, engine, Base, init_db
 from model import Student, Visit
@@ -441,6 +442,144 @@ def assign_car_plate(
     visit.assigned_plate_number = plate
     db.commit()
     return {"status": "success", "message": "Car plate assigned successfully", "visit_id": visit.id}
+
+
+# ==================== EXPORT ENDPOINTS ====================
+
+@app.get("/{school_name}/export/students")
+def export_students_to_excel(school_name: str, db: Session = Depends(get_db)):
+    """Export all students for a specific school to Excel file"""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    
+    try:
+        students = db.query(Student).filter(
+            (Student.school_id == school.id) | (Student.school_id.is_(None))
+        ).all()
+        
+        # Prepare data for Excel
+        data = []
+        for student in students:
+            data.append({
+                "Student Name": student.student_name,
+                "Class": student.class_name,
+                "ID": student.id
+            })
+        
+        # Create DataFrame
+        df = pd.DataFrame(data)
+        
+        # Generate filename with timestamp
+        filename = f"students_{school_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        filepath = f"/tmp/{filename}"
+        
+        # Write to Excel with formatting
+        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Students', index=False)
+            
+            # Access the workbook and worksheet for formatting
+            workbook = writer.book
+            worksheet = writer.sheets['Students']
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Style header row
+            header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            for cell in worksheet[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+        
+        return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/{school_name}/export/visits")
+def export_visits_to_excel(
+    school_name: str, 
+    visit_type: str = Query(..., pattern="^(visit_day|parent_meeting)$"),
+    db: Session = Depends(get_db)
+):
+    """Export visit data for a specific school and visit type to Excel file"""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    
+    try:
+        visits = db.query(Visit).join(Student).filter(
+            Visit.visit_type == visit_type,
+            (Student.school_id == school.id) | (Student.school_id.is_(None))
+        ).all()
+        
+        # Prepare data for Excel
+        data = []
+        for visit in visits:
+            data.append({
+                "Student Name": visit.student.student_name,
+                "Class": visit.student.class_name,
+                "Visit Type": visit.visit_type.replace('_', ' ').title(),
+                "Visit Date": visit.visit_date.strftime("%Y-%m-%d"),
+                "Status": visit.status,
+                "Movement Method": visit.movement_method if visit.movement_method else "-",
+                "Arrival Plate": visit.arrival_plate_number if visit.arrival_plate_number else "-",
+                "Assigned Plate": visit.assigned_plate_number if visit.assigned_plate_number else "-",
+            })
+        
+        # Create DataFrame
+        df = pd.DataFrame(data)
+        
+        # Generate filename with timestamp
+        visit_type_label = "visit_day" if visit_type == "visit_day" else "parent_meeting"
+        filename = f"{visit_type_label}_{school_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        filepath = f"/tmp/{filename}"
+        
+        # Write to Excel with formatting
+        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Visit Data', index=False)
+            
+            # Access the workbook and worksheet for formatting
+            workbook = writer.book
+            worksheet = writer.sheets['Visit Data']
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Style header row
+            header_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            for cell in worksheet[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+        
+        return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 
 import threading
 import time
