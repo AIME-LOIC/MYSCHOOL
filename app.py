@@ -240,15 +240,25 @@ def add_visit(
 
 
 @app.get("/{school_name}/admin/data/{visit_type}")
-def admin_data(school_name: str, visit_type: str, db: Session = Depends(get_db)):
+def admin_data(school_name: str, visit_type: str, visit_date: str | None = Query(None), db: Session = Depends(get_db)):
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     
-    visits = db.query(Visit).join(Student).filter(
+    query = db.query(Visit).join(Student).filter(
         Visit.visit_type == visit_type,
         (Student.school_id == school.id) | (Student.school_id.is_(None))
-    ).order_by(Visit.visit_date.desc(), Visit.id.desc()).all()
+    )
+    
+    # Filter by date if provided
+    if visit_date:
+        try:
+            target_date = datetime.strptime(visit_date, "%Y-%m-%d").date()
+            query = query.filter(Visit.visit_date == target_date)
+        except ValueError:
+            pass
+    
+    visits = query.order_by(Visit.visit_date.desc(), Visit.id.desc()).all()
 
     result = {}
     for v in visits:

@@ -165,10 +165,14 @@
             <button onclick="resetSelection()" class="flex items-center mb-6 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
             <div class="flex justify-between items-center mb-6">
                 <h3 id="data-title" class="text-3xl font-bold"></h3>
-                <button onclick="exportVisitData()" class="flex items-center gap-2 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0 0V8m0 4h4m-4 0H8m9-11H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2zm0 2v12H7V7h10z"></path></svg>
-                    Download Excel
-                </button>
+                <div class="flex gap-3 items-center">
+                    <input id="data-visit-date" type="date" onchange="fetchData()" class="border rounded-lg px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <button onclick="fetchData()" class="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold text-sm">Refresh</button>
+                    <button onclick="exportVisitData()" class="flex items-center gap-2 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0 0V8m0 4h4m-4 0H8m9-11H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2zm0 2v12H7V7h10z"></path></svg>
+                        Download Excel
+                    </button>
+                </div>
             </div>
             <div id="stats-area" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
@@ -512,7 +516,12 @@
             const container = document.getElementById('classes-container');
             statsDiv.innerHTML = 'Loading...';
             try {
-                const res = await fetch(`/${schoolName}/admin/data/${selectedType}`);
+                const dateInput = document.getElementById('data-visit-date').value;
+                let url = `/${schoolName}/admin/data/${selectedType}`;
+                if (dateInput) {
+                    url += `?visit_date=${dateInput}`;
+                }
+                const res = await fetch(url);
                 const result = await res.json();
                 statsDiv.innerHTML = `<div class="p-3 bg-gray-50 border rounded text-center"><p class="text-xs uppercase font-bold text-gray-400">Total</p><p class="text-2xl font-black">${result.total}</p></div>`;
                 container.innerHTML = '<h4 class="text-xl font-bold mb-4">Class Detail (Newest First)</h4>';
