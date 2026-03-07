@@ -177,6 +177,7 @@
                 <div id="plate-number-wrap" class="hidden mt-3">
                     <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">Plate number</label>
                     <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. REA 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <p id="plate-error" class="hidden text-sm text-red-600 mt-1"></p>
                 </div>
             </div>
 
@@ -612,6 +613,18 @@
         if (isSOSSchool) {
             const movementMethod = document.getElementById('movement-method').value;
             const plateNumber = document.getElementById('plate-number').value.trim();
+
+            // Ensure the plate number format is valid before sending it to the server
+            if (movementMethod === 'with_car' && plateNumber && !isValidPlateNumber(plateNumber)) {
+                feedbackEl.innerText = 'Plate number must be in the format "RAx 123A" (e.g. REA 123A).';
+                feedbackEl.classList.remove('text-green-600');
+                feedbackEl.classList.add('text-red-500');
+                submitBtn.innerText = originalText;
+                submitBtn.classList.remove('animate-pulse');
+                submitBtn.disabled = false;
+                return;
+            }
+
             formData.append('movement_method', movementMethod);
             formData.append('plate_number', plateNumber);
         }
@@ -727,17 +740,45 @@ function onMovementMethodChange() {
     validateSubmitState();
 }
 
+function isValidPlateNumber(plate) {
+    if (!plate) return false;
+    // Remove spaces (e.g. "REA 123A" -> "REA123A")
+    const clean = plate.toUpperCase().replace(/\s+/g, '');
+    // Must start with RA, followed by another uppercase letter, 3 digits, then one uppercase letter
+    return /^RA[A-Z]\d{3}[A-Z]$/.test(clean);
+}
+
 function validateSubmitState() {
     const submitBtn = document.getElementById('submit-btn');
     let canSubmit = !!selectedStudentId && !!selectedType;
+    const plateErrorEl = document.getElementById('plate-error');
     if (canSubmit && isSOSSchool) {
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
         if (!movementMethod) {
             canSubmit = false;
-        } else if (movementMethod === 'with_car' && !plateNumber) {
-            canSubmit = false;
+            plateErrorEl.classList.add('hidden');
+            plateErrorEl.innerText = '';
+        } else if (movementMethod === 'with_car') {
+            if (!plateNumber) {
+                canSubmit = false;
+                plateErrorEl.classList.add('hidden');
+                plateErrorEl.innerText = '';
+            } else if (!isValidPlateNumber(plateNumber)) {
+                canSubmit = false;
+                plateErrorEl.classList.remove('hidden');
+                plateErrorEl.innerText = 'Plate must be in the format "RAx 123A" (e.g. REA 123A).';
+            } else {
+                plateErrorEl.classList.add('hidden');
+                plateErrorEl.innerText = '';
+            }
+        } else {
+            plateErrorEl.classList.add('hidden');
+            plateErrorEl.innerText = '';
         }
+    } else {
+        plateErrorEl.classList.add('hidden');
+        plateErrorEl.innerText = '';
     }
 
     submitBtn.disabled = !canSubmit;
