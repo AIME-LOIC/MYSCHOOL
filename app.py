@@ -214,7 +214,7 @@ def add_visit(
 
                 # Normalize by stripping spaces and validate format: RA + letter + 3 digits + letter (e.g. REA 123A)
                 plate_number_clean = re.sub(r"\s+", "", plate_number_clean)
-                if not re.match(r"^RA[A-Z]\d{3}[A-Z}$", plate_number_clean):
+                if not re.match(r"^RA[A-Z]\d{3}[A-Z]$", plate_number_clean):
                     return {"status": "error", "message": "Plate number must be in the format RAx 123A (start with RA, then a letter, 3 digits, and a letter)."}
             else:
                 plate_number_clean = None
