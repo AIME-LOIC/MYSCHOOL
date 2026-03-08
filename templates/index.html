@@ -838,8 +838,18 @@ document.onkeydown = function(e) {
   }
   if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { // View Source
     return false;
+
   }
+  // Optional: Alert user if they try to use developer tools
+  if ((e.ctrlKey && e.shiftKey && ['I', 'C', 'J'].includes(String.fromCharCode(e.keyCode))) || (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+    showToast('Developer tools are disabled on this page. If you need assistance, please contact support.');
+  //disable fn + F12 for some browsers
+  } else if (e.keyCode == 123 && e.fnKey) {
+    return false;
+  }
+  
 };
+//
 // Blurs the content when the user clicks away or switches tabs
 window.addEventListener('blur', () => {
     document.body.style.filter = 'blur(15px)';
