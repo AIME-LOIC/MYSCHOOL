@@ -463,16 +463,24 @@ def assign_car_plate(
 # ==================== EXPORT ENDPOINTS ====================
 
 @app.get("/{school_name}/export/students")
-def export_students_to_excel(school_name: str, db: Session = Depends(get_db)):
+def export_students_to_excel(
+    school_name: str,
+    class_name: str | None = Query(None),
+    db: Session = Depends(get_db)
+):
     """Export all students for a specific school to Excel file"""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     
     try:
-        students = db.query(Student).filter(
+        query = db.query(Student).filter(
             (Student.school_id == school.id) | (Student.school_id.is_(None))
-        ).all()
+        )
+        class_filter = (class_name or "").strip()
+        if class_filter and class_filter.lower() != "all":
+            query = query.filter(Student.class_name == class_filter)
+        students = query.all()
         
         # Prepare data for Excel
         data = []

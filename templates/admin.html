@@ -857,7 +857,12 @@
         
         async function exportStudentList() {
             try {
-                const response = await fetch(`/${schoolName}/export/students`);
+                const selectedClass = document.getElementById('class-filter')?.value || 'all';
+                let url = `/${schoolName}/export/students`;
+                if (selectedClass && selectedClass !== 'all') {
+                    url += `?class_name=${encodeURIComponent(selectedClass)}`;
+                }
+                const response = await fetch(url);
                 if (response.ok) {
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
@@ -868,45 +873,4 @@
                     a.click();
                     window.URL.revokeObjectURL(url);
                     a.remove();
-                    showToast('Student list downloaded successfully.', 'success');
-                } else {
-                    showToast('Failed to export student list.', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Error exporting student list.', 'error');
-            }
-        }
-
-        async function exportVisitData() {
-            try {
-                const currentType = selectedType || 'visit_day';
-                let url = `/${schoolName}/export/visits?visit_type=${currentType}`;
-                const dateInput = document.getElementById('data-visit-date').value;
-                if (dateInput) {
-                    url += `&visit_date=${dateInput}`;
-                }
-                const response = await fetch(url);
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const urlObj = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = urlObj;
-                    const typeLabel = currentType === 'visit_day' ? 'visit_day' : 'parent_meeting';
-                    a.download = `${typeLabel}_${schoolName}_${new Date().toISOString().split('T')[0]}.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(urlObj);
-                    a.remove();
-                    showToast('Visit data downloaded successfully.', 'success');
-                } else {
-                    showToast('Failed to export visit data.', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Error exporting visit data.', 'error');
-            }
-        }
-    </script>
-</body>
-</html>
+                 
