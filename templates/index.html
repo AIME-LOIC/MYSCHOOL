@@ -983,23 +983,61 @@ async function fetchVisits(visitType) {
     // intentionally empty - visits are handled by submitVisit and flushVisitQueue
 }
 
-// Offline/online banner
-window.addEventListener('offline', () => {
-    let banner = document.getElementById('offline-banner');
-    if (!banner) {
-        banner = document.createElement('div');
-        banner.id = 'offline-banner';
-        banner.className = 'fixed top-0 left-0 right-0 z-[200] bg-amber-500 text-white text-center text-sm font-semibold py-2';
-        banner.innerText = '⚠️ You are offline. Searches use cached data. Visits will sync when reconnected.';
-        document.body.prepend(banner);
-    }
-});
+// Offline popup
+function showOfflinePopup() {
+    if (document.getElementById('offline-popup')) return;
+    const popup = document.createElement('div');
+    popup.id = 'offline-popup';
+    popup.className = 'fixed inset-0 z-[200] flex items-end justify-center pb-8 pointer-events-none';
+    popup.innerHTML = `
+        <div class="pointer-events-auto mx-4 w-full max-w-sm bg-gray-900 text-white rounded-2xl shadow-2xl p-5 animate-fade-in">
+            <div class="flex items-start gap-3">
+                <div class="text-2xl mt-0.5">📡</div>
+                <div class="flex-1">
+                    <p class="font-bold text-base mb-1">You're offline</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">No worries — you can still:</p>
+                    <ul class="mt-2 space-y-1 text-sm text-gray-200">
+                        <li>🔍 Search for students using cached data</li>
+                        <li>🛍️ View products from last sync</li>
+                        <li>📋 Submit visits — they'll send automatically when you reconnect</li>
+                    </ul>
+                </div>
+                <button onclick="document.getElementById('offline-popup').remove()" class="text-gray-400 hover:text-white text-xl leading-none mt-0.5">&times;</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(popup);
+    // Auto-dismiss after 6 seconds
+    setTimeout(() => { const p = document.getElementById('offline-popup'); if (p) p.remove(); }, 6000);
+}
+
+function showOnlinePopup() {
+    const existing = document.getElementById('offline-popup');
+    if (existing) existing.remove();
+    const popup = document.createElement('div');
+    popup.id = 'online-popup';
+    popup.className = 'fixed inset-0 z-[200] flex items-end justify-center pb-8 pointer-events-none';
+    popup.innerHTML = `
+        <div class="pointer-events-auto mx-4 w-full max-w-sm bg-green-600 text-white rounded-2xl shadow-2xl p-5 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <div class="text-2xl">✅</div>
+                <p class="font-bold text-base">Back online! Syncing queued visits...</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(popup);
+    setTimeout(() => { const p = document.getElementById('online-popup'); if (p) p.remove(); }, 3000);
+}
+
+window.addEventListener('offline', showOfflinePopup);
 
 window.addEventListener('online', () => {
-    const banner = document.getElementById('offline-banner');
-    if (banner) banner.remove();
+    showOnlinePopup();
     flushVisitQueue();
 });
+
+// Show popup immediately if already offline on page load
+if (!navigator.onLine) showOfflinePopup();
 
 // Call every 2 seconds
 setInterval(() => {
