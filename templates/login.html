@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
+        <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Admin Login</h1>
+        <p class="text-sm text-gray-500 mb-6">{{ school_name }}</p>
+
+        {% if error %}
+        <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/{{ school_name }}/admin/login" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+                <input type="text" name="username" required autofocus
+                    class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                <input type="password" name="password" required
+                    class="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <button type="submit"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition">
+                Login
+            </button>
+        </form>
+    </div>
+</body>
+</html>

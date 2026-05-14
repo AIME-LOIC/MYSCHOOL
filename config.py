@@ -15,7 +15,7 @@ if not DATABASE_URL:
 # Configure Supabase PostgreSQL connection
 engine = create_engine(
     DATABASE_URL,
-    echo=True,
+    echo=False,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
@@ -143,4 +143,13 @@ def _ensure_visit_transport_columns():
                     print("✓ Added assigned_plate_number column to visits table")
                 except Exception as e:
                     print(f"Warning: Could not add assigned_plate_number column: {e}")
+                    connection.rollback()
+
+            if 'created_at' not in columns:
+                try:
+                    connection.execute(text("ALTER TABLE visits ADD COLUMN created_at TIMESTAMP DEFAULT NOW()"))
+                    connection.commit()
+                    print("✓ Added created_at column to visits table")
+                except Exception as e:
+                    print(f"Warning: Could not add created_at column: {e}")
                     connection.rollback()

@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, Query, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
+from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, Query, HTTPException, Response
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List, Dict
 import pandas as pd
-import threading, time, requests, os, signal
+import threading, time, requests, os, signal, hashlib, hmac
 from datetime import datetime
 import re
 from openpyxl.styles import Font, PatternFill
@@ -30,6 +30,30 @@ app.add_middleware(
 # Templates & static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# ==================== AUTH HELPERS ====================
+
+SESSION_COOKIE = "admin_session"
+
+def _make_token(school_name: str) -> str:
+    secret = os.getenv("SECRET_KEY", "myschool_secret_key")
+    return hmac.new(secret.encode(), school_name.encode(), hashlib.sha256).hexdigest()
+
+def _check_admin(request: Request, school_name: str) -> bool:
+    token = request.cookies.get(SESSION_COOKIE)
+    return token == _make_token(school_name)
+
+
+# In-memory school cache to avoid repeated DB lookups
+_school_cache: dict = {}
+
+def _get_school(school_name: str, db: Session):
+    if school_name not in _school_cache:
+        school = db.query(School).filter(School.school_name == school_name).first()
+        if school:
+            _school_cache[school_name] = {"id": school.id, "school_code": school.school_code, "school_name": school.school_name}
+    return _school_cache.get(school_name)
+
 
 # ==================== SYSTEM ADMIN ENDPOINTS ====================
 
@@ -139,6 +163,45 @@ def parent_choice(school_name: str, request: Request, db: Session = Depends(get_
     })
 
 
+# Admin login page
+@app.get("/{school_name}/admin/login")
+def admin_login_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    if _check_admin(request, school_name):
+        return RedirectResponse(f"/{school_name}/admin", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "school_name": school_name, "error": ""})
+
+
+@app.post("/{school_name}/admin/login")
+def admin_login(
+    school_name: str,
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    expected_user = school_name
+    expected_pass = f"{school_name}001"
+    if username == expected_user and password == expected_pass:
+        token = _make_token(school_name)
+        response = RedirectResponse(f"/{school_name}/admin", status_code=302)
+        response.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax", max_age=86400 * 7)
+        return response
+    return templates.TemplateResponse("login.html", {"request": request, "school_name": school_name, "error": "Invalid username or password"})
+
+
+@app.get("/{school_name}/admin/logout")
+def admin_logout(school_name: str):
+    response = RedirectResponse(f"/{school_name}/admin/login", status_code=302)
+    response.delete_cookie(SESSION_COOKIE)
+    return response
+
+
 # Admin dashboard for specific school
 @app.get("/{school_name}/admin")
 def admin_choice(school_name: str, request: Request, db: Session = Depends(get_db)):
@@ -146,7 +209,8 @@ def admin_choice(school_name: str, request: Request, db: Session = Depends(get_d
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
+    if not _check_admin(request, school_name):
+        return RedirectResponse(f"/{school_name}/admin/login", status_code=302)
     return templates.TemplateResponse("admin.html", {
         "request": request,
         "school_name": school_name,
@@ -158,16 +222,13 @@ def admin_choice(school_name: str, request: Request, db: Session = Depends(get_d
 
 @app.get("/{school_name}/students/search", response_model=List[Dict])
 def search_students(school_name: str, q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    """Search students in a specific school"""
-    school = db.query(School).filter(School.school_name == school_name).first()
+    school = _get_school(school_name, db)
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
-    # Search for students with matching school_id (or students with no school assigned)
-    query = db.query(Student).filter(
-        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+    query = db.query(Student.id, Student.student_name, Student.class_name).filter(
+        (Student.school_id == school["id"]) | (Student.school_id.is_(None)),
         Student.student_name.ilike(f"%{q}%")
-    ).all()
+    ).limit(20).all()
     return [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in query]
 
 
@@ -247,43 +308,45 @@ def add_visit(
 
 @app.get("/{school_name}/admin/data/{visit_type}")
 def admin_data(school_name: str, visit_type: str, visit_date: str | None = Query(None), db: Session = Depends(get_db)):
-    school = db.query(School).filter(School.school_name == school_name).first()
+    school = _get_school(school_name, db)
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
-    query = db.query(Visit).join(Student).filter(
+
+    query = db.query(
+        Visit.id, Visit.visit_date, Visit.created_at,
+        Visit.movement_method, Visit.arrival_plate_number, Visit.assigned_plate_number,
+        Student.student_name, Student.class_name
+    ).join(Student).filter(
         Visit.visit_type == visit_type,
-        (Student.school_id == school.id) | (Student.school_id.is_(None))
+        (Student.school_id == school["id"]) | (Student.school_id.is_(None))
     )
-    
-    # Filter by date if provided
+
     if visit_date:
         try:
             target_date = datetime.strptime(visit_date, "%Y-%m-%d").date()
             query = query.filter(Visit.visit_date == target_date)
         except ValueError:
             pass
-    
-    visits = query.order_by(Visit.visit_date.desc(), Visit.id.desc()).all()
+
+    rows = query.order_by(Visit.visit_date.desc(), Visit.id.desc()).all()
 
     result = {}
-    for v in visits:
-        cls = v.student.class_name
+    for r in rows:
+        cls = r.class_name
         if cls not in result:
             result[cls] = []
-        
         result[cls].append({
-            "student_name": v.student.student_name, 
-            "date": v.visit_date.strftime("%Y-%m-%d"),
-            "timestamp": v.created_at.isoformat() if hasattr(v, 'created_at') and v.created_at else None,
-            "id": v.id,  # This is the key for FIFO ordering!
-            "movement_method": v.movement_method,
-            "arrival_plate_number": v.arrival_plate_number,
-            "assigned_plate_number": v.assigned_plate_number,
+            "student_name": r.student_name,
+            "date": r.visit_date.strftime("%Y-%m-%d"),
+            "timestamp": r.created_at.isoformat() if r.created_at else None,
+            "id": r.id,
+            "movement_method": r.movement_method,
+            "arrival_plate_number": r.arrival_plate_number,
+            "assigned_plate_number": r.assigned_plate_number,
         })
 
     stats = {cls: len(students) for cls, students in result.items()}
-    return {"data": result, "stats": stats, "total": len(visits)}
+    return {"data": result, "stats": stats, "total": len(rows)}
 
 
 @app.post("/{school_name}/admin/upload-students")
@@ -318,16 +381,13 @@ def upload_students(school_name: str, file: UploadFile = File(...), db: Session 
 # Get all students for a specific school
 @app.get("/{school_name}/admin/students")
 def get_all_students(school_name: str, db: Session = Depends(get_db)):
-    """Get all students for a specific school"""
-    school = db.query(School).filter(School.school_name == school_name).first()
+    school = _get_school(school_name, db)
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
-    students = db.query(Student).filter(
-        (Student.school_id == school.id) | (Student.school_id.is_(None))
+    students = db.query(Student.id, Student.student_name, Student.class_name).filter(
+        (Student.school_id == school["id"]) | (Student.school_id.is_(None))
     ).all()
-    result = [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in students]
-    return {"status": "success", "students": result}
+    return {"status": "success", "students": [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in students]}
 
 
 # Delete a student by ID from a specific school
@@ -345,6 +405,23 @@ def delete_student(school_name: str, student_id: int, db: Session = Depends(get_
     db.delete(student)
     db.commit()
     return {"status": "success", "message": f"Student '{student.student_name}' deleted"}
+
+
+# Delete a visit by ID
+@app.delete("/{school_name}/admin/visits/{visit_id}")
+def delete_visit(school_name: str, visit_id: int, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    visit = db.query(Visit).join(Student).filter(
+        Visit.id == visit_id,
+        (Student.school_id == school.id) | (Student.school_id.is_(None))
+    ).first()
+    if not visit:
+        return {"status": "error", "message": "Visit not found"}
+    db.delete(visit)
+    db.commit()
+    return {"status": "success"}
 
 
 # Add a single student to a specific school

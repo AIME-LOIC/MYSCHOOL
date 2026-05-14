@@ -125,13 +125,13 @@
                     <i class="fas fa-calendar-alt mr-2"></i> Visit Day
                 </button>
                 <button id="btn-parent-meeting" onclick="selectType('parent_meeting')" class="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
-                    <i class="fas fa-handshake mr-2"></i> Parent Meeting
+                    <i class="fas fa-handshake mr-2"></i> INAMA Y'ABABYEYI
                 </button>
                 <button id="btn-support" onclick="openDonationModal()" class="w-full py-3 px-6 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
-                    <i class="fas fa-heart mr-2"></i> Support
+                    <i class="fas fa-heart mr-2"></i> GUFASHA ICF
                 </button>
                 <button onclick="openProductsModal()" class="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
-                    <i class="fas fa-shopping-bag mr-2"></i> Products
+                    <i class="fas fa-shopping-bag mr-2"></i> IBICIRO MURI CATINE
                 </button>
             </div>
         </div>
@@ -158,27 +158,27 @@
             <button id="btn-back-to-choice" onclick="goBackToChoice()" 
                     class="mb-4 flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition duration-150">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Return to Selection
+                SUBIRA INYUMA
             </button>
             
             <h3 id="form-title" class="text-xl font-semibold mb-4 text-gray-700"></h3>
 
-            <input type="text" id="search-input" placeholder="Search student by name..." oninput="searchStudents()"
+            <input type="text" id="search-input" placeholder="ANDIKA AMAZINA Y'UMWANA..." oninput="searchStudents()"
                     class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4 transition duration-150 ease-in-out">
 
             <div id="student-results" class="student-list max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4">
-                <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student's name...</p>
+                <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">KANDA KU  AMAZINA Y'UMWANA</p>
             </div>
 
             <div id="movement-section" class="hidden border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
-                <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">Method of movement</label>
+                <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">UFITE IKINYABIZIGA</label>
                 <select id="movement-method" onchange="onMovementMethodChange()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Select movement method</option>
-                    <option value="with_car">By private car</option>
-                    <option value="without_car">Without car</option>
+                    <option value="">HITAMO</option>
+                    <option value="with_car">YEGO</option>
+                    <option value="without_car">HOYA</option>
                 </select>
                 <div id="plate-number-wrap" class="hidden mt-3">
-                    <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">Plate number</label>
+                    <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">ANDIKA PARAKE YACYO</label>
                     <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. REA 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <p id="plate-error" class="hidden text-sm text-red-600 mt-1"></p>
                 </div>
@@ -281,13 +281,15 @@
         function openDB() {
             if (_db) return Promise.resolve(_db);
             return new Promise((res, rej) => {
-                const req = indexedDB.open(DB_NAME, 1);
+                const req = indexedDB.open(DB_NAME, 2);
                 req.onupgradeneeded = e => {
                     const db = e.target.result;
                     if (!db.objectStoreNames.contains('students'))
                         db.createObjectStore('students', { keyPath: 'id' });
                     if (!db.objectStoreNames.contains('visit_queue'))
                         db.createObjectStore('visit_queue', { autoIncrement: true });
+                    if (!db.objectStoreNames.contains('products'))
+                        db.createObjectStore('products', { keyPath: 'product_id' });
                 };
                 req.onsuccess = e => { _db = e.target.result; res(_db); };
                 req.onerror  = () => rej(req.error);
@@ -383,18 +385,37 @@
         async function openProductsModal() {
             document.getElementById('products-modal').classList.remove('hidden');
             const list = document.getElementById('products-list');
-            // Try cache first
-            const cached = localStorage.getItem(`products_${schoolname}`);
-            if (cached) renderProducts(JSON.parse(cached), list);
+            list.innerHTML = '<p class="text-gray-400 text-sm">Loading...</p>';
+            const db = await openDB();
+
+            // Read cached products
+            const cached = await new Promise(res => {
+                const items = [];
+                const tx = db.transaction('products', 'readonly');
+                tx.objectStore('products').openCursor().onsuccess = e => {
+                    const cursor = e.target.result;
+                    if (cursor) { items.push(cursor.value); cursor.continue(); }
+                    else res(items);
+                };
+            });
+            if (cached.length) renderProducts(cached, list);
+
             try {
                 const res = await fetch(`/${schoolname}/products`);
                 const data = await res.json();
                 if (data.status === 'success') {
-                    localStorage.setItem(`products_${schoolname}`, JSON.stringify(data.products));
+                    // Save fresh data in a new transaction
+                    await new Promise(res => {
+                        const tx = db.transaction('products', 'readwrite');
+                        const store = tx.objectStore('products');
+                        store.clear();
+                        data.products.forEach(p => store.put(p));
+                        tx.oncomplete = res;
+                    });
                     renderProducts(data.products, list);
                 }
             } catch {
-                if (!cached) list.innerHTML = '<p class="text-red-500 text-sm">Offline. No cached data.</p>';
+                if (!cached.length) list.innerHTML = '<p class="text-red-500 text-sm">Offline. No cached products.</p>';
             }
         }
 
@@ -959,20 +980,31 @@ function copyPhoneNumber() {
     });
 }
 async function fetchVisits(visitType) {
-    try {
-        const res = await fetch(`/admin/data/${visitType}`);
-        const data = await res.json();
-        // Update your table/UI here
-        renderVisits(data);
-    } catch (err) {
-        console.error("Failed to fetch visits:", err);
-    }
+    // intentionally empty - visits are handled by submitVisit and flushVisitQueue
 }
 
-// Call every 5 seconds
+// Offline/online banner
+window.addEventListener('offline', () => {
+    let banner = document.getElementById('offline-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'offline-banner';
+        banner.className = 'fixed top-0 left-0 right-0 z-[200] bg-amber-500 text-white text-center text-sm font-semibold py-2';
+        banner.innerText = '⚠️ You are offline. Searches use cached data. Visits will sync when reconnected.';
+        document.body.prepend(banner);
+    }
+});
+
+window.addEventListener('online', () => {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.remove();
+    flushVisitQueue();
+});
+
+// Call every 2 seconds
 setInterval(() => {
-    if (currentVisitType) fetchVisits(currentVisitType);
-}, 5000);
+    if (navigator.onLine) flushVisitQueue();
+}, 2000);
 document.addEventListener('contextmenu', event => event.preventDefault());
 document.onkeydown = function(e) {
   if (e.keyCode == 123) { // F12

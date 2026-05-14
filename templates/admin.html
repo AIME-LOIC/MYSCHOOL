@@ -79,6 +79,9 @@
                 <span class="text-blue-600">A</span>dmin <span class="text-blue-600">D</span>ashboard
             </h1>
             <p class="text-gray-500 mt-1">Attendance tracking and student database management.</p>
+            <div class="mt-2">
+                <a href="/{{ school_name }}/admin/logout" class="text-sm text-red-500 hover:text-red-700 font-semibold">Logout</a>
+            </div>
         </header>
 
         <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 animate-fade-in">
@@ -356,6 +359,7 @@
         }
 
         async function loadAllStudents() {
+            _cachedStudentMap = null; // invalidate cache
             const list = document.getElementById('manager-student-list');
             list.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-blue-500">Loading database...</td></tr>';
             try {
@@ -534,7 +538,12 @@
                     div.innerHTML = `<h5 class="font-bold border-b mb-2">${cls}</h5>`;
                     // Sort by date - newest first
                     const sorted = result.data[cls].sort((a, b) => new Date(b.date) - new Date(a.date));
-                    sorted.forEach(s => div.innerHTML += `<div class="flex justify-between text-xs py-1"><span>${s.student_name}</span><span class="text-gray-400">${s.date}</span></div>`);
+                    sorted.forEach(s => div.innerHTML += `
+                        <div class="flex justify-between items-center text-xs py-1 gap-2">
+                            <span class="flex-1">${s.student_name}</span>
+                            <span class="text-gray-400">${s.date}</span>
+                            <button onclick="deleteVisit(${s.id})" class="text-red-400 hover:text-red-600 font-bold px-1">✕</button>
+                        </div>`);
                     container.appendChild(div);
                 }
                 drawChart(result.stats);
@@ -601,75 +610,54 @@
             }
         }
 
+        let _cachedStudentMap = null;
+
         async function refreshLiveData() {
             const container = document.getElementById('live-data-list');
-            
             try {
-                const students = await fetch(`/${schoolName}/admin/students`).then(r => r.json()).then(r => r.students || []);
-                const studentMap = Object.fromEntries(students.map(s => [s.id, s]));
-                
-                // Fetch data for current type
-                const dataRes = await fetch(`/${schoolName}/admin/data/${currentLiveTrackType}`);
-                const data = await dataRes.json();
-                
-                // Get today's date
+                // Only fetch students once per session
+                if (!_cachedStudentMap) {
+                    const students = await fetch(`/${schoolName}/admin/students`).then(r => r.json()).then(r => r.students || []);
+                    _cachedStudentMap = Object.fromEntries(students.map(s => [s.student_name, s]));
+                }
+
                 const today = new Date().toISOString().split('T')[0];
-                
-                // Collect ALL visits from ALL classes
+                const data = await fetch(`/${schoolName}/admin/data/${currentLiveTrackType}?visit_date=${today}`).then(r => r.json());
+
                 const allVisits = [];
-                
                 for (const cls in data.data) {
-                    data.data[cls].forEach((visit) => {
-                        // Only show today's visits
-                        if (visit.date === today) {
-                            const student = Object.values(studentMap).find(s => s.student_name === visit.student_name);
-                            if (student) {
-                                const typeLabel = currentLiveTrackType === 'visit_day' ? 'Visit Day' : 'Parent Meeting';
-                                allVisits.push({
-                                    student_name: visit.student_name,
-                                    class_name: student.class_name,
-                                    visit_type: typeLabel,
-                                    visit_date: visit.date,
-                                    timestamp: visit.timestamp, // From backend
-                                    id: visit.id, // Database ID for ordering
-                                    status: 'Recorded'
-                                });
-                            }
-                        }
+                    data.data[cls].forEach(visit => {
+                        const typeLabel = currentLiveTrackType === 'visit_day' ? 'Visit Day' : 'Parent Meeting';
+                        allVisits.push({
+                            student_name: visit.student_name,
+                            class_name: (_cachedStudentMap[visit.student_name] || {}).class_name || cls,
+                            visit_type: typeLabel,
+                            visit_date: visit.date,
+                            timestamp: visit.timestamp,
+                            id: visit.id,
+                            status: 'Recorded'
+                        });
                     });
                 }
-                
-                // FIFO Sort: Use timestamp if available, otherwise use ID (database insertion order)
+
                 allVisits.sort((a, b) => {
-                    // If both have timestamps, use them
-                    if (a.timestamp && b.timestamp) {
-                        return new Date(a.timestamp) - new Date(b.timestamp);
-                    }
-                    // If no timestamps, use ID (lower ID = earlier insertion = FIFO)
+                    if (a.timestamp && b.timestamp) return new Date(a.timestamp) - new Date(b.timestamp);
                     return (a.id || 0) - (b.id || 0);
                 });
-                
+
                 liveTrackData = allVisits;
-                
-                // Create a string representation of the data to compare
                 const currentDataString = JSON.stringify(liveTrackData);
-                
-                // Check if data has changed
+
                 if (currentDataString !== previousDataString || liveTrackData.length !== previousDataCount) {
                     previousDataString = currentDataString;
                     previousDataCount = liveTrackData.length;
-                    
-                    // Check for duplicate visits today
+
                     const visitCounts = {};
-                    liveTrackData.forEach(record => {
-                        const key = `${record.student_name}-${record.visit_date}`;
+                    liveTrackData.forEach(r => {
+                        const key = `${r.student_name}-${r.visit_date}`;
                         visitCounts[key] = (visitCounts[key] || 0) + 1;
                     });
-                    
-                    filteredLiveData = liveTrackData.map(record => ({
-                        ...record,
-                        isDuplicate: visitCounts[`${record.student_name}-${record.visit_date}`] > 1
-                    }));
+                    filteredLiveData = liveTrackData.map(r => ({ ...r, isDuplicate: visitCounts[`${r.student_name}-${r.visit_date}`] > 1 }));
                     
                     updateLiveClassFilter();
                     renderLiveTrackTable();
@@ -750,7 +738,7 @@
                 
                 autoRefreshInterval = setInterval(() => {
                     refreshLiveData();
-                }, 10000); // Refresh every 10 seconds - only shows toast on NEW data
+                }, 2000); // Refresh every 2 seconds
             } else {
                 btn.innerText = 'Start Auto-Refresh';
                 btn.classList.remove('bg-red-600', 'hover:bg-red-700');
@@ -918,6 +906,17 @@
                 console.error(err);
                 showToast('Error exporting visit data.', 'error');
             }
+        }
+
+        async function deleteVisit(visitId) {
+            showDeleteModal(async () => {
+                try {
+                    const res = await fetch(`/${schoolName}/admin/visits/${visitId}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.status === 'success') { showToast('Visit deleted.', 'success'); fetchData(); }
+                    else showToast(data.message || 'Delete failed.', 'error');
+                } catch { showToast('Connection error.', 'error'); }
+            }, 'Delete this visit record? This cannot be undone.');
         }
     </script>
     <!-- Products Admin Modal -->

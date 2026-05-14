@@ -1,7 +1,8 @@
 # models.py
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from config import Base  # ensure Base = declarative_base() in config.py
+from config import Base
+from datetime import datetime
 
 class Student(Base):
     __tablename__ = "students"
@@ -39,6 +40,7 @@ class Visit(Base):
     movement_method = Column(String(20), nullable=True)  # with_car | without_car
     arrival_plate_number = Column(String(30), nullable=True)
     assigned_plate_number = Column(String(30), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=True)
 
     # Link back to Student
     student = relationship("Student", back_populates="visits")
