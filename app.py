@@ -11,7 +11,7 @@ import re
 from openpyxl.styles import Font, PatternFill
 
 from config import get_db, engine, Base, init_db
-from model import Student, Visit
+from model import Student, Visit, Product
 from system_admin import School, create_school_database, list_all_schools, delete_school_database, get_school_database_info
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -458,6 +458,72 @@ def assign_car_plate(
     visit.assigned_plate_number = plate
     db.commit()
     return {"status": "success", "message": "Car plate assigned successfully", "visit_id": visit.id}
+
+
+# ==================== PRODUCT ENDPOINTS ====================
+
+@app.get("/{school_name}/products")
+def get_products(school_name: str, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    products = db.query(Product).filter(
+        (Product.school_id == school.id) | (Product.school_id.is_(None))
+    ).all()
+    return {"status": "success", "products": [{"product_id": p.product_id, "product_name": p.product_name, "product_price": p.product_price} for p in products]}
+
+
+@app.post("/{school_name}/admin/products/add")
+def add_product(
+    school_name: str,
+    product_name: str = Form(...),
+    product_price: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    product = Product(product_name=product_name, product_price=product_price, school_id=school.id)
+    db.add(product)
+    db.commit()
+    return {"status": "success", "product_id": product.product_id}
+
+
+@app.put("/{school_name}/admin/products/{product_id}")
+def update_product(
+    school_name: str,
+    product_id: int,
+    product_name: str = Form(...),
+    product_price: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    product = db.query(Product).filter(Product.product_id == product_id, Product.school_id == school.id).first()
+    if not product:
+        return {"status": "error", "message": "Product not found"}
+    product.product_name = product_name
+    product.product_price = product_price
+    db.commit()
+    return {"status": "success"}
+
+
+@app.delete("/{school_name}/admin/products/{product_id}")
+def delete_product(
+    school_name: str,
+    product_id: int,
+    db: Session = Depends(get_db)
+):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    product = db.query(Product).filter(Product.product_id == product_id, Product.school_id == school.id).first()
+    if not product:
+        return {"status": "error", "message": "Product not found"}
+    db.delete(product)
+    db.commit()
+    return {"status": "success"}
 
 
 # ==================== EXPORT ENDPOINTS ====================

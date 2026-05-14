@@ -43,11 +43,30 @@ def get_db():
 def init_db():
     """Initialize database tables - creates all tables defined in models"""
     Base.metadata.create_all(bind=engine)
-    
-    # Ensure school_id column exists in students table (for existing databases)
+    _ensure_products_table()
     _ensure_student_school_id_column()
-    # Ensure transport/car columns exist in visits table (for existing databases)
     _ensure_visit_transport_columns()
+
+def _ensure_products_table():
+    """Create products table if it doesn't exist"""
+    from sqlalchemy import text, inspect
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if 'products' not in inspector.get_table_names():
+            try:
+                connection.execute(text("""
+                    CREATE TABLE products (
+                        product_id SERIAL PRIMARY KEY,
+                        product_name VARCHAR(100) NOT NULL,
+                        product_price INTEGER NOT NULL,
+                        school_id INTEGER REFERENCES schools(id)
+                    )
+                """))
+                connection.commit()
+                print("✓ Created products table")
+            except Exception as e:
+                print(f"Warning: Could not create products table: {e}")
+                connection.rollback()
 
 def _ensure_student_school_id_column():
     """Add school_id column to students table if it doesn't exist"""

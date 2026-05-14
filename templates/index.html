@@ -130,11 +130,8 @@
                 <button id="btn-support" onclick="openDonationModal()" class="w-full py-3 px-6 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
                     <i class="fas fa-heart mr-2"></i> Support
                 </button>
-                <button id="btn-tour-guide" onclick="showTourGuide()" class="w-full py-3 px-6 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
-                    <i class="fas fa-map-marker-alt mr-2"></i> School Tour Guide
-                </button>
-                <button id="btn-start-tour" onclick="startTour()" class="w-full py-3 px-6 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg mt-4">
-                    <i class="fas fa-route mr-2"></i> Start Interactive Guide
+                <button onclick="openProductsModal()" class="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-shopping-bag mr-2"></i> Products
                 </button>
             </div>
         </div>
@@ -263,8 +260,160 @@
 
     <div id="toast" class="fixed bottom-8 left-1/2 hidden z-[130] px-5 py-3 rounded-lg shadow-2xl font-semibold text-white whitespace-nowrap"></div>
 
+    <!-- Products Modal -->
+    <div id="products-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" onclick="closeProductsModal()"></div>
+        <div class="relative w-full max-w-md rounded-2xl bg-white shadow-2xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Products</h3>
+            <div id="products-list" class="space-y-2 max-h-72 overflow-y-auto">
+                <p class="text-gray-400 text-sm">Loading...</p>
+            </div>
+            <button onclick="closeProductsModal()" class="mt-5 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
+        </div>
+    </div>
+
     <script>
-        let selectedType = '';
+        // Service Worker registration for offline sync
+        // ── IndexedDB helpers ──────────────────────────────────────────
+        const DB_NAME = 'myschool_offline';
+        let _db = null;
+
+        function openDB() {
+            if (_db) return Promise.resolve(_db);
+            return new Promise((res, rej) => {
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('students'))
+                        db.createObjectStore('students', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('visit_queue'))
+                        db.createObjectStore('visit_queue', { autoIncrement: true });
+                };
+                req.onsuccess = e => { _db = e.target.result; res(_db); };
+                req.onerror  = () => rej(req.error);
+            });
+        }
+
+        async function saveStudentsToDB(students) {
+            const db = await openDB();
+            const tx = db.transaction('students', 'readwrite');
+            const store = tx.objectStore('students');
+            store.clear();
+            students.forEach(s => store.put(s));
+        }
+
+        async function searchStudentsFromDB(query) {
+            const db = await openDB();
+            return new Promise(res => {
+                const results = [];
+                const tx = db.transaction('students', 'readonly');
+                tx.objectStore('students').openCursor().onsuccess = e => {
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        if (cursor.value.student_name.toLowerCase().includes(query.toLowerCase()))
+                            results.push(cursor.value);
+                        cursor.continue();
+                    } else res(results);
+                };
+            });
+        }
+
+        async function queueVisit(payload) {
+            const db = await openDB();
+            const tx = db.transaction('visit_queue', 'readwrite');
+            tx.objectStore('visit_queue').add(payload);
+        }
+
+        async function getVisitQueue() {
+            const db = await openDB();
+            return new Promise(res => {
+                const items = [];
+                const tx = db.transaction('visit_queue', 'readonly');
+                tx.objectStore('visit_queue').openCursor().onsuccess = e => {
+                    const cursor = e.target.result;
+                    if (cursor) { items.push({ key: cursor.key, value: cursor.value }); cursor.continue(); }
+                    else res(items);
+                };
+            });
+        }
+
+        async function removeFromQueue(key) {
+            const db = await openDB();
+            const tx = db.transaction('visit_queue', 'readwrite');
+            tx.objectStore('visit_queue').delete(key);
+        }
+
+        async function prefetchStudents() {
+            try {
+                const res = await fetch(`/${schoolname}/admin/students`);
+                const data = await res.json();
+                if (data.status === 'success') await saveStudentsToDB(data.students);
+            } catch { /* offline on first load */ }
+        }
+
+        async function flushVisitQueue() {
+            const queue = await getVisitQueue();
+            if (!queue.length) return;
+            for (const { key, value } of queue) {
+                try {
+                    const fd = new FormData();
+                    Object.entries(value).forEach(([k, v]) => fd.append(k, v));
+                    const res = await fetch(`/${schoolname}/visits/add`, { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.status === 'success' || data.message === 'Already recorded today')
+                        await removeFromQueue(key);
+                } catch { break; }
+            }
+            const remaining = await getVisitQueue();
+            if (remaining.length < queue.length)
+                showToast(`Synced ${queue.length - remaining.length} queued visit(s).`, 'success');
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(() => {
+                    navigator.serviceWorker.addEventListener('message', e => {
+                        if (e.data && e.data.type === 'flush-visit-queue') flushVisitQueue();
+                    });
+                }).catch(() => {});
+        }
+
+        window.addEventListener('online', flushVisitQueue);
+
+        async function openProductsModal() {
+            document.getElementById('products-modal').classList.remove('hidden');
+            const list = document.getElementById('products-list');
+            // Try cache first
+            const cached = localStorage.getItem(`products_${schoolname}`);
+            if (cached) renderProducts(JSON.parse(cached), list);
+            try {
+                const res = await fetch(`/${schoolname}/products`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    localStorage.setItem(`products_${schoolname}`, JSON.stringify(data.products));
+                    renderProducts(data.products, list);
+                }
+            } catch {
+                if (!cached) list.innerHTML = '<p class="text-red-500 text-sm">Offline. No cached data.</p>';
+            }
+        }
+
+        function renderProducts(products, list) {
+            if (!products.length) { list.innerHTML = '<p class="text-gray-400 text-sm">No products available.</p>'; return; }
+            list.innerHTML = products.map(p =>
+                `<div class="flex justify-between items-center border-b py-2">
+                    <span class="font-medium text-gray-800">${p.product_name}</span>
+                    <span class="text-indigo-600 font-bold">${p.product_price} RWF</span>
+                </div>`
+            ).join('');
+        }
+
+        function closeProductsModal() {
+            document.getElementById('products-modal').classList.add('hidden');
+        }
+    </script>
+
+    <script>
         let selectedStudentId = null;
         let tourStep = 0; // 0: Tour is inactive, 1+: Current step of the tour
         let toastTimeout = null;
@@ -455,7 +604,9 @@
                         setTimeout(() => {
                             poweredByPage.classList.add('hidden');
                             mainContent.classList.remove('hidden');
-                            mainContent.classList.add('animate-fade-in'); 
+                            mainContent.classList.add('animate-fade-in');
+                            prefetchStudents();
+                            flushVisitQueue();
                         }, 500); 
                     }, poweredByDuration); 
                 }, 500); 
@@ -546,36 +697,42 @@
     selectedStudentId = null;
     validateSubmitState();
 
-    if(query.length < 2) {
+    if (query.length < 2) {
         resultsDiv.innerHTML = '<p class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
         return;
     }
 
     resultsDiv.innerHTML = '<p class="p-3 text-center text-blue-500 animate-pulse">Searching...</p>';
 
+    let data = [];
     try {
         const res = await fetch(`/${schoolname}/students/search?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-
-        if(data.length === 0){
-            resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">No students found matching your query.</p>';
-            return;
+        data = await res.json();
+        // Update local DB with fresh results
+        if (data.length) await saveStudentsToDB(data);
+    } catch {
+        // Offline: search IndexedDB
+        data = await searchStudentsFromDB(query);
+        if (data.length) {
+            resultsDiv.innerHTML = '<p class="px-3 pt-2 text-xs text-amber-500">Offline — showing cached results</p>';
         }
-
-        resultsDiv.innerHTML = '';
-        data.forEach(student => {
-            const div = document.createElement('div');
-            div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
-            div.setAttribute('data-student-id', student.id);
-            div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span>`;
-            div.onclick = () => selectStudent(student.id, div);
-            resultsDiv.appendChild(div);
-        });
-
-    } catch (err) {
-        console.error(err);
-        resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">Error connecting to search service.</p>';
     }
+
+    if (!data.length) {
+        resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">No students found matching your query.</p>';
+        return;
+    }
+
+    const existing = resultsDiv.querySelector('p.text-amber-500');
+    if (!existing) resultsDiv.innerHTML = '';
+    data.forEach(student => {
+        const div = document.createElement('div');
+        div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
+        div.setAttribute('data-student-id', student.id);
+        div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span>`;
+        div.onclick = () => selectStudent(student.id, div);
+        resultsDiv.appendChild(div);
+    });
 }
 
 
@@ -604,70 +761,64 @@
 
     const feedbackEl = document.getElementById('feedback');
     const submitBtn = document.getElementById('submit-btn');
-
     const originalText = submitBtn.innerText;
+
     submitBtn.innerText = 'Processing...';
     submitBtn.disabled = true;
     submitBtn.classList.add('animate-pulse');
     feedbackEl.innerText = '';
 
-    let shouldShowDonationModal = false;
-    try {
-        const formData = new FormData();
-        formData.append('student_id', selectedStudentId);
-        formData.append('visit_type', selectedType);
-        if (isSOSSchool) {
-            const movementMethod = document.getElementById('movement-method').value;
-            const plateNumber = document.getElementById('plate-number').value.trim();
-
-            // Ensure the plate number format is valid before sending it to the server
-            if (movementMethod === 'with_car' && plateNumber && !isValidPlateNumber(plateNumber)) {
-                feedbackEl.innerText = 'Plate number must be in the format "RAx 123A" (e.g. REA 123A).';
-                feedbackEl.classList.remove('text-green-600');
-                feedbackEl.classList.add('text-red-500');
-                submitBtn.innerText = originalText;
-                submitBtn.classList.remove('animate-pulse');
-                submitBtn.disabled = false;
-                return;
-            }
-
-            formData.append('movement_method', movementMethod);
-            formData.append('plate_number', plateNumber);
+    const payload = { student_id: selectedStudentId, visit_type: selectedType };
+    if (isSOSSchool) {
+        const movementMethod = document.getElementById('movement-method').value;
+        const plateNumber = document.getElementById('plate-number').value.trim();
+        if (movementMethod === 'with_car' && plateNumber && !isValidPlateNumber(plateNumber)) {
+            feedbackEl.innerText = 'Plate number must be in the format "RAx 123A" (e.g. REA 123A).';
+            feedbackEl.classList.remove('text-green-600');
+            feedbackEl.classList.add('text-red-500');
+            submitBtn.innerText = originalText;
+            submitBtn.classList.remove('animate-pulse');
+            submitBtn.disabled = false;
+            return;
         }
+        payload.movement_method = movementMethod;
+        payload.plate_number = plateNumber;
+    }
 
-        const res = await fetch(`/${schoolname}/visits/add`, {
-            method: 'POST',
-            body: formData
-        });
+    let shouldShowDonationModal = false;
+    let wentOffline = false;
 
+    try {
+        const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => fd.append(k, v));
+        const res = await fetch(`/${schoolname}/visits/add`, { method: 'POST', body: fd });
         const data = await res.json();
 
-        if (data.status === 'success') {
+        if (data.status === 'success' || data.message === 'Already recorded today') {
             feedbackEl.innerText = 'Success! Your request has been recorded.';
             feedbackEl.classList.remove('text-red-500');
             feedbackEl.classList.add('text-green-600');
             shouldShowDonationModal = isSOSSchool;
         } else {
-            // Hide "Already recorded today" message from parents - only show success
-            if (data.message === 'Already recorded today') {
-                feedbackEl.innerText = 'Success! Your request has been recorded.';
-                feedbackEl.classList.remove('text-red-500');
-                feedbackEl.classList.add('text-green-600');
-                shouldShowDonationModal = isSOSSchool;
-            } else {
-                feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
-                feedbackEl.classList.remove('text-green-600');
-                feedbackEl.classList.add('text-red-500');
-            }
+            feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
+            feedbackEl.classList.remove('text-green-600');
+            feedbackEl.classList.add('text-red-500');
         }
-    } catch(err) {
-        console.error(err);
-        feedbackEl.innerText = 'A network error occurred while submitting.';
-        feedbackEl.classList.remove('text-green-600');
-        feedbackEl.classList.add('text-red-500');
+    } catch {
+        // Offline — queue it
+        await queueVisit(payload);
+        wentOffline = true;
+        feedbackEl.innerText = 'Sending... (will sync when online)';
+        feedbackEl.classList.remove('text-red-500');
+        feedbackEl.classList.add('text-amber-500');
+        submitBtn.innerText = 'Sending...';
     } finally {
-        submitBtn.innerText = originalText;
-        submitBtn.classList.remove('animate-pulse');
+        if (!wentOffline) {
+            submitBtn.innerText = originalText;
+            submitBtn.classList.remove('animate-pulse');
+        } else {
+            submitBtn.classList.remove('animate-pulse');
+        }
         selectedStudentId = null;
         document.getElementById('search-input').value = '';
         document.getElementById('movement-method').value = '';
@@ -679,7 +830,7 @@
         if (shouldShowDonationModal) {
             setTimeout(openDonationModal, 500);
         } else {
-            setTimeout(goBackToChoice, 1500);
+            setTimeout(goBackToChoice, wentOffline ? 2000 : 1500);
         }
     }
 }

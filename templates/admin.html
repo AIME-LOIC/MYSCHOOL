@@ -97,6 +97,9 @@
                 <button id="btn-car-management" onclick="openCarManagement()" class="py-4 px-6 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition shadow-md">
                     Car Management
                 </button>
+                <button onclick="openProductsAdmin()" class="py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition shadow-md">
+                    Products
+                </button>
             </div>
         </div>
 
@@ -917,5 +920,153 @@
             }
         }
     </script>
+    <!-- Products Admin Modal -->
+    <div id="products-admin-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/40" onclick="closeProductsAdmin()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md z-10 animate-fade-in">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Manage Products</h3>
+            <div class="space-y-3 mb-4">
+                <input type="text" id="new-product-name" placeholder="Product name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                <input type="number" id="new-product-price" placeholder="Price (RWF)" min="0" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                <button onclick="addProduct()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Add Product</button>
+            </div>
+            <div id="admin-products-list" class="space-y-2 max-h-60 overflow-y-auto border-t pt-3">
+                <p class="text-gray-400 text-sm">Loading...</p>
+            </div>
+            <button onclick="closeProductsAdmin()" class="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Service Worker for offline sync
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+        }
+
+        async function openProductsAdmin() {
+            document.getElementById('products-admin-modal').classList.remove('hidden');
+            await loadAdminProducts();
+        }
+
+        function closeProductsAdmin() {
+            document.getElementById('products-admin-modal').classList.add('hidden');
+        }
+
+        async function loadAdminProducts() {
+            const list = document.getElementById('admin-products-list');
+            const cached = localStorage.getItem(`products_${schoolName}`);
+            if (cached) renderAdminProducts(JSON.parse(cached), list);
+            try {
+                const res = await fetch(`/${schoolName}/products`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    localStorage.setItem(`products_${schoolName}`, JSON.stringify(data.products));
+                    renderAdminProducts(data.products, list);
+                }
+            } catch {
+                if (!cached) list.innerHTML = '<p class="text-red-500 text-sm">Offline. No cached data.</p>';
+            }
+        }
+
+        function renderAdminProducts(products, list) {
+            if (!products.length) { list.innerHTML = '<p class="text-gray-400 text-sm">No products yet.</p>'; return; }
+            list.innerHTML = products.map(p =>
+                `<div class="border-b py-2" id="product-row-${p.product_id}">
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="font-medium text-gray-800 flex-1" id="product-name-${p.product_id}">${p.product_name}</span>
+                        <span class="text-indigo-600 font-bold" id="product-price-${p.product_id}">${p.product_price} RWF</span>
+                        <button onclick="editProduct(${p.product_id}, '${p.product_name.replace(/'/g, "\\'")}'  , ${p.product_price})" class="text-blue-500 hover:text-blue-700 text-xs font-bold px-2">Edit</button>
+                        <button onclick="deleteProduct(${p.product_id})" class="text-red-500 hover:text-red-700 text-xs font-bold px-2">Delete</button>
+                    </div>
+                    <div id="edit-form-${p.product_id}" class="hidden mt-2 flex gap-2">
+                        <input id="edit-name-${p.product_id}" type="text" value="${p.product_name}" class="border rounded px-2 py-1 text-sm flex-1 focus:ring-2 focus:ring-indigo-400 outline-none">
+                        <input id="edit-price-${p.product_id}" type="number" value="${p.product_price}" class="border rounded px-2 py-1 text-sm w-24 focus:ring-2 focus:ring-indigo-400 outline-none">
+                        <button onclick="saveProduct(${p.product_id})" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Save</button>
+                        <button onclick="cancelEdit(${p.product_id})" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">Cancel</button>
+                    </div>
+                </div>`
+            ).join('');
+        }
+
+        function editProduct(id, name, price) {
+            document.getElementById(`edit-form-${id}`).classList.remove('hidden');
+        }
+
+        function cancelEdit(id) {
+            document.getElementById(`edit-form-${id}`).classList.add('hidden');
+        }
+
+        async function saveProduct(id) {
+            const name = document.getElementById(`edit-name-${id}`).value.trim();
+            const price = document.getElementById(`edit-price-${id}`).value.trim();
+            if (!name || !price) { showToast('Name and price required.', 'error'); return; }
+            const fd = new FormData();
+            fd.append('product_name', name);
+            fd.append('product_price', price);
+            try {
+                const res = await fetch(`/${schoolName}/admin/products/${id}`, { method: 'PUT', body: fd });
+                const data = await res.json();
+                if (data.status === 'success') { showToast('Product updated!', 'success'); await loadAdminProducts(); }
+                else showToast('Update failed.', 'error');
+            } catch { showToast('Connection error.', 'error'); }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Delete this product?')) return;
+            try {
+                const res = await fetch(`/${schoolName}/admin/products/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.status === 'success') { showToast('Product deleted.', 'success'); await loadAdminProducts(); }
+                else showToast('Delete failed.', 'error');
+            } catch { showToast('Connection error.', 'error'); }
+        }
+
+        async function addProduct() {
+            const name = document.getElementById('new-product-name').value.trim();
+            const price = document.getElementById('new-product-price').value.trim();
+            if (!name || !price) { showToast('Enter product name and price.', 'error'); return; }
+            const formData = new FormData();
+            formData.append('product_name', name);
+            formData.append('product_price', price);
+            try {
+                const res = await fetch(`/${schoolName}/admin/products/add`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('new-product-name').value = '';
+                    document.getElementById('new-product-price').value = '';
+                    showToast('Product added!', 'success');
+                    await loadAdminProducts();
+                } else {
+                    showToast('Failed to add product.', 'error');
+                }
+            } catch {
+                // Queue for offline sync
+                const queue = JSON.parse(localStorage.getItem('offline_products') || '[]');
+                queue.push({ product_name: name, product_price: price });
+                localStorage.setItem('offline_products', JSON.stringify(queue));
+                showToast('Offline: product queued for sync.', 'error');
+            }
+        }
+
+        // Flush offline queue when back online
+        window.addEventListener('online', async () => {
+            const queue = JSON.parse(localStorage.getItem('offline_products') || '[]');
+            if (!queue.length) return;
+            const remaining = [];
+            for (const item of queue) {
+                const fd = new FormData();
+                fd.append('product_name', item.product_name);
+                fd.append('product_price', item.product_price);
+                try {
+                    const res = await fetch(`/${schoolName}/admin/products/add`, { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.status !== 'success') remaining.push(item);
+                } catch { remaining.push(item); }
+            }
+            localStorage.setItem('offline_products', JSON.stringify(remaining));
+            if (remaining.length < queue.length) showToast(`Synced ${queue.length - remaining.length} offline product(s).`, 'success');
+        });
+    </script>
+
 </body>
 </html>
