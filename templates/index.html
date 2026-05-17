@@ -182,8 +182,8 @@
                     <option value="without_car">HOYA</option>
                 </select>
                 <div id="plate-number-wrap" class="hidden mt-3">
-                    <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">ANDIKA PARAKE YACYO</label>
-                    <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. REA 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">ANDIKA PURAKE YACYO</label>
+                    <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. RAE 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <p id="plate-error" class="hidden text-sm text-red-600 mt-1"></p>
                 </div>
             </div>
@@ -690,13 +690,13 @@
             const submitBtn = document.getElementById('submit-btn');
 
             if (type === 'visit_day') {
-                formTitle.innerText = "Visit Day Announcement";
-                submitBtn.innerText = "Announce Visit";
+                formTitle.innerText = "Visit Day ";
+                submitBtn.innerText = "OHEREZA";
                 submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
                 submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
             } else {
-                formTitle.innerText = "Parent Meeting Attendance";
-                submitBtn.innerText = "Confirm Attendance";
+                formTitle.innerText = "INAMA Y'ABABYEYI";
+                submitBtn.innerText = "OHEREZA";
                 submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
             }
@@ -802,7 +802,7 @@
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
         if (movementMethod === 'with_car' && plateNumber && !isValidPlateNumber(plateNumber)) {
-            feedbackEl.innerText = 'Plate number must be in the format "RAx 123A" (e.g. REA 123A).';
+            feedbackEl.innerText = 'Plate number must be in the format "RAx 123A" (e.g. RAE 123A).';
             feedbackEl.classList.remove('text-green-600');
             feedbackEl.classList.add('text-red-500');
             submitBtn.innerText = originalText;
@@ -953,7 +953,7 @@ function validateSubmitState() {
             } else if (!isValidPlateNumber(plateNumber)) {
                 canSubmit = false;
                 plateErrorEl.classList.remove('hidden');
-                plateErrorEl.innerText = 'Plate must be in the format "RAx 123A" (e.g. REA 123A).';
+                plateErrorEl.innerText = 'Plate must be in the format "RAx 123A" (e.g. RAE 123A).';
             } else {
                 plateErrorEl.classList.add('hidden');
                 plateErrorEl.innerText = '';
