@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parent Portal</title>
+    <link id="favicon" rel="icon" href="/static/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <meta name="google-site-verification" content="ZfOqpsVV7Mv1-PxcKiUDQBBONWc1SKmeTi2y2OnZ_RY" />
@@ -80,6 +81,9 @@
         }
         .toast-enter { animation: slideUp 0.35s ease-out forwards; }
         .toast-exit { animation: slideDown 0.35s ease-out forwards; }
+                /* Logo image sizing */
+                .logo-img { height: 4rem; width: auto; }
+                @media (min-width: 768px) { .logo-img { height: 6rem; } }
     @media print {
   body { display: none !important; }
 }
@@ -102,7 +106,7 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p class="text-gray-600 text-lg">Initializing modules...</p>
+            <p class="text-gray-600 text-lg">MURAKAZA NEZA MURI SOS</p>
         </div>
         <p class="absolute bottom-6 text-sm text-gray-400">Powered by <span class="powered-logo">1%</span></p>
     </div>
@@ -459,6 +463,10 @@
         const tourText = document.getElementById('tour-text');
         const tourNextBtn = document.getElementById('tour-next-btn');
         const tourEndBtn = document.getElementById('tour-end-btn');
+        // if(isSOSSchool) {
+        //     let favicon_link = document.querySelector("link[rel~='icon']");
+        //     favicon_link.href = "./static/sos.webp";
+        // }
 
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
