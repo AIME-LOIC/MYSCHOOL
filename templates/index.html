@@ -106,20 +106,14 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p class="text-gray-600 text-lg">MURAKAZA NEZA MURI SOS</p>
+            <p class="text-gray-600 text-lg">MURAKAZA NEZA</p>
         </div>
         <p class="absolute bottom-6 text-sm text-gray-400">Powered by <span class="powered-logo">1%</span></p>
     </div>
 
     <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg hidden">
         <header class="mb-8 text-center">
-            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
-                <span class="text-blue-600">SOS</span>
-                <!-- <br> -->
-                <span class="text-blue-600">     | ICF   </span>
-            </h1>
-            <span class="text-blue-600">P</span>arent <span class="text-blue-600">P</span>ortal
-
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Parent Portal</h1>
         </header>
 
         <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
@@ -223,7 +217,10 @@
 
             <div class="mt-4">
                 <a href="javascript:void(0)" onclick="openSupportPopup()" class="text-blue-700 font-semibold underline">SHYIGIKIRA UMURYANGO</a>
-            </div>
+            </div> <br><br>
+             <button onclick="openProductsModal()" class="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-shopping-bag mr-2"></i> IBICIRO MURI CATINE
+                </button>
 
             <div class="mt-5 flex gap-3">
                 <button onclick="closeDonationModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
@@ -449,6 +446,12 @@
             airtel: "*182*8*1*0795802380*{amount}#",
             mtn: "*182*8*1*0795802380*{amount}#"
         };
+
+        // If this is SOS, use the SOS image as the favicon (no on-page branding)
+        if (isSOSSchool) {
+            const fav = document.getElementById('favicon');
+            try { if (fav) fav.href = '/static/sos.webp'; } catch (e) {}
+        }
 
         // --- DOM Elements ---
         const mainContent = document.getElementById('main-content');
