@@ -21,7 +21,7 @@ init_db()
 app = FastAPI(title="School Visit Management System")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or your frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,24 +43,24 @@ def _check_admin(request: Request, school_name: str) -> bool:
     token = request.cookies.get(SESSION_COOKIE)
     return token == _make_token(school_name)
 
+
 # ─────────────────────────────────────────────────────────────────────────────
-# ACCESS GUARD  — paste this helper right after _check_admin()
+# ACCESS GUARD
 # ─────────────────────────────────────────────────────────────────────────────
 
 from fastapi.responses import HTMLResponse as _HTMLResponse
-from system_admin import School as _School   # already imported as School above
 
 def _school_access_guard(school, request: Request):
     """
     Returns None when access is allowed.
     Returns an HTMLResponse (closed page) when access is blocked.
-    Call this at the TOP of every school-facing route that should be gated.
-    Skip it for:  /{school_name}/admin/login  and  /{school_name}/admin/logout
-    For admin routes you may also want to skip it (admin can always log in).
+    Call this at the TOP of every school-facing public route.
+    Do NOT call on: /{school_name}/admin/login, /{school_name}/admin/logout,
+                    or any admin-only routes (admins should always be able to log in).
     """
     status = school.access_status()
     if status["open"]:
-        return None   # all good
+        return None   # access allowed
 
     opens_at_iso = status["opens_at"].isoformat() + "Z" if status["opens_at"] else ""
     closes_at_iso = status["closes_at"].isoformat() + "Z" if status["closes_at"] else ""
@@ -75,29 +75,31 @@ def _school_access_guard(school, request: Request):
   *{{margin:0;padding:0;box-sizing:border-box}}
   body{{
     font-family:'Segoe UI',sans-serif;
-    background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-    min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;color:#2d3748;
   }}
   .card{{
-    background:rgba(255,255,255,.08);backdrop-filter:blur(12px);
-    border:1px solid rgba(255,255,255,.15);border-radius:20px;
+    background:#ffffff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+    border:1px solid #e2e8f0;border-radius:20px;
     padding:50px 40px;max-width:480px;width:90%;text-align:center;
   }}
   .icon{{font-size:64px;margin-bottom:20px}}
-  h1{{font-size:26px;font-weight:700;margin-bottom:10px}}
-  .subtitle{{color:rgba(255,255,255,.65);font-size:15px;margin-bottom:36px;line-height:1.6}}
+  h1{{font-size:26px;font-weight:700;margin-bottom:10px;color:#1a202c}}
+  .subtitle{{color:#718096;font-size:15px;margin-bottom:36px;line-height:1.6}}
   .countdown-label{{font-size:13px;text-transform:uppercase;letter-spacing:2px;
-    color:rgba(255,255,255,.5);margin-bottom:16px}}
+    color:#a0aec0;margin-bottom:16px;font-weight:600}}
   .countdown{{display:flex;justify-content:center;gap:16px;margin-bottom:36px}}
-  .unit{{background:rgba(255,255,255,.12);border-radius:12px;padding:14px 18px;min-width:70px}}
-  .unit .num{{font-size:32px;font-weight:700;line-height:1}}
+  .unit{{background:#edf2f7;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;min-width:70px}}
+  .unit .num{{font-size:32px;font-weight:700;line-height:1;color:#2b6cb0}}
   .unit .lbl{{font-size:11px;text-transform:uppercase;letter-spacing:1px;
-    color:rgba(255,255,255,.55);margin-top:6px}}
-  .no-schedule{{font-size:14px;color:rgba(255,255,255,.5);font-style:italic}}
+    color:#718096;margin-top:6px;font-weight:500}}
+  .no-schedule{{font-size:14px;color:#a0aec0;font-style:italic}}
   .school-badge{{
-    display:inline-block;background:rgba(102,126,234,.3);
-    border:1px solid rgba(102,126,234,.5);border-radius:20px;
+    display:inline-block;background:#ebf8ff;
+    border:1px solid #bee3f8;border-radius:20px;
     padding:6px 18px;font-size:13px;margin-bottom:28px;
+    color:#2b6cb0;font-weight:600;
   }}
 </style>
 </head>
@@ -142,7 +144,7 @@ def _school_access_guard(school, request: Request):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SYSTEM ADMIN — access-control endpoints  (add inside main.py)
+# SYSTEM ADMIN — access-control endpoints
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/myadmin/schools/{school_id}/toggle")
@@ -163,7 +165,7 @@ def toggle_school_access(school_id: int, db: Session = Depends(get_db)):
 @app.post("/myadmin/schools/{school_id}/schedule")
 def set_school_schedule(
     school_id: int,
-    open_at: str | None = Form(None),   # ISO datetime string or empty
+    open_at: str | None = Form(None),
     close_at: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -214,6 +216,8 @@ def get_school_access_status(school_id: int, db: Session = Depends(get_db)):
         "opens_at":  s["opens_at"].isoformat()  if s["opens_at"]  else None,
         "closes_at": s["closes_at"].isoformat() if s["closes_at"] else None,
     }
+
+
 # In-memory school cache to avoid repeated DB lookups
 _school_cache: dict = {}
 
@@ -227,7 +231,6 @@ def _get_school(school_name: str, db: Session):
 
 # ==================== SYSTEM ADMIN ENDPOINTS ====================
 
-# System Admin - Main dashboard
 @app.get("/myadmin")
 def system_admin_dashboard(request: Request):
     """System admin main portal for managing schools"""
@@ -239,7 +242,6 @@ def system_admin_dashboard(request: Request):
     })
 
 
-# System Admin - Create new school
 @app.post("/myadmin/create-school")
 def create_new_school(
     school_name: str = Form(...),
@@ -247,19 +249,16 @@ def create_new_school(
     db: Session = Depends(get_db)
 ):
     """Create a new school and its associated database"""
-    # Check if school already exists
     existing = db.query(School).filter(School.school_name == school_name).first()
     if existing:
         return {"status": "error", "message": "School already exists"}
-    
-    # Create school in system database
+
     school = School(school_name=school_name, school_code=school_code)
     db.add(school)
     db.commit()
-    
-    # Create school-specific database
+
     result = create_school_database(school_name, school_code)
-    
+
     if result["status"] == "success":
         return {
             "status": "success",
@@ -269,13 +268,11 @@ def create_new_school(
             "school_code": school_code
         }
     else:
-        # Rollback if database creation fails
         db.delete(school)
         db.commit()
         return result
 
 
-# System Admin - List all schools
 @app.get("/myadmin/schools")
 def get_all_schools(db: Session = Depends(get_db)):
     """Get list of all registered schools"""
@@ -295,21 +292,18 @@ def get_all_schools(db: Session = Depends(get_db)):
     }
 
 
-# System Admin - Delete school
 @app.delete("/myadmin/schools/{school_id}")
 def delete_school(school_id: int, db: Session = Depends(get_db)):
     """Delete a school and its data"""
     school = db.query(School).filter(School.id == school_id).first()
     if not school:
         return {"status": "error", "message": "School not found"}
-    
-    # Delete from database
+
     db.delete(school)
     db.commit()
-    
-    # Delete school-specific database
+
     result = delete_school_database(school.school_name)
-    
+
     return {
         "status": "success",
         "message": f"School '{school.school_name}' deleted successfully"
@@ -318,14 +312,19 @@ def delete_school(school_id: int, db: Session = Depends(get_db)):
 
 # ==================== SCHOOL-SPECIFIC ENDPOINTS ====================
 
-# Parent chooses type for specific school
+# Parent portal — GUARDED
 @app.get("/{school_name}/parentportal")
 def parent_choice(school_name: str, request: Request, db: Session = Depends(get_db)):
     """Parent portal for a specific school"""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
+    # ── Access guard ──
+    blocked = _school_access_guard(school, request)
+    if blocked:
+        return blocked
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "school_name": school_name,
@@ -333,7 +332,7 @@ def parent_choice(school_name: str, request: Request, db: Session = Depends(get_
     })
 
 
-# Admin login page
+# Admin login — NOT guarded (admin must always be able to log in)
 @app.get("/{school_name}/admin/login")
 def admin_login_page(school_name: str, request: Request, db: Session = Depends(get_db)):
     school = db.query(School).filter(School.school_name == school_name).first()
@@ -365,6 +364,7 @@ def admin_login(
     return templates.TemplateResponse("login.html", {"request": request, "school_name": school_name, "error": "Invalid username or password"})
 
 
+# Admin logout — NOT guarded
 @app.get("/{school_name}/admin/logout")
 def admin_logout(school_name: str):
     response = RedirectResponse(f"/{school_name}/admin/login", status_code=302)
@@ -372,7 +372,7 @@ def admin_logout(school_name: str):
     return response
 
 
-# Admin dashboard for specific school
+# Admin dashboard — NOT guarded (admin bypass; login check handles auth)
 @app.get("/{school_name}/admin")
 def admin_choice(school_name: str, request: Request, db: Session = Depends(get_db)):
     """Admin dashboard for a specific school"""
@@ -392,11 +392,19 @@ def admin_choice(school_name: str, request: Request, db: Session = Depends(get_d
 
 @app.get("/{school_name}/students/search", response_model=List[Dict])
 def search_students(school_name: str, q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    school = _get_school(school_name, db)
+    # Guarded: parents use this endpoint from the parent portal
+    school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+
+    blocked = _school_access_guard(school, Request)
+    # Note: For JSON API endpoints we return a JSON error instead of HTML
+    status = school.access_status()
+    if not status["open"]:
+        raise HTTPException(status_code=503, detail="School portal is currently closed")
+
     query = db.query(Student.id, Student.student_name, Student.class_name).filter(
-        (Student.school_id == school["id"]) | (Student.school_id.is_(None)),
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
         Student.student_name.ilike(f"%{q}%")
     ).limit(20).all()
     return [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in query]
@@ -415,7 +423,12 @@ def add_visit(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
+    # ── Access guard (JSON response for API endpoint) ──
+    status = school.access_status()
+    if not status["open"]:
+        raise HTTPException(status_code=503, detail="School portal is currently closed")
+
     try:
         student = db.query(Student).filter(Student.id == student_id).first()
         if not student:
@@ -443,7 +456,6 @@ def add_visit(
                 if not plate_number_clean:
                     return {"status": "error", "message": "Plate number is required"}
 
-                # Normalize by stripping spaces and validate format: RA + letter + 3 digits + letter (e.g. REA 123A)
                 plate_number_clean = re.sub(r"\s+", "", plate_number_clean)
                 if not re.match(r"^RA[A-Z]\d{3}[A-Z]$", plate_number_clean):
                     return {"status": "error", "message": "Plate number must be in the format RAx 123A (start with RA, then a letter, 3 digits, and a letter)."}
@@ -525,7 +537,7 @@ def upload_students(school_name: str, file: UploadFile = File(...), db: Session 
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
     try:
         df = pd.read_excel(file.file)
     except Exception:
@@ -548,7 +560,6 @@ def upload_students(school_name: str, file: UploadFile = File(...), db: Session 
     return {"status": "success", "added": added, "skipped": skipped}
 
 
-# Get all students for a specific school
 @app.get("/{school_name}/admin/students")
 def get_all_students(school_name: str, db: Session = Depends(get_db)):
     school = _get_school(school_name, db)
@@ -560,14 +571,13 @@ def get_all_students(school_name: str, db: Session = Depends(get_db)):
     return {"status": "success", "students": [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in students]}
 
 
-# Delete a student by ID from a specific school
 @app.delete("/{school_name}/admin/students/{student_id}")
 def delete_student(school_name: str, student_id: int, db: Session = Depends(get_db)):
     """Delete a student from a specific school"""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         return {"status": "error", "message": "Student not found"}
@@ -577,7 +587,6 @@ def delete_student(school_name: str, student_id: int, db: Session = Depends(get_
     return {"status": "success", "message": f"Student '{student.student_name}' deleted"}
 
 
-# Delete a visit by ID
 @app.delete("/{school_name}/admin/visits/{visit_id}")
 def delete_visit(school_name: str, visit_id: int, db: Session = Depends(get_db)):
     school = db.query(School).filter(School.school_name == school_name).first()
@@ -594,7 +603,6 @@ def delete_visit(school_name: str, visit_id: int, db: Session = Depends(get_db))
     return {"status": "success"}
 
 
-# Add a single student to a specific school
 @app.post("/{school_name}/admin/add_student")
 def add_student(
     school_name: str,
@@ -606,8 +614,7 @@ def add_student(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
-    # Check if student already exists
+
     existing = db.query(Student).filter(
         Student.student_name == student_name,
         Student.class_name == class_name,
@@ -616,7 +623,6 @@ def add_student(
     if existing:
         return {"status": "error", "message": "Student already exists"}
 
-    # Add new student with school_id
     student = Student(student_name=student_name, class_name=class_name, school_id=school.id)
     db.add(student)
     db.commit()
@@ -630,7 +636,6 @@ def get_car_management_data(
     visit_date: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
-    """List SOS visits (default today) with car movement details for admin assignment."""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
@@ -680,7 +685,6 @@ def assign_car_plate(
     assigned_plate_number: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Assign a managed car plate to a specific student visit."""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
@@ -781,11 +785,10 @@ def export_students_to_excel(
     class_name: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Export all students for a specific school to Excel file"""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
     try:
         query = db.query(Student).filter(
             (Student.school_id == school.id) | (Student.school_id.is_(None))
@@ -794,8 +797,7 @@ def export_students_to_excel(
         if class_filter and class_filter.lower() != "all":
             query = query.filter(Student.class_name == class_filter)
         students = query.all()
-        
-        # Prepare data for Excel
+
         data = []
         for student in students:
             data.append({
@@ -803,23 +805,15 @@ def export_students_to_excel(
                 "Class": student.class_name,
                 "ID": student.id
             })
-        
-        # Create DataFrame
+
         df = pd.DataFrame(data)
-        
-        # Generate filename with timestamp
         filename = f"students_{school_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         filepath = f"/tmp/{filename}"
-        
-        # Write to Excel with formatting
+
         with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name='Students', index=False)
-            
-            # Access the workbook and worksheet for formatting
             workbook = writer.book
             worksheet = writer.sheets['Students']
-            
-            # Auto-adjust column widths
             for column in worksheet.columns:
                 max_length = 0
                 column_letter = column[0].column_letter
@@ -831,32 +825,29 @@ def export_students_to_excel(
                         pass
                 adjusted_width = min(max_length + 2, 50)
                 worksheet.column_dimensions[column_letter].width = adjusted_width
-            
-            # Style header row
             header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
             header_font = Font(bold=True, color="FFFFFF")
             for cell in worksheet[1]:
                 cell.fill = header_fill
                 cell.font = header_font
-        
+
         return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    
+
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.get("/{school_name}/export/visits")
 def export_visits_to_excel(
-    school_name: str, 
+    school_name: str,
     visit_type: str = Query(..., pattern="^(visit_day|parent_meeting)$"),
     visit_date: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Export visit data for a specific school and visit type to Excel file"""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
     try:
         query = db.query(Visit).join(Student).filter(
             Visit.visit_type == visit_type,
@@ -869,8 +860,7 @@ def export_visits_to_excel(
             except ValueError:
                 pass
         visits = query.all()
-        
-        # Prepare data for Excel
+
         data = []
         for visit in visits:
             data.append({
@@ -883,24 +873,16 @@ def export_visits_to_excel(
                 "Arrival Plate": visit.arrival_plate_number if visit.arrival_plate_number else "-",
                 "Assigned Plate": visit.assigned_plate_number if visit.assigned_plate_number else "-",
             })
-        
-        # Create DataFrame
+
         df = pd.DataFrame(data)
-        
-        # Generate filename with timestamp
         visit_type_label = "visit_day" if visit_type == "visit_day" else "parent_meeting"
         filename = f"{visit_type_label}_{school_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         filepath = f"/tmp/{filename}"
-        
-        # Write to Excel with formatting
+
         with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name='Visit Data', index=False)
-            
-            # Access the workbook and worksheet for formatting
             workbook = writer.book
             worksheet = writer.sheets['Visit Data']
-            
-            # Auto-adjust column widths
             for column in worksheet.columns:
                 max_length = 0
                 column_letter = column[0].column_letter
@@ -912,33 +894,27 @@ def export_visits_to_excel(
                         pass
                 adjusted_width = min(max_length + 2, 50)
                 worksheet.column_dimensions[column_letter].width = adjusted_width
-            
-            # Style header row
             header_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
             header_font = Font(bold=True, color="FFFFFF")
             for cell in worksheet[1]:
                 cell.fill = header_fill
                 cell.font = header_font
-        
+
         return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    
+
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-import threading
-import time
-import requests
-import os
+# ==================== KEEP ALIVE ====================
 
 def keep_awake():
-    url = os.environ.get("RENDER_URL", "https://myschool-rw-web.onrender.com")  # set your deployed URL in env variables
+    url = os.environ.get("RENDER_URL", "https://myschool-rw-web.onrender.com")
     while True:
         try:
             requests.get(url)
         except:
             pass
-        time.sleep(10 * 60)  # ping every 10 minutes
+        time.sleep(10 * 60)
 
 threading.Thread(target=keep_awake, daemon=True).start()
-  

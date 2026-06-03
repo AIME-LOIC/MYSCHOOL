@@ -32,7 +32,7 @@ class School(Base):
         """
         Returns the effective access state for this school.
         Schedule overrides the manual toggle when active.
-        
+
         Returns:
             {
               "open": bool,
@@ -78,7 +78,7 @@ class School(Base):
 
 
 # ---------------------------------------------------------------------------
-# In-memory school cache (unchanged from original)
+# In-memory school cache
 # ---------------------------------------------------------------------------
 
 school_databases: dict = {}

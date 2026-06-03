@@ -56,22 +56,22 @@
             border: none; border-radius: 5px; cursor: pointer;
             font-size: 14px; font-weight: 600; transition: background .3s;
         }
-        .btn:hover      { background: #764ba2; }
-        .btn-danger     { background: #e74c3c; }
+        .btn:hover        { background: #764ba2; }
+        .btn-danger       { background: #e74c3c; }
         .btn-danger:hover { background: #c0392b; }
-        .btn-warning    { background: #f39c12; }
-        .btn-warning:hover { background: #d68910; }
-        .btn-success    { background: #27ae60; }
-        .btn-success:hover { background: #1e8449; }
-        .btn-sm         { padding: 6px 12px; font-size: 12px; }
-        .btn-full       { width: 100%; }
+        .btn-warning      { background: #f39c12; }
+        .btn-warning:hover{ background: #d68910; }
+        .btn-success      { background: #27ae60; }
+        .btn-success:hover{ background: #1e8449; }
+        .btn-sm           { padding: 6px 12px; font-size: 12px; }
+        .btn-full         { width: 100%; }
 
-        /* ── school card ── */
+        /* school card */
         .school-item {
             background: #f8f9fa; padding: 16px; border-radius: 8px;
             margin-bottom: 14px; border-left: 4px solid #667eea;
         }
-        .school-item.closed { border-left-color: #e74c3c; background: #fff5f5; }
+        .school-item.closed    { border-left-color: #e74c3c; background: #fff5f5; }
         .school-item.scheduled { border-left-color: #f39c12; background: #fffbf0; }
 
         .school-top {
@@ -89,9 +89,9 @@
             font-size: 12px; font-weight: 600; padding: 4px 10px;
             border-radius: 20px; white-space: nowrap;
         }
-        .badge-open     { background: #d4edda; color: #155724; }
-        .badge-closed   { background: #f8d7da; color: #721c24; }
-        .badge-scheduled{ background: #fff3cd; color: #856404; }
+        .badge-open      { background: #d4edda; color: #155724; }
+        .badge-closed    { background: #f8d7da; color: #721c24; }
+        .badge-scheduled { background: #fff3cd; color: #856404; }
 
         /* schedule panel */
         .schedule-panel {
@@ -175,47 +175,56 @@
 </div>
 
 <script>
-/* ── helpers ── */
+/* ── toast ── */
 let toastTimeout = null;
-function showToast(msg, type='success'){
+function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     t.className = `toast toast-${type}`;
     t.textContent = msg;
     t.style.display = 'block';
-    if(toastTimeout) clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(()=>{ t.style.display='none'; }, 3000);
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => { t.style.display = 'none'; }, 3000);
 }
 
-function badgeHtml(school){
+/* ── badge / card helpers ── */
+function badgeHtml(school) {
     const s = school.access_status;
-    if(!s) return '';
-    if(s.open && s.reason === 'scheduled')
+    if (!s) return '';
+    if (s.open && s.reason === 'scheduled')
         return `<span class="status-badge badge-scheduled">⏰ Scheduled Open</span>`;
-    if(!s.open && s.reason === 'scheduled_closed')
+    if (!s.open && s.reason === 'scheduled_closed')
         return `<span class="status-badge badge-closed">⏰ Scheduled Closed</span>`;
-    if(s.open)
+    if (s.open)
         return `<span class="status-badge badge-open">✅ Open</span>`;
     return `<span class="status-badge badge-closed">🔒 Closed</span>`;
 }
 
-function cardClass(school){
+function cardClass(school) {
     const s = school.access_status;
-    if(!s) return '';
-    if(s.reason && s.reason.startsWith('scheduled')) return 'scheduled';
-    if(!s.open) return 'closed';
+    if (!s) return '';
+    if (s.reason && s.reason.startsWith('scheduled')) return 'scheduled';
+    if (!s.open) return 'closed';
     return '';
 }
 
-function fmtDatetimeLocal(isoStr){
-    if(!isoStr) return '';
-    // Convert stored UTC ISO → local datetime-local string for the input
-    const d = new Date(isoStr + (isoStr.endsWith('Z') ? '' : 'Z'));
-    const pad = n => String(n).padStart(2,'0');
+/* ── datetime helpers ── */
+// UTC ISO string from server → local datetime-local value for <input>
+function fmtDatetimeLocal(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
+    if (isNaN(d)) return '';
+    const pad = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Local datetime-local value → UTC ISO string for server
+function toUTC(val) {
+    if (!val) return '';
+    return new Date(val).toISOString().slice(0, 16);
+}
+
 /* ── render ── */
-function renderSchool(school){
+function renderSchool(school) {
     const sc = cardClass(school);
     return `
     <div class="school-item ${sc}" id="school-${school.id}">
@@ -240,24 +249,23 @@ function renderSchool(school){
             </div>
         </div>
 
-        <!-- Schedule Panel -->
-        <div class="schedule-panel ${(school.open_at || school.close_at) ? 'active' : ''}" id="schedule-${school.id}">
+        <!-- Schedule Panel — always starts collapsed; restored by loadSchools if it was open -->
+        <div class="schedule-panel" id="schedule-${school.id}">
             <h4>📅 Set Open / Close Schedule (leave blank to clear)</h4>
             <div class="schedule-row">
                 <div class="form-group">
-                    <label>Open At (local time)</label>
+                    <label>Open At (your local time)</label>
                     <input type="datetime-local" id="open-at-${school.id}"
                         value="${fmtDatetimeLocal(school.open_at)}">
                 </div>
                 <div class="form-group">
-                    <label>Close At (local time)</label>
+                    <label>Close At (your local time)</label>
                     <input type="datetime-local" id="close-at-${school.id}"
                         value="${fmtDatetimeLocal(school.close_at)}">
                 </div>
-                <div>
+                <div style="display:flex;gap:6px;align-items:flex-end">
                     <button class="btn btn-sm btn-success" onclick="saveSchedule(${school.id})">Save</button>
-                    <button class="btn btn-sm btn-danger" style="margin-left:6px"
-                        onclick="clearSchedule(${school.id})">Clear</button>
+                    <button class="btn btn-sm btn-danger"  onclick="clearSchedule(${school.id})">Clear</button>
                 </div>
             </div>
             <p style="font-size:12px;color:#888;margin-top:8px">
@@ -269,16 +277,15 @@ function renderSchool(school){
     </div>`;
 }
 
-/* ── load ── */
-async function loadSchools(){
+/* ── load / refresh ── */
+async function loadSchools() {
     try {
-        const res = await fetch('/myadmin/schools');
+        const res  = await fetch('/myadmin/schools');
         const data = await res.json();
 
-        // Fetch access status for each school
         const withStatus = await Promise.all(data.schools.map(async s => {
             try {
-                const r = await fetch(`/myadmin/schools/${s.id}/access-status`);
+                const r  = await fetch(`/myadmin/schools/${s.id}/access-status`);
                 const st = await r.json();
                 return { ...s, access_status: st, open_at: st.open_at, close_at: st.close_at };
             } catch { return s; }
@@ -288,117 +295,150 @@ async function loadSchools(){
         const list = document.getElementById('schoolsList');
         const none = document.getElementById('noSchools');
 
-        if(withStatus.length){
+        if (withStatus.length) {
             none.style.display = 'none';
+
+            // Save which panels are open AND their exact input values before re-render
+            const panelState = {};
+            document.querySelectorAll('.schedule-panel.active').forEach(el => {
+                const id = el.id.replace('schedule-', '');
+                panelState[id] = {
+                    openVal:  document.getElementById(`open-at-${id}`)?.value  ?? '',
+                    closeVal: document.getElementById(`close-at-${id}`)?.value ?? '',
+                };
+            });
+
             list.innerHTML = withStatus.map(renderSchool).join('');
+
+            // Restore open panels and ALWAYS set both input values (even empty string)
+            // so user-typed or cleared values are never overwritten by the server render
+            Object.entries(panelState).forEach(([id, vals]) => {
+                const panel = document.getElementById(`schedule-${id}`);
+                if (panel) {
+                    panel.classList.add('active');
+                    document.getElementById(`open-at-${id}`).value  = vals.openVal;
+                    document.getElementById(`close-at-${id}`).value = vals.closeVal;
+                }
+            });
+
         } else {
             none.style.display = 'block';
             list.innerHTML = '';
         }
-    } catch(e){ console.error(e); }
+    } catch(e) { console.error(e); }
 }
 
 /* ── schedule panel toggle ── */
-function toggleSchedule(id){
-    const panel = document.getElementById(`schedule-${id}`);
-    panel.classList.toggle('active');
+function toggleSchedule(id) {
+    document.getElementById(`schedule-${id}`).classList.toggle('active');
 }
 
-/* ── toggle open/close ── */
-async function toggleAccess(id){
+/* ── toggle open / close ── */
+async function toggleAccess(id) {
     try {
-        const res = await fetch(`/myadmin/schools/${id}/toggle`, { method: 'POST' });
+        const res  = await fetch(`/myadmin/schools/${id}/toggle`, { method: 'POST' });
         const data = await res.json();
-        if(data.status === 'success'){
+        if (data.status === 'success') {
             showToast(data.message, 'success');
             loadSchools();
         } else {
             showToast('Error: ' + data.message, 'error');
         }
-    } catch(e){ showToast('Network error', 'error'); }
+    } catch(e) { showToast('Network error', 'error'); }
 }
 
 /* ── save schedule ── */
-async function saveSchedule(id){
+async function saveSchedule(id) {
     const openVal  = document.getElementById(`open-at-${id}`).value;
     const closeVal = document.getElementById(`close-at-${id}`).value;
-
-    // Convert datetime-local (local time) to UTC ISO for the server
-    function toUTC(val){
-        if(!val) return '';
-        return new Date(val).toISOString().slice(0,16);  // send as YYYY-MM-DDTHH:MM
-    }
 
     const fd = new FormData();
     fd.append('open_at',  toUTC(openVal));
     fd.append('close_at', toUTC(closeVal));
 
     try {
-        const res = await fetch(`/myadmin/schools/${id}/schedule`, { method:'POST', body:fd });
+        const res  = await fetch(`/myadmin/schools/${id}/schedule`, { method: 'POST', body: fd });
         const data = await res.json();
-        if(data.status === 'success'){
+        if (data.status === 'success') {
             showToast('Schedule saved ✓', 'success');
-            loadSchools();
+
+            // Write back exactly what the user typed — not the server response —
+            // so neither field ever resets to null/empty unexpectedly
+            document.getElementById(`open-at-${id}`).value  = openVal;
+            document.getElementById(`close-at-${id}`).value = closeVal;
+
+            // Reload the rest of the UI after a pause; panel state is preserved above
+            setTimeout(loadSchools, 2000);
         } else {
             showToast('Error: ' + data.message, 'error');
         }
-    } catch(e){ showToast('Network error', 'error'); }
+    } catch(e) { showToast('Network error', 'error'); }
 }
 
-async function clearSchedule(id){
+/* ── clear schedule ── */
+async function clearSchedule(id) {
     const fd = new FormData();
-    fd.append('open_at', '');
+    fd.append('open_at',  '');
     fd.append('close_at', '');
     try {
-        const res = await fetch(`/myadmin/schools/${id}/schedule`, { method:'POST', body:fd });
+        const res  = await fetch(`/myadmin/schools/${id}/schedule`, { method: 'POST', body: fd });
         const data = await res.json();
-        if(data.status === 'success'){
+        if (data.status === 'success') {
             showToast('Schedule cleared', 'success');
-            loadSchools();
+            // Wipe inputs immediately in-place before the reload
+            document.getElementById(`open-at-${id}`).value  = '';
+            document.getElementById(`close-at-${id}`).value = '';
+            setTimeout(loadSchools, 2000);
         } else {
             showToast('Error: ' + data.message, 'error');
         }
-    } catch(e){ showToast('Network error', 'error'); }
+    } catch(e) { showToast('Network error', 'error'); }
 }
 
 /* ── create school ── */
 document.getElementById('createSchoolForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const fd = new FormData(document.getElementById('createSchoolForm'));
+    const fd  = new FormData(document.getElementById('createSchoolForm'));
+    const msg = document.getElementById('formMessage');
     try {
-        const res = await fetch('/myadmin/create-school', { method:'POST', body:fd });
+        const res  = await fetch('/myadmin/create-school', { method: 'POST', body: fd });
         const data = await res.json();
-        const msg = document.getElementById('formMessage');
-        if(data.status === 'success'){
+        if (data.status === 'success') {
             msg.innerHTML = `<div class="message success">✓ ${data.message}</div>`;
             document.getElementById('createSchoolForm').reset();
             setTimeout(loadSchools, 800);
         } else {
             msg.innerHTML = `<div class="message error">✗ ${data.message}</div>`;
         }
-    } catch(e){
-        document.getElementById('formMessage').innerHTML = `<div class="message error">✗ Error creating school</div>`;
+    } catch(e) {
+        msg.innerHTML = `<div class="message error">✗ Error creating school</div>`;
     }
 });
 
 /* ── delete school ── */
-async function deleteSchool(id, name){
-    if(!confirm(`Delete "${name}" and all its data?`)) return;
+async function deleteSchool(id, name) {
+    if (!confirm(`Delete "${name}" and all its data?`)) return;
     try {
-        const res = await fetch(`/myadmin/schools/${id}`, { method:'DELETE' });
+        const res  = await fetch(`/myadmin/schools/${id}`, { method: 'DELETE' });
         const data = await res.json();
-        if(data.status === 'success'){
+        if (data.status === 'success') {
             showToast(data.message, 'success');
             loadSchools();
         } else {
             showToast('Error: ' + data.message, 'error');
         }
-    } catch(e){ showToast('Error deleting school', 'error'); }
+    } catch(e) { showToast('Error deleting school', 'error'); }
 }
 
 /* ── init ── */
 loadSchools();
-setInterval(loadSchools, 10000);   // refresh every 10 s
+
+// Auto-refresh every 10 s — skip entirely if any schedule panel is open
+// so the user is never interrupted while setting times
+setInterval(() => {
+    const anyOpen = document.querySelector('.schedule-panel.active');
+    if (!anyOpen) loadSchools();
+}, 10000);
 </script>
 </body>
 </html>
