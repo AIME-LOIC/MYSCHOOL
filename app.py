@@ -43,7 +43,177 @@ def _check_admin(request: Request, school_name: str) -> bool:
     token = request.cookies.get(SESSION_COOKIE)
     return token == _make_token(school_name)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ACCESS GUARD  — paste this helper right after _check_admin()
+# ─────────────────────────────────────────────────────────────────────────────
 
+from fastapi.responses import HTMLResponse as _HTMLResponse
+from system_admin import School as _School   # already imported as School above
+
+def _school_access_guard(school, request: Request):
+    """
+    Returns None when access is allowed.
+    Returns an HTMLResponse (closed page) when access is blocked.
+    Call this at the TOP of every school-facing route that should be gated.
+    Skip it for:  /{school_name}/admin/login  and  /{school_name}/admin/logout
+    For admin routes you may also want to skip it (admin can always log in).
+    """
+    status = school.access_status()
+    if status["open"]:
+        return None   # all good
+
+    opens_at_iso = status["opens_at"].isoformat() + "Z" if status["opens_at"] else ""
+    closes_at_iso = status["closes_at"].isoformat() + "Z" if status["closes_at"] else ""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{school.school_name} — Portal Closed</title>
+<style>
+  *{{margin:0;padding:0;box-sizing:border-box}}
+  body{{
+    font-family:'Segoe UI',sans-serif;
+    background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;
+  }}
+  .card{{
+    background:rgba(255,255,255,.08);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.15);border-radius:20px;
+    padding:50px 40px;max-width:480px;width:90%;text-align:center;
+  }}
+  .icon{{font-size:64px;margin-bottom:20px}}
+  h1{{font-size:26px;font-weight:700;margin-bottom:10px}}
+  .subtitle{{color:rgba(255,255,255,.65);font-size:15px;margin-bottom:36px;line-height:1.6}}
+  .countdown-label{{font-size:13px;text-transform:uppercase;letter-spacing:2px;
+    color:rgba(255,255,255,.5);margin-bottom:16px}}
+  .countdown{{display:flex;justify-content:center;gap:16px;margin-bottom:36px}}
+  .unit{{background:rgba(255,255,255,.12);border-radius:12px;padding:14px 18px;min-width:70px}}
+  .unit .num{{font-size:32px;font-weight:700;line-height:1}}
+  .unit .lbl{{font-size:11px;text-transform:uppercase;letter-spacing:1px;
+    color:rgba(255,255,255,.55);margin-top:6px}}
+  .no-schedule{{font-size:14px;color:rgba(255,255,255,.5);font-style:italic}}
+  .school-badge{{
+    display:inline-block;background:rgba(102,126,234,.3);
+    border:1px solid rgba(102,126,234,.5);border-radius:20px;
+    padding:6px 18px;font-size:13px;margin-bottom:28px;
+  }}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🔒</div>
+  <div class="school-badge">{school.school_name}</div>
+  <h1>Portal is Currently Closed</h1>
+  <p class="subtitle">
+    {"The system administrator has temporarily disabled access to this portal." if not opens_at_iso else "Access will be available when the countdown reaches zero."}
+  </p>
+
+  {"<p class='no-schedule'>Check back later or contact the school administrator.</p>" if not opens_at_iso else f"""
+  <div class="countdown-label">Opens in</div>
+  <div class="countdown">
+    <div class="unit"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
+    <div class="unit"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
+    <div class="unit"><div class="num" id="cd-m">--</div><div class="lbl">Mins</div></div>
+    <div class="unit"><div class="num" id="cd-s">--</div><div class="lbl">Secs</div></div>
+  </div>
+  <script>
+    const target = new Date("{opens_at_iso}");
+    function tick(){{
+      const diff = target - Date.now();
+      if(diff <= 0){{ location.reload(); return; }}
+      const d=Math.floor(diff/86400000),
+            h=Math.floor(diff%86400000/3600000),
+            m=Math.floor(diff%3600000/60000),
+            s=Math.floor(diff%60000/1000);
+      document.getElementById('cd-d').textContent=String(d).padStart(2,'0');
+      document.getElementById('cd-h').textContent=String(h).padStart(2,'0');
+      document.getElementById('cd-m').textContent=String(m).padStart(2,'0');
+      document.getElementById('cd-s').textContent=String(s).padStart(2,'0');
+    }}
+    tick(); setInterval(tick,1000);
+  </script>
+  """}
+</div>
+</body>
+</html>"""
+    return _HTMLResponse(content=html, status_code=503)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SYSTEM ADMIN — access-control endpoints  (add inside main.py)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post("/myadmin/schools/{school_id}/toggle")
+def toggle_school_access(school_id: int, db: Session = Depends(get_db)):
+    """Manually open or close a school portal."""
+    school = db.query(School).filter(School.id == school_id).first()
+    if not school:
+        return {"status": "error", "message": "School not found"}
+    school.is_open = 0 if school.is_open else 1
+    db.commit()
+    return {
+        "status": "success",
+        "is_open": school.is_open,
+        "message": f"Portal {'opened' if school.is_open else 'closed'}",
+    }
+
+
+@app.post("/myadmin/schools/{school_id}/schedule")
+def set_school_schedule(
+    school_id: int,
+    open_at: str | None = Form(None),   # ISO datetime string or empty
+    close_at: str | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Set (or clear) an open/close schedule for a school portal."""
+    school = db.query(School).filter(School.id == school_id).first()
+    if not school:
+        return {"status": "error", "message": "School not found"}
+
+    def _parse(val):
+        if not val or not val.strip():
+            return None
+        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M"):
+            try:
+                return datetime.strptime(val.strip(), fmt)
+            except ValueError:
+                continue
+        raise ValueError(f"Cannot parse datetime: {val!r}")
+
+    try:
+        school.open_at  = _parse(open_at)
+        school.close_at = _parse(close_at)
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+
+    db.commit()
+    return {
+        "status": "success",
+        "open_at":  school.open_at.isoformat()  if school.open_at  else None,
+        "close_at": school.close_at.isoformat() if school.close_at else None,
+        "message": "Schedule updated",
+    }
+
+
+@app.get("/myadmin/schools/{school_id}/access-status")
+def get_school_access_status(school_id: int, db: Session = Depends(get_db)):
+    """Return the effective access status of a school (used by admin UI polling)."""
+    school = db.query(School).filter(School.id == school_id).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    s = school.access_status()
+    return {
+        "school_id": school_id,
+        "school_name": school.school_name,
+        "is_open_manual": school.is_open,
+        "open_at":  school.open_at.isoformat()  if school.open_at  else None,
+        "close_at": school.close_at.isoformat() if school.close_at else None,
+        **s,
+        "opens_at":  s["opens_at"].isoformat()  if s["opens_at"]  else None,
+        "closes_at": s["closes_at"].isoformat() if s["closes_at"] else None,
+    }
 # In-memory school cache to avoid repeated DB lookups
 _school_cache: dict = {}
 

@@ -7,368 +7,398 @@
     <meta name="google-site-verification" content="ZfOqpsVV7Mv1-PxcKiUDQBBONWc1SKmeTi2y2OnZ_RY" />
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
         .header {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: white; padding: 30px; border-radius: 10px;
+            margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,.1);
         }
-        
-        .header h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            color: #666;
-            font-size: 14px;
-        }
-        
+        .header h1 { color: #333; margin-bottom: 10px; }
+        .header p  { color: #666; font-size: 14px; }
+
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 30px;
         }
-        
+
         .card {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: white; border-radius: 10px; padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
         }
-        
         .card h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 20px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
+            color: #333; margin-bottom: 20px; font-size: 20px;
+            border-bottom: 2px solid #667eea; padding-bottom: 10px;
         }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
-        
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; }
         .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
+            width: 100%; padding: 10px; border: 1px solid #ddd;
+            border-radius: 5px; font-size: 14px;
         }
-        
         .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none; border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,.1);
         }
-        
+
         .btn {
-            background: #667eea;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: background 0.3s;
+            background: #667eea; color: white; padding: 10px 20px;
+            border: none; border-radius: 5px; cursor: pointer;
+            font-size: 14px; font-weight: 600; transition: background .3s;
         }
-        
-        .btn:hover {
-            background: #764ba2;
-        }
-        
-        .btn-danger {
-            background: #e74c3c;
-        }
-        
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-        
-        .btn-full {
-            width: 100%;
-        }
-        
-        .schools-list {
-            margin-top: 20px;
-        }
-        
+        .btn:hover      { background: #764ba2; }
+        .btn-danger     { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning    { background: #f39c12; }
+        .btn-warning:hover { background: #d68910; }
+        .btn-success    { background: #27ae60; }
+        .btn-success:hover { background: #1e8449; }
+        .btn-sm         { padding: 6px 12px; font-size: 12px; }
+        .btn-full       { width: 100%; }
+
+        /* ── school card ── */
         .school-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            border-left: 4px solid #667eea;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: #f8f9fa; padding: 16px; border-radius: 8px;
+            margin-bottom: 14px; border-left: 4px solid #667eea;
         }
-        
-        .school-info h3 {
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 5px;
+        .school-item.closed { border-left-color: #e74c3c; background: #fff5f5; }
+        .school-item.scheduled { border-left-color: #f39c12; background: #fffbf0; }
+
+        .school-top {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 10px;
         }
-        
-        .school-info p {
-            color: #666;
-            font-size: 13px;
-            margin: 2px 0;
+        .school-info h3 { color: #333; font-size: 16px; margin-bottom: 4px; }
+        .school-info p  { color: #666; font-size: 13px; margin: 2px 0; }
+
+        .school-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+        /* status badge */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 12px; font-weight: 600; padding: 4px 10px;
+            border-radius: 20px; white-space: nowrap;
         }
-        
-        .school-actions {
-            display: flex;
-            gap: 10px;
+        .badge-open     { background: #d4edda; color: #155724; }
+        .badge-closed   { background: #f8d7da; color: #721c24; }
+        .badge-scheduled{ background: #fff3cd; color: #856404; }
+
+        /* schedule panel */
+        .schedule-panel {
+            margin-top: 12px; padding: 14px;
+            background: rgba(102,126,234,.06);
+            border: 1px dashed #667eea; border-radius: 8px;
+            display: none;
         }
-        
-        .btn-small {
-            padding: 8px 15px;
-            font-size: 12px;
-        }
-        
+        .schedule-panel.active { display: block; }
+        .schedule-panel h4 { font-size: 14px; color: #444; margin-bottom: 10px; }
+        .schedule-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        .schedule-row .form-group { flex: 1; min-width: 160px; margin-bottom: 0; }
+
+        /* stat block */
         .stat {
-            text-align: center;
-            padding: 20px;
+            text-align: center; padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            color: white; border-radius: 10px; margin-bottom: 20px;
         }
-        
-        .stat-number {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .message {
-            padding: 12px 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-        
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
+        .stat-number { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
+        .stat-label  { font-size: 14px; opacity: .9; }
+
+        .message { padding: 12px 15px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
         .toast {
-            position: fixed;
-            left: 50%;
-            bottom: 24px;
-            transform: translateX(-50%);
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 9999;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: fixed; left: 50%; bottom: 24px;
+            transform: translateX(-50%); color: #fff;
+            padding: 10px 18px; border-radius: 8px;
+            font-size: 14px; font-weight: 600; z-index: 9999;
+            box-shadow: 0 10px 20px rgba(0,0,0,.2);
         }
-        
-        .toast-success {
-            background: #2e7d32;
-        }
-        
-        .toast-error {
-            background: #c62828;
-        }
-        
-        @media (max-width: 768px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .toast-success { background: #2e7d32; }
+        .toast-error   { background: #c62828; }
+
+        @media(max-width:768px){ .main-grid{ grid-template-columns:1fr; } }
     </style>
 </head>
 <body>
-    <div id="toast" style="display:none"></div>
-    <div class="container">
-        <div class="header">
-            <h1>🎓 System Admin Dashboard</h1>
-            <p>Manage all schools and their data</p>
-        </div>
-        
-        <div class="main-grid">
-            <!-- Create School Section -->
-            <div class="card">
-                <h2>Create New School</h2>
-                <form id="createSchoolForm">
-                    <div class="form-group">
-                        <label for="schoolName">School Name *</label>
-                        <input type="text" id="schoolName" name="school_name" required placeholder="e.g., ABC High School">
-                    </div>
-                    <div class="form-group">
-                        <label for="schoolCode">School Code *</label>
-                        <input type="text" id="schoolCode" name="school_code" required placeholder="e.g., AHS-001">
-                    </div>
-                    <button type="submit" class="btn btn-full">Create School</button>
-                </form>
-                <div id="formMessage"></div>
-                
-                <div class="stat">
-                    <div class="stat-number" id="totalSchools">0</div>
-                    <div class="stat-label">Total Schools</div>
+<div id="toast" style="display:none"></div>
+
+<div class="container">
+    <div class="header">
+        <h1>🎓 System Admin Dashboard</h1>
+        <p>Manage all schools — access control, schedules, and data</p>
+    </div>
+
+    <div class="main-grid">
+        <!-- Create School -->
+        <div class="card">
+            <h2>Create New School</h2>
+            <form id="createSchoolForm">
+                <div class="form-group">
+                    <label for="schoolName">School Name *</label>
+                    <input type="text" id="schoolName" name="school_name" required placeholder="e.g., ABC High School">
                 </div>
+                <div class="form-group">
+                    <label for="schoolCode">School Code *</label>
+                    <input type="text" id="schoolCode" name="school_code" required placeholder="e.g., AHS-001">
+                </div>
+                <button type="submit" class="btn btn-full">Create School</button>
+            </form>
+            <div id="formMessage" style="margin-top:12px"></div>
+
+            <div class="stat" style="margin-top:24px">
+                <div class="stat-number" id="totalSchools">0</div>
+                <div class="stat-label">Total Schools</div>
             </div>
-            
-            <!-- Schools List Section -->
-            <div class="card">
-                <h2>Registered Schools</h2>
-                <div id="schoolsList" class="schools-list"></div>
-                <div id="noSchools" style="color: #999; text-align: center; padding: 20px;">
-                    No schools registered yet
-                </div>
+        </div>
+
+        <!-- Schools List -->
+        <div class="card">
+            <h2>Registered Schools</h2>
+            <div id="schoolsList"></div>
+            <div id="noSchools" style="color:#999;text-align:center;padding:20px;display:none">
+                No schools registered yet
             </div>
         </div>
     </div>
-    
-    <script>
-        let toastTimeout = null;
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.className = `toast ${type === 'error' ? 'toast-error' : 'toast-success'}`;
-            toast.textContent = message;
-            toast.style.display = 'block';
-            if (toastTimeout) clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
-        }
+</div>
 
-        // Fetch and display all schools
-        async function loadSchools() {
+<script>
+/* ── helpers ── */
+let toastTimeout = null;
+function showToast(msg, type='success'){
+    const t = document.getElementById('toast');
+    t.className = `toast toast-${type}`;
+    t.textContent = msg;
+    t.style.display = 'block';
+    if(toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(()=>{ t.style.display='none'; }, 3000);
+}
+
+function badgeHtml(school){
+    const s = school.access_status;
+    if(!s) return '';
+    if(s.open && s.reason === 'scheduled')
+        return `<span class="status-badge badge-scheduled">⏰ Scheduled Open</span>`;
+    if(!s.open && s.reason === 'scheduled_closed')
+        return `<span class="status-badge badge-closed">⏰ Scheduled Closed</span>`;
+    if(s.open)
+        return `<span class="status-badge badge-open">✅ Open</span>`;
+    return `<span class="status-badge badge-closed">🔒 Closed</span>`;
+}
+
+function cardClass(school){
+    const s = school.access_status;
+    if(!s) return '';
+    if(s.reason && s.reason.startsWith('scheduled')) return 'scheduled';
+    if(!s.open) return 'closed';
+    return '';
+}
+
+function fmtDatetimeLocal(isoStr){
+    if(!isoStr) return '';
+    // Convert stored UTC ISO → local datetime-local string for the input
+    const d = new Date(isoStr + (isoStr.endsWith('Z') ? '' : 'Z'));
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/* ── render ── */
+function renderSchool(school){
+    const sc = cardClass(school);
+    return `
+    <div class="school-item ${sc}" id="school-${school.id}">
+        <div class="school-top">
+            <div class="school-info">
+                <h3>${school.school_name} ${badgeHtml(school)}</h3>
+                <p><strong>Code:</strong> ${school.school_code}</p>
+                <p><strong>Created:</strong> ${new Date(school.created_at).toLocaleDateString()}</p>
+                ${school.access_status?.opens_at  ? `<p style="color:#e67e22;font-size:12px">⏳ Opens: ${new Date(school.access_status.opens_at).toLocaleString()}</p>`  : ''}
+                ${school.access_status?.closes_at ? `<p style="color:#27ae60;font-size:12px">🕐 Closes: ${new Date(school.access_status.closes_at).toLocaleString()}</p>` : ''}
+            </div>
+            <div class="school-actions">
+                <a href="/${school.school_name}/admin" class="btn btn-sm" target="_blank">Admin Panel</a>
+                <button class="btn btn-sm ${school.access_status?.open ? 'btn-warning' : 'btn-success'}"
+                    onclick="toggleAccess(${school.id})">
+                    ${school.access_status?.open ? '🔒 Close' : '✅ Open'}
+                </button>
+                <button class="btn btn-sm" style="background:#667eea"
+                    onclick="toggleSchedule(${school.id})">⏰ Schedule</button>
+                <button class="btn btn-sm btn-danger"
+                    onclick="deleteSchool(${school.id}, '${school.school_name}')">Delete</button>
+            </div>
+        </div>
+
+        <!-- Schedule Panel -->
+        <div class="schedule-panel ${(school.open_at || school.close_at) ? 'active' : ''}" id="schedule-${school.id}">
+            <h4>📅 Set Open / Close Schedule (leave blank to clear)</h4>
+            <div class="schedule-row">
+                <div class="form-group">
+                    <label>Open At (local time)</label>
+                    <input type="datetime-local" id="open-at-${school.id}"
+                        value="${fmtDatetimeLocal(school.open_at)}">
+                </div>
+                <div class="form-group">
+                    <label>Close At (local time)</label>
+                    <input type="datetime-local" id="close-at-${school.id}"
+                        value="${fmtDatetimeLocal(school.close_at)}">
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-success" onclick="saveSchedule(${school.id})">Save</button>
+                    <button class="btn btn-sm btn-danger" style="margin-left:6px"
+                        onclick="clearSchedule(${school.id})">Clear</button>
+                </div>
+            </div>
+            <p style="font-size:12px;color:#888;margin-top:8px">
+                Schedule overrides the manual toggle while active.
+                If only Open At is set, the portal stays open indefinitely from that time.
+                If only Close At is set, it's open until that time.
+            </p>
+        </div>
+    </div>`;
+}
+
+/* ── load ── */
+async function loadSchools(){
+    try {
+        const res = await fetch('/myadmin/schools');
+        const data = await res.json();
+
+        // Fetch access status for each school
+        const withStatus = await Promise.all(data.schools.map(async s => {
             try {
-                const response = await fetch('/myadmin/schools');
-                const data = await response.json();
-                
-                const schoolsList = document.getElementById('schoolsList');
-                const noSchools = document.getElementById('noSchools');
-                const totalSchools = document.getElementById('totalSchools');
-                
-                totalSchools.textContent = data.total;
-                
-                if (data.schools && data.schools.length > 0) {
-                    noSchools.style.display = 'none';
-                    schoolsList.innerHTML = data.schools.map(school => `
-                        <div class="school-item">
-                            <div class="school-info">
-                                <h3>${school.school_name}</h3>
-                                <p><strong>Code:</strong> ${school.school_code}</p>
-                                <p><strong>Created:</strong> ${new Date(school.created_at).toLocaleDateString()}</p>
-                            </div>
-                            <div class="school-actions">
-                                <a href="/${school.school_name}/admin" class="btn btn-small">Admin Panel</a>
-                                <button class="btn btn-small btn-danger" onclick="deleteSchool(${school.id}, '${school.school_name}')">Delete</button>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    noSchools.style.display = 'block';
-                    schoolsList.innerHTML = '';
-                }
-            } catch (error) {
-                console.error('Error loading schools:', error);
-            }
+                const r = await fetch(`/myadmin/schools/${s.id}/access-status`);
+                const st = await r.json();
+                return { ...s, access_status: st, open_at: st.open_at, close_at: st.close_at };
+            } catch { return s; }
+        }));
+
+        document.getElementById('totalSchools').textContent = data.total;
+        const list = document.getElementById('schoolsList');
+        const none = document.getElementById('noSchools');
+
+        if(withStatus.length){
+            none.style.display = 'none';
+            list.innerHTML = withStatus.map(renderSchool).join('');
+        } else {
+            none.style.display = 'block';
+            list.innerHTML = '';
         }
-        
-        // Create school
-        document.getElementById('createSchoolForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(document.getElementById('createSchoolForm'));
-            const formMessage = document.getElementById('formMessage');
-            
-            try {
-                const response = await fetch('/myadmin/create-school', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    formMessage.innerHTML = `<div class="message success">✓ ${data.message}</div>`;
-                    document.getElementById('createSchoolForm').reset();
-                    setTimeout(() => loadSchools(), 1000);
-                } else {
-                    formMessage.innerHTML = `<div class="message error">✗ ${data.message}</div>`;
-                }
-            } catch (error) {
-                formMessage.innerHTML = `<div class="message error">✗ Error creating school</div>`;
-                console.error('Error:', error);
-            }
-        });
-        
-        // Delete school
-        async function deleteSchool(schoolId, schoolName) {
-            if (confirm(`Are you sure you want to delete "${schoolName}" and all its data?`)) {
-                try {
-                    const response = await fetch(`/myadmin/schools/${schoolId}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.status === 'success') {
-                        showToast(data.message, 'success');
-                        loadSchools();
-                    } else {
-                        showToast('Error: ' + data.message, 'error');
-                    }
-                } catch (error) {
-                    showToast('Error deleting school', 'error');
-                    console.error('Error:', error);
-                }
-            }
+    } catch(e){ console.error(e); }
+}
+
+/* ── schedule panel toggle ── */
+function toggleSchedule(id){
+    const panel = document.getElementById(`schedule-${id}`);
+    panel.classList.toggle('active');
+}
+
+/* ── toggle open/close ── */
+async function toggleAccess(id){
+    try {
+        const res = await fetch(`/myadmin/schools/${id}/toggle`, { method: 'POST' });
+        const data = await res.json();
+        if(data.status === 'success'){
+            showToast(data.message, 'success');
+            loadSchools();
+        } else {
+            showToast('Error: ' + data.message, 'error');
         }
-        
-        // Load schools on page load
-        loadSchools();
-        
-        // Refresh schools every 5 seconds
-        setInterval(loadSchools, 5000);
-    </script>
+    } catch(e){ showToast('Network error', 'error'); }
+}
+
+/* ── save schedule ── */
+async function saveSchedule(id){
+    const openVal  = document.getElementById(`open-at-${id}`).value;
+    const closeVal = document.getElementById(`close-at-${id}`).value;
+
+    // Convert datetime-local (local time) to UTC ISO for the server
+    function toUTC(val){
+        if(!val) return '';
+        return new Date(val).toISOString().slice(0,16);  // send as YYYY-MM-DDTHH:MM
+    }
+
+    const fd = new FormData();
+    fd.append('open_at',  toUTC(openVal));
+    fd.append('close_at', toUTC(closeVal));
+
+    try {
+        const res = await fetch(`/myadmin/schools/${id}/schedule`, { method:'POST', body:fd });
+        const data = await res.json();
+        if(data.status === 'success'){
+            showToast('Schedule saved ✓', 'success');
+            loadSchools();
+        } else {
+            showToast('Error: ' + data.message, 'error');
+        }
+    } catch(e){ showToast('Network error', 'error'); }
+}
+
+async function clearSchedule(id){
+    const fd = new FormData();
+    fd.append('open_at', '');
+    fd.append('close_at', '');
+    try {
+        const res = await fetch(`/myadmin/schools/${id}/schedule`, { method:'POST', body:fd });
+        const data = await res.json();
+        if(data.status === 'success'){
+            showToast('Schedule cleared', 'success');
+            loadSchools();
+        } else {
+            showToast('Error: ' + data.message, 'error');
+        }
+    } catch(e){ showToast('Network error', 'error'); }
+}
+
+/* ── create school ── */
+document.getElementById('createSchoolForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(document.getElementById('createSchoolForm'));
+    try {
+        const res = await fetch('/myadmin/create-school', { method:'POST', body:fd });
+        const data = await res.json();
+        const msg = document.getElementById('formMessage');
+        if(data.status === 'success'){
+            msg.innerHTML = `<div class="message success">✓ ${data.message}</div>`;
+            document.getElementById('createSchoolForm').reset();
+            setTimeout(loadSchools, 800);
+        } else {
+            msg.innerHTML = `<div class="message error">✗ ${data.message}</div>`;
+        }
+    } catch(e){
+        document.getElementById('formMessage').innerHTML = `<div class="message error">✗ Error creating school</div>`;
+    }
+});
+
+/* ── delete school ── */
+async function deleteSchool(id, name){
+    if(!confirm(`Delete "${name}" and all its data?`)) return;
+    try {
+        const res = await fetch(`/myadmin/schools/${id}`, { method:'DELETE' });
+        const data = await res.json();
+        if(data.status === 'success'){
+            showToast(data.message, 'success');
+            loadSchools();
+        } else {
+            showToast('Error: ' + data.message, 'error');
+        }
+    } catch(e){ showToast('Error deleting school', 'error'); }
+}
+
+/* ── init ── */
+loadSchools();
+setInterval(loadSchools, 10000);   // refresh every 10 s
+</script>
 </body>
 </html>

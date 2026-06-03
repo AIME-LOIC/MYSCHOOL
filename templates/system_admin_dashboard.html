@@ -1,0 +1,369 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--color-background-tertiary)}
+.page{padding:1.5rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-left .logo{width:36px;height:36px;background:var(--color-background-info);border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;color:var(--color-text-info)}
+.topbar-left h1{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.topbar-left span{font-size:13px;color:var(--color-text-secondary)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;display:flex;flex-direction:column;gap:4px}
+.stat-card .s-label{font-size:12px;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.5px}
+.stat-card .s-val{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.stat-card .s-sub{font-size:12px;color:var(--color-text-secondary)}
+.main-cols{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem}
+.panel-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.panel-title i{font-size:16px;color:var(--color-text-secondary)}
+.field-row{margin-bottom:12px}
+.field-row label{display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:5px}
+.field-row input{width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+.field-row input:focus{outline:none;border-color:var(--color-border-info);box-shadow:0 0 0 2px rgba(55,138,221,.12)}
+.btn-primary{width:100%;padding:9px;font-size:13px;font-weight:500;background:var(--color-background-info);color:var(--color-text-info);border:none;border-radius:var(--border-radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary:hover{opacity:.88}
+.schools-panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem}
+.schools-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.schools-header .panel-title{margin-bottom:0}
+.search-wrap{position:relative}
+.search-wrap i{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--color-text-tertiary)}
+.search-wrap input{padding:7px 10px 7px 30px;font-size:13px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary);width:200px}
+.search-wrap input:focus{outline:none;border-color:var(--color-border-secondary)}
+.school-row{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:10px;transition:border-color .15s}
+.school-row:hover{border-color:var(--color-border-secondary)}
+.school-row.row-closed{border-left:3px solid #E24B4A}
+.school-row.row-scheduled{border-left:3px solid #EF9F27}
+.school-row.row-open{border-left:3px solid #639922}
+.row-top{display:flex;align-items:center;gap:10px}
+.row-avatar{width:38px;height:38px;border-radius:var(--border-radius-md);background:var(--color-background-info);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--color-text-info);flex-shrink:0}
+.row-main{flex:1;min-width:0}
+.row-name{font-size:14px;font-weight:500;color:var(--color-text-primary);display:flex;align-items:center;gap:6px}
+.row-meta{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px}
+.badge-open{background:#EAF3DE;color:#3B6D11}
+.badge-closed{background:#FCEBEB;color:#A32D2D}
+.badge-scheduled{background:#FAEEDA;color:#854F0B}
+.row-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.act-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:6px 11px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;transition:background .12s}
+.act-btn:hover{background:var(--color-background-secondary)}
+.act-btn.btn-open{border-color:var(--color-border-success);color:var(--color-text-success)}
+.act-btn.btn-close{border-color:var(--color-border-warning);color:var(--color-text-warning)}
+.act-btn.btn-del{border-color:var(--color-border-danger);color:var(--color-text-danger)}
+.schedule-panel{margin-top:12px;padding:12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);display:none}
+.schedule-panel.open{display:block}
+.sch-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.sch-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.sch-field label{font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;display:block}
+.sch-field input{width:100%;padding:6px 8px;font-size:12px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+.sch-field input:focus{outline:none;border-color:var(--color-border-info)}
+.sch-actions{display:flex;gap:6px}
+.sch-save{padding:6px 14px;font-size:12px;background:var(--color-background-success);color:var(--color-text-success);border:none;border-radius:var(--border-radius-md);cursor:pointer;font-weight:500}
+.sch-clear{padding:6px 10px;font-size:12px;background:none;color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer}
+.sch-hint{font-size:11px;color:var(--color-text-tertiary);margin-top:8px;line-height:1.5}
+.sch-current{font-size:11px;color:var(--color-text-secondary);margin-top:6px;display:flex;gap:12px}
+.empty-state{text-align:center;padding:2rem;color:var(--color-text-tertiary);font-size:13px}
+.toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999}
+.toast{padding:9px 16px;border-radius:var(--border-radius-md);font-size:13px;font-weight:500;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15);opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+.toast.t-success{background:#3B6D11}
+.toast.t-error{background:#A32D2D}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:12px 0}
+.admin-link{font-size:12px;color:var(--color-text-info);text-decoration:none;display:inline-flex;align-items:center;gap:3px}
+.admin-link:hover{text-decoration:underline}
+</style>
+
+<div class="page">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo"><i class="ti ti-building-school" style="font-size:18px" aria-hidden="true"></i></div>
+      <div>
+        <h1>System admin</h1>
+        <span>School portal management</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <span class="s-label">Total schools</span>
+      <span class="s-val" id="statTotal">0</span>
+      <span class="s-sub">registered</span>
+    </div>
+    <div class="stat-card">
+      <span class="s-label">Open portals</span>
+      <span class="s-val" id="statOpen" style="color:var(--color-text-success)">0</span>
+      <span class="s-sub">accessible now</span>
+    </div>
+    <div class="stat-card">
+      <span class="s-label">Closed portals</span>
+      <span class="s-val" id="statClosed" style="color:var(--color-text-danger)">0</span>
+      <span class="s-sub">blocked</span>
+    </div>
+    <div class="stat-card">
+      <span class="s-label">Scheduled</span>
+      <span class="s-val" id="statSched" style="color:var(--color-text-warning)">0</span>
+      <span class="s-sub">with time rules</span>
+    </div>
+  </div>
+
+  <div class="main-cols">
+    <div class="panel">
+      <div class="panel-title"><i class="ti ti-plus" aria-hidden="true"></i> Add new school</div>
+      <div class="field-row">
+        <label>School name</label>
+        <input type="text" id="inp-name" placeholder="e.g. Green Valley High" />
+      </div>
+      <div class="field-row">
+        <label>School code</label>
+        <input type="text" id="inp-code" placeholder="e.g. GVH-001" />
+      </div>
+      <button class="btn-primary" onclick="createSchool()">
+        <i class="ti ti-plus" aria-hidden="true"></i> Create school
+      </button>
+      <div id="create-msg" style="margin-top:10px;font-size:12px"></div>
+    </div>
+
+    <div class="schools-panel">
+      <div class="schools-header">
+        <div class="panel-title" style="margin-bottom:0"><i class="ti ti-list" aria-hidden="true"></i> Registered schools</div>
+        <div class="search-wrap">
+          <i class="ti ti-search" aria-hidden="true"></i>
+          <input type="text" id="search-inp" placeholder="Search schools..." oninput="filterSchools()" />
+        </div>
+      </div>
+      <div id="schools-list"><div class="empty-state"><i class="ti ti-loader" style="font-size:20px"></i><br>Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<script>
+let allSchools = [];
+let toastT = null;
+
+function toast(msg, type='success'){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast t-${type} show`;
+  if(toastT) clearTimeout(toastT);
+  toastT = setTimeout(()=>{ el.classList.remove('show'); }, 2800);
+}
+
+function initials(name){
+  return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+function badgeHtml(s){
+  if(!s.access_status) return '';
+  const {open, reason} = s.access_status;
+  if(reason === 'scheduled' || reason === 'scheduled_closed'){
+    const label = open ? 'scheduled open' : 'scheduled closed';
+    return `<span class="badge badge-scheduled"><i class="ti ti-clock" style="font-size:10px" aria-hidden="true"></i>${label}</span>`;
+  }
+  return open
+    ? `<span class="badge badge-open"><i class="ti ti-circle-check" style="font-size:10px" aria-hidden="true"></i>open</span>`
+    : `<span class="badge badge-closed"><i class="ti ti-lock" style="font-size:10px" aria-hidden="true"></i>closed</span>`;
+}
+
+function rowClass(s){
+  if(!s.access_status) return '';
+  const {open, reason} = s.access_status;
+  if(reason && reason.includes('scheduled')) return 'row-scheduled';
+  return open ? 'row-open' : 'row-closed';
+}
+
+function fmtLocal(iso){
+  if(!iso) return '';
+  const d = new Date(iso.endsWith('Z') ? iso : iso+'Z');
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fmtDisplay(iso){
+  if(!iso) return null;
+  return new Date(iso.endsWith('Z') ? iso : iso+'Z').toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+}
+
+function renderSchool(s){
+  const isOpen = s.access_status?.open;
+  const ao = s.access_status?.opens_at || s.open_at;
+  const ac = s.access_status?.closes_at || s.close_at;
+  const hasSchedule = !!(s.open_at || s.close_at);
+
+  return `
+  <div class="school-row ${rowClass(s)}" id="row-${s.id}">
+    <div class="row-top">
+      <div class="row-avatar">${initials(s.school_name)}</div>
+      <div class="row-main">
+        <div class="row-name">
+          ${s.school_name}
+          ${badgeHtml(s)}
+        </div>
+        <div class="row-meta">
+          Code: <strong>${s.school_code}</strong>
+          &nbsp;·&nbsp;
+          Added ${new Date(s.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}
+          ${ao ? `&nbsp;·&nbsp;<span style="color:var(--color-text-warning)"><i class="ti ti-calendar-time" style="font-size:12px" aria-hidden="true"></i> opens ${fmtDisplay(ao)}</span>` : ''}
+          ${ac ? `&nbsp;·&nbsp;<span style="color:var(--color-text-success)"><i class="ti ti-calendar-off" style="font-size:12px" aria-hidden="true"></i> closes ${fmtDisplay(ac)}</span>` : ''}
+        </div>
+      </div>
+      <div class="row-actions">
+        <a href="/${s.school_name}/admin" target="_blank" class="act-btn admin-link" style="text-decoration:none">
+          <i class="ti ti-external-link" style="font-size:13px" aria-hidden="true"></i> admin
+        </a>
+        ${isOpen
+          ? `<button class="act-btn btn-close" onclick="toggleAccess(${s.id})"><i class="ti ti-lock" style="font-size:13px" aria-hidden="true"></i> close</button>`
+          : `<button class="act-btn btn-open" onclick="toggleAccess(${s.id})"><i class="ti ti-lock-open" style="font-size:13px" aria-hidden="true"></i> open</button>`
+        }
+        <button class="act-btn" onclick="toggleSchedule(${s.id})" style="color:var(--color-text-warning);border-color:var(--color-border-warning)">
+          <i class="ti ti-calendar" style="font-size:13px" aria-hidden="true"></i> schedule
+        </button>
+        <button class="act-btn btn-del" onclick="deleteSchool(${s.id},'${s.school_name.replace(/'/g,"\\'")}')">
+          <i class="ti ti-trash" style="font-size:13px" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="schedule-panel ${hasSchedule ? 'open' : ''}" id="sch-${s.id}">
+      <div class="sch-title"><i class="ti ti-clock" style="font-size:13px" aria-hidden="true"></i> Access schedule — leave blank to clear</div>
+      <div class="sch-grid">
+        <div class="sch-field">
+          <label>Open at</label>
+          <input type="datetime-local" id="sop-${s.id}" value="${fmtLocal(s.open_at)}" />
+        </div>
+        <div class="sch-field">
+          <label>Close at</label>
+          <input type="datetime-local" id="scl-${s.id}" value="${fmtLocal(s.close_at)}" />
+        </div>
+        <div class="sch-actions">
+          <button class="sch-save" onclick="saveSchedule(${s.id})">Save</button>
+          <button class="sch-clear" onclick="clearSchedule(${s.id})">Clear</button>
+        </div>
+      </div>
+      <div class="sch-hint">Schedule overrides the manual toggle. If only "open at" is set, the portal stays open from that time onward. If only "close at" is set, it stays open until that time.</div>
+    </div>
+  </div>`;
+}
+
+function renderList(schools){
+  const list = document.getElementById('schools-list');
+  if(!schools.length){
+    list.innerHTML = `<div class="empty-state"><i class="ti ti-school-off" style="font-size:24px"></i><br>No schools registered yet</div>`;
+    return;
+  }
+  list.innerHTML = schools.map(renderSchool).join('');
+}
+
+function updateStats(schools){
+  let open=0, closed=0, sched=0;
+  schools.forEach(s=>{
+    if(!s.access_status) return;
+    const {open:o, reason:r} = s.access_status;
+    if(r && r.includes('scheduled')) sched++;
+    else if(o) open++;
+    else closed++;
+  });
+  document.getElementById('statTotal').textContent = schools.length;
+  document.getElementById('statOpen').textContent = open;
+  document.getElementById('statClosed').textContent = closed;
+  document.getElementById('statSched').textContent = sched;
+}
+
+async function loadSchools(){
+  try {
+    const res = await fetch('/myadmin/schools');
+    const data = await res.json();
+    const withStatus = await Promise.all((data.schools||[]).map(async s=>{
+      try {
+        const r = await fetch(`/myadmin/schools/${s.id}/access-status`);
+        const st = await r.json();
+        return {...s, access_status:st, open_at:st.open_at, close_at:st.close_at};
+      } catch { return s; }
+    }));
+    allSchools = withStatus;
+    filterSchools();
+  } catch(e){ console.error(e); }
+}
+
+function filterSchools(){
+  const q = (document.getElementById('search-inp').value||'').toLowerCase();
+  const filtered = q ? allSchools.filter(s=>s.school_name.toLowerCase().includes(q)||s.school_code.toLowerCase().includes(q)) : allSchools;
+  renderList(filtered);
+  updateStats(allSchools);
+}
+
+function toggleSchedule(id){
+  document.getElementById(`sch-${id}`).classList.toggle('open');
+}
+
+async function toggleAccess(id){
+  try {
+    const r = await fetch(`/myadmin/schools/${id}/toggle`,{method:'POST'});
+    const d = await r.json();
+    if(d.status==='success'){ toast(d.message,'success'); loadSchools(); }
+    else toast('Error: '+d.message,'error');
+  } catch { toast('Network error','error'); }
+}
+
+async function saveSchedule(id){
+  const opVal = document.getElementById(`sop-${id}`).value;
+  const clVal = document.getElementById(`scl-${id}`).value;
+  const toUTC = v => v ? new Date(v).toISOString().slice(0,16) : '';
+  const fd = new FormData();
+  fd.append('open_at', toUTC(opVal));
+  fd.append('close_at', toUTC(clVal));
+  try {
+    const r = await fetch(`/myadmin/schools/${id}/schedule`,{method:'POST',body:fd});
+    const d = await r.json();
+    if(d.status==='success'){ toast('Schedule saved','success'); loadSchools(); }
+    else toast('Error: '+d.message,'error');
+  } catch { toast('Network error','error'); }
+}
+
+async function clearSchedule(id){
+  const fd = new FormData();
+  fd.append('open_at',''); fd.append('close_at','');
+  try {
+    const r = await fetch(`/myadmin/schools/${id}/schedule`,{method:'POST',body:fd});
+    const d = await r.json();
+    if(d.status==='success'){ toast('Schedule cleared','success'); loadSchools(); }
+    else toast('Error: '+d.message,'error');
+  } catch { toast('Network error','error'); }
+}
+
+async function createSchool(){
+  const name = document.getElementById('inp-name').value.trim();
+  const code = document.getElementById('inp-code').value.trim();
+  const msg = document.getElementById('create-msg');
+  if(!name||!code){ msg.innerHTML='<span style="color:var(--color-text-danger)">Both fields are required</span>'; return; }
+  const fd = new FormData();
+  fd.append('school_name',name); fd.append('school_code',code);
+  try {
+    const r = await fetch('/myadmin/create-school',{method:'POST',body:fd});
+    const d = await r.json();
+    if(d.status==='success'){
+      msg.innerHTML=`<span style="color:var(--color-text-success)">School created</span>`;
+      document.getElementById('inp-name').value='';
+      document.getElementById('inp-code').value='';
+      setTimeout(loadSchools,600);
+    } else {
+      msg.innerHTML=`<span style="color:var(--color-text-danger)">${d.message}</span>`;
+    }
+  } catch { msg.innerHTML='<span style="color:var(--color-text-danger)">Network error</span>'; }
+}
+
+async function deleteSchool(id,name){
+  if(!confirm(`Delete "${name}" and all its data? This cannot be undone.`)) return;
+  try {
+    const r = await fetch(`/myadmin/schools/${id}`,{method:'DELETE'});
+    const d = await r.json();
+    if(d.status==='success'){ toast(d.message,'success'); loadSchools(); }
+    else toast('Error: '+d.message,'error');
+  } catch { toast('Error deleting school','error'); }
+}
+
+loadSchools();
+setInterval(loadSchools, 10000);
+</script>
