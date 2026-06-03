@@ -107,13 +107,13 @@ def _school_access_guard(school, request: Request):
 <div class="card">
   <div class="icon">🔒</div>
   <div class="school-badge">{school.school_name}</div>
-  <h1>Portal is Currently Closed</h1>
+  <h1>Sisiteme irafunze </h1>
   <p class="subtitle">
-    {"The system administrator has temporarily disabled access to this portal." if not opens_at_iso else "Access will be available when the countdown reaches zero."}
+    {"sisiteme irafunze kugeza kw'Itariki y'umunsi wogusura." if not opens_at_iso else "sisiteme iragaruka kumurongo mu."}
   </p>
 
-  {"<p class='no-schedule'>Check back later or contact the school administrator.</p>" if not opens_at_iso else f"""
-  <div class="countdown-label">Opens in</div>
+  {"<p class='no-schedule'>Ugaruke nyuma yigihe kirimutsi cg uvugishe ubuyobozi.</p>" if not opens_at_iso else f"""
+  <div class="countdown-label">Umwanya uburango sisiteme ifunguke</div>
   <div class="countdown">
     <div class="unit"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
     <div class="unit"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
