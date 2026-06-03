@@ -32,48 +32,51 @@ class School(Base):
         """
         Returns the effective access state for this school.
         Schedule overrides the manual toggle when active.
-
-        Returns:
-            {
-              "open": bool,
-              "reason": "manual" | "scheduled" | "scheduled_closed",
-              "opens_at": datetime | None,   # when it will open (if currently closed)
-              "closes_at": datetime | None,  # when it will close (if currently open)
-            }
         """
-        now = datetime.utcnow()
-        has_schedule = self.open_at is not None or self.close_at is not None
+        # 1. Use timezone-aware UTC now, then strip it to make it safe for naive DB columns
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
 
-        if has_schedule:
-            # Both bounds defined → only open inside the window
-            if self.open_at and self.close_at:
-                if self.open_at <= now <= self.close_at:
-                    return {"open": True,  "reason": "scheduled",        "opens_at": None,          "closes_at": self.close_at}
-                elif now < self.open_at:
-                    return {"open": False, "reason": "scheduled_closed", "opens_at": self.open_at,  "closes_at": None}
-                else:  # past close_at
-                    return {"open": False, "reason": "scheduled_closed", "opens_at": None,          "closes_at": None}
+        # Extract values cleanly
+        open_at = self.open_at
+        close_at = self.close_at
 
-            # Only open_at defined → open from that point onward
-            if self.open_at and not self.close_at:
-                if now >= self.open_at:
-                    return {"open": True,  "reason": "scheduled",        "opens_at": None,          "closes_at": None}
-                else:
-                    return {"open": False, "reason": "scheduled_closed", "opens_at": self.open_at,  "closes_at": None}
+        # Helper string conversion safely appending Z for the frontend
+        def to_iso(dt):
+            return dt.isoformat() + "Z" if dt else None
 
-            # Only close_at defined → open until that point
-            if self.close_at and not self.open_at:
-                if now <= self.close_at:
-                    return {"open": True,  "reason": "scheduled",        "opens_at": None,          "closes_at": self.close_at}
-                else:
-                    return {"open": False, "reason": "scheduled_closed", "opens_at": None,          "closes_at": None}
+        # 2. Check if schedule boundaries are configured
+        if open_at or close_at:
+            is_after_open = now >= open_at if open_at else True
+            is_before_close = now < close_at if close_at else True
 
-        # No schedule → fall back to manual toggle
+            if is_after_open and is_before_close:
+                return {
+                    "open": True,
+                    "reason": "scheduled",
+                    "opens_at": to_iso(open_at),
+                    "closes_at": to_iso(close_at),
+                    "open_at": to_iso(open_at),
+                    "close_at": to_iso(close_at)
+                }
+            else:
+                return {
+                    "open": False,
+                    "reason": "scheduled_closed",
+                    "opens_at": to_iso(open_at),
+                    "closes_at": to_iso(close_at),
+                    "open_at": to_iso(open_at),
+                    "close_at": to_iso(close_at)
+                }
+
+        # 3. Fallback to manual toggle state if no schedule boundaries are set
         return {
-            "open": bool(self.is_open),
+            "open": bool(self.is_open == 1),
             "reason": "manual",
             "opens_at": None,
             "closes_at": None,
+            "open_at": None,
+            "close_at": None
         }
 
 

@@ -50,21 +50,14 @@ def _check_admin(request: Request, school_name: str) -> bool:
 
 from fastapi.responses import HTMLResponse as _HTMLResponse
 
-def _school_access_guard(school, request: Request):
-    """
-    Returns None when access is allowed.
-    Returns an HTMLResponse (closed page) when access is blocked.
-    Call this at the TOP of every school-facing public route.
-    Do NOT call on: /{school_name}/admin/login, /{school_name}/admin/logout,
-                    or any admin-only routes (admins should always be able to log in).
-    """
+def _school_access_guard(school, request):
     status = school.access_status()
     if status["open"]:
-        return None   # access allowed
+        return None  # Portal is open, do not block access
+        
+    opens_at_iso = status["opens_at"] if status["opens_at"] else ""
 
-    opens_at_iso = status["opens_at"].isoformat() + "Z" if status["opens_at"] else ""
-    closes_at_iso = status["closes_at"].isoformat() + "Z" if status["closes_at"] else ""
-
+    # Ensure this variable assignment aligns exactly with 'opens_at_iso' above
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,12 +68,12 @@ def _school_access_guard(school, request: Request):
   *{{margin:0;padding:0;box-sizing:border-box}}
   body{{
     font-family:'Segoe UI',sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);
     min-height:100vh;display:flex;align-items:center;justify-content:center;color:#2d3748;
   }}
   .card{{
-    background:#ffffff;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+    background:#fff;
+    box-shadow:0 10px 25px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.04);
     border:1px solid #e2e8f0;border-radius:20px;
     padding:50px 40px;max-width:480px;width:90%;text-align:center;
   }}
@@ -96,51 +89,175 @@ def _school_access_guard(school, request: Request):
     color:#718096;margin-top:6px;font-weight:500}}
   .no-schedule{{font-size:14px;color:#a0aec0;font-style:italic}}
   .school-badge{{
-    display:inline-block;background:#ebf8ff;
-    border:1px solid #bee3f8;border-radius:20px;
-    padding:6px 18px;font-size:13px;margin-bottom:28px;
+    display:inline-block;background:#ebf8ff;border:1px solid #bee3f8;
+    border-radius:20px;padding:6px 18px;font-size:13px;margin-bottom:28px;
     color:#2b6cb0;font-weight:600;
   }}
+  
+  /* Support Trigger Panel */
+  .support-panel{{
+    margin-top:30px;padding-top:24px;
+    border-top:1px dashed #e2e8f0;
+  }}
+  .link-support{{
+    color:#2b6cb0;font-size:14px;font-weight:600;
+    text-decoration:none;cursor:pointer;
+  }}
+  .link-support:hover{{text-decoration:underline}}
+
+  /* Popup Modal Overlay */
+  .modal-overlay{{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(26,32,44,0.4);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity 0.25s ease;z-index:999;
+  }}
+  .modal-overlay.active{{opacity:1;pointer-events:auto}}
+
+  /* Popup Window Card */
+  .modal-card{{
+    background:#fff;border-radius:16px;padding:32px;
+    width:90%;max-width:440px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);
+    transform:scale(0.9);transition:transform 0.25s ease;text-align:left;
+  }}
+  .modal-overlay.active .modal-card{{transform:scale(1)}}
+
+  .modal-title{{font-size:20px;font-weight:700;color:#1a202c;margin-bottom:6px}}
+  .modal-subtitle{{font-size:13px;color:#718096;margin-bottom:20px}}
+  
+  /* Form Styling */
+  .form-group{{margin-bottom:16px}}
+  .form-group label{{display:block;font-size:13px;font-weight:600;color:#4a5568;margin-bottom:6px}}
+  .form-group input, .form-group textarea{{
+    width:100%;padding:10px 14px;border:1px solid #cbd5e0;border-radius:8px;
+    font-size:14px;color:#2d3748;outline:none;background:#fff;
+  }}
+  .form-group input:focus, .form-group textarea:focus{{
+    border-color:#2b6cb0;box-shadow:0 0 0 3px rgba(43,108,176,0.12);
+  }}
+  .form-group textarea{{resize:none;height:100px}}
+  
+  .modal-actions{{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}}
+  .btn{{
+    padding:10px 16px;font-size:14px;font-weight:600;border-radius:8px;
+    cursor:pointer;border:none;transition:background 0.2s;
+  }}
+  .btn-cancel{{background:#edf2f7;color:#4a5568}}
+  .btn-cancel:hover{{background:#e2e8f0}}
+  .btn-submit{{background:#2b6cb0;color:#fff}}
+  .btn-submit:hover{{background:#2c5282}}
 </style>
 </head>
 <body>
+
+<div id="_d" data-o="{opens_at_iso}" data-s="{school.school_name}" style="display:none"></div>
+
 <div class="card">
   <div class="icon">🔒</div>
   <div class="school-badge">{school.school_name}</div>
-  <h1>Sisiteme irafunze </h1>
-  <p class="subtitle">
-    {"sisiteme irafunze kugeza kw'Itariki y'umunsi wogusura." if not opens_at_iso else "sisiteme iragaruka kumurongo mu."}
-  </p>
-
-  {"<p class='no-schedule'>Ugaruke nyuma yigihe kirimutsi cg uvugishe ubuyobozi.</p>" if not opens_at_iso else f"""
-  <div class="countdown-label">Umwanya uburango sisiteme ifunguke</div>
-  <div class="countdown">
-    <div class="unit"><div class="num" id="cd-d">--</div><div class="lbl">Days</div></div>
-    <div class="unit"><div class="num" id="cd-h">--</div><div class="lbl">Hours</div></div>
-    <div class="unit"><div class="num" id="cd-m">--</div><div class="lbl">Mins</div></div>
-    <div class="unit"><div class="num" id="cd-s">--</div><div class="lbl">Secs</div></div>
+  <h1>Sisiteme irafunze</h1>
+  <p class="subtitle" id="msg"></p>
+  <div id="cw"></div>
+  
+  <div class="support-panel">
+    <span class="link-support" onclick="toggleModal(true)">💬 Saba ubufasha (Ask Support)</span>
   </div>
-  <script>
-    const target = new Date("{opens_at_iso}");
-    function tick(){{
-      const diff = target - Date.now();
-      if(diff <= 0){{ location.reload(); return; }}
-      const d=Math.floor(diff/86400000),
-            h=Math.floor(diff%86400000/3600000),
-            m=Math.floor(diff%3600000/60000),
-            s=Math.floor(diff%60000/1000);
-      document.getElementById('cd-d').textContent=String(d).padStart(2,'0');
-      document.getElementById('cd-h').textContent=String(h).padStart(2,'0');
-      document.getElementById('cd-m').textContent=String(m).padStart(2,'0');
-      document.getElementById('cd-s').textContent=String(s).padStart(2,'0');
-    }}
-    tick(); setInterval(tick,1000);
-  </script>
-  """}
 </div>
+
+<div class="modal-overlay" id="supportModal">
+  <div class="modal-card">
+    <h2 class="modal-title">Saba Ubufasha</h2>
+    <p class="modal-subtitle">Uzuza ubu busabe usake ubufasha bwa sisiteme.</p>
+    
+    <form action="https://formspree.io/f/xqeozoyn" method="POST">
+      <input type="hidden" name="school_name" value="{school.school_name}">
+
+      <div class="form-group">
+        <label>Amazina yombi / Full Name *</label>
+        <input type="text" name="name" required placeholder="e.g., John Doe">
+      </div>
+      
+      <div class="form-group">
+        <label>Ikibazo ufite / Describe Your Issue *</label>
+        <textarea name="message" required placeholder="Andika ikibazo cyose ufite hano..."></textarea>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-cancel" onclick="toggleModal(false)">Bika (Cancel)</button>
+        <button type="submit" class="btn btn-submit">Ohereza (Send)</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleModal(show) {{
+  const modal = document.getElementById('supportModal');
+  if (show) {{
+    modal.classList.add('active');
+  }} else {{
+    modal.classList.remove('active');
+  }}
+}}
+
+(function() {{
+  var meta    = document.getElementById('_d');
+  var opensAt = meta.dataset.o;
+  var sname   = meta.dataset.s;
+  var msgEl   = document.getElementById('msg');
+  var cwEl    = document.getElementById('cw');
+
+  if (!opensAt) {{
+    msgEl.textContent = "sisiteme irafunze kugeza kw'Itariki y'umunsi wogusura.";
+    cwEl.innerHTML    = "<p class='no-schedule'>Ugaruke nyuma yigihe kirimutsi cg uvugishe ubuyobozi.</p>";
+  }} else {{
+    msgEl.textContent = "sisiteme iragaruka kumurongo mu masaha yemewe.";
+    cwEl.innerHTML =
+      "<div class='countdown-label'>Umwanya uburango sisiteme ifunguke</div>" +
+      "<div class='countdown'>" +
+        "<div class='unit'><div class='num' id='cd-d'>--</div><div class='lbl'>Days</div></div>"   +
+        "<div class='unit'><div class='num' id='cd-h'>--</div><div class='lbl'>Hours</div></div>" +
+        "<div class='unit'><div class='num' id='cd-m'>--</div><div class='lbl'>Mins</div></div>"   +
+        "<div class='unit'><div class='num' id='cd-s'>--</div><div class='lbl'>Secs</div></div>"   +
+      "</div>";
+
+    var target = new Date(opensAt);
+    var ticker = null;
+
+    function tick() {{
+      var diff = target - Date.now();
+      if (diff <= 0) {{
+        if (ticker) clearInterval(ticker);
+        setTimeout(function() {{ location.reload(); }}, 1000);
+        return;
+      }}
+      var dd = Math.floor(diff / 86400000);
+      var hh = Math.floor(diff % 86400000 / 3600000);
+      var mm = Math.floor(diff % 3600000  / 60000);
+      var ss = Math.floor(diff % 60000    / 1000);
+      document.getElementById('cd-d').textContent = String(dd).padStart(2, '0');
+      document.getElementById('cd-h').textContent = String(hh).padStart(2, '0');
+      document.getElementById('cd-m').textContent = String(mm).padStart(2, '0');
+      document.getElementById('cd-s').textContent = String(ss).padStart(2, '0');
+    }}
+
+    tick();
+    ticker = setInterval(tick, 1000);
+  }}
+
+  setInterval(function() {{
+    fetch('/' + sname + '/portal-status')
+      .then(function(r) {{ return r.json(); }})
+      .then(function(data) {{ if (data.open) location.reload(); }})
+      .catch(function() {{}});
+  }}, 15000);
+}})();
+</script>
 </body>
 </html>"""
-    return _HTMLResponse(content=html, status_code=503)
+
+    return HTMLResponse(content=html, status_code=503)
+   
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -174,12 +291,25 @@ def set_school_schedule(
     if not school:
         return {"status": "error", "message": "School not found"}
 
-    def _parse(val):
+    def _parse(val: str | None) -> datetime | None:
         if not val or not val.strip():
             return None
+        
+        val_clean = val.strip()
+        
+        # FIX: Check if the string is an ISO string sent from the frontend (contains 'Z' or 'T')
+        if "T" in val_clean:
+            try:
+                # Handle standard ISO formats and strip timezone information to match your naive DB columns
+                dt_aware = datetime.fromisoformat(val_clean.replace("Z", "+00:00"))
+                return dt_aware.replace(tzinfo=None)
+            except ValueError:
+                pass
+
+        # Fallback legacy parsing for other formats
         for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M"):
             try:
-                return datetime.strptime(val.strip(), fmt)
+                return datetime.strptime(val_clean, fmt)
             except ValueError:
                 continue
         raise ValueError(f"Cannot parse datetime: {val!r}")
@@ -201,22 +331,30 @@ def set_school_schedule(
 
 @app.get("/myadmin/schools/{school_id}/access-status")
 def get_school_access_status(school_id: int, db: Session = Depends(get_db)):
-    """Return the effective access status of a school (used by admin UI polling)."""
+    """Fetch status for the admin dashboard polling system."""
     school = db.query(School).filter(School.id == school_id).first()
+    if not school:
+        return {"status": "error", "message": "School not found"}
+        
+    s = school.access_status()
+    
+    return {
+        "open": s["open"],
+        "reason": s["reason"],
+        # FIX: These are already strings from access_status(), do not call .isoformat()
+        "opens_at":  s["opens_at"],
+        "closes_at": s["closes_at"],
+        "open_at":   s["open_at"],
+        "close_at":  s["close_at"]
+    }
+@app.get("/{school_name}/portal-status")
+def portal_status(school_name: str, db: Session = Depends(get_db)):
+    """Lightweight public endpoint polled by the closed page."""
+    school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     s = school.access_status()
-    return {
-        "school_id": school_id,
-        "school_name": school.school_name,
-        "is_open_manual": school.is_open,
-        "open_at":  school.open_at.isoformat()  if school.open_at  else None,
-        "close_at": school.close_at.isoformat() if school.close_at else None,
-        **s,
-        "opens_at":  s["opens_at"].isoformat()  if s["opens_at"]  else None,
-        "closes_at": s["closes_at"].isoformat() if s["closes_at"] else None,
-    }
-
+    return {"open": s["open"]}
 
 # In-memory school cache to avoid repeated DB lookups
 _school_cache: dict = {}
