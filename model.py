@@ -11,6 +11,7 @@ class Student(Base):
     student_name = Column(String(100), nullable=False, index=True)
     class_name = Column(String(50), nullable=False)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, default=1)  # Made nullable for migration compatibility
+    is_active = Column(Integer, nullable=False, default=1)  # 1 = studying (in active class), 0 = promoted out / archived
 
     # One-to-many relationship with visits
     visits = relationship(

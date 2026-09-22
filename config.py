@@ -46,6 +46,8 @@ def init_db():
     _ensure_products_table()
     _ensure_student_school_id_column()
     _ensure_visit_transport_columns()
+    _ensure_student_is_active_column()
+    _ensure_school_last_promoted_at_column()
 
 def _ensure_products_table():
     """Create products table if it doesn't exist"""
@@ -152,4 +154,44 @@ def _ensure_visit_transport_columns():
                     print("✓ Added created_at column to visits table")
                 except Exception as e:
                     print(f"Warning: Could not add created_at column: {e}")
+                    connection.rollback()
+
+def _ensure_student_is_active_column():
+    """Add is_active column to students table if it doesn't exist (for promotion/archive support)"""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+
+        if 'students' in inspector.get_table_names():
+            columns = {col['name'] for col in inspector.get_columns('students')}
+
+            if 'is_active' not in columns:
+                try:
+                    print("Adding is_active column to students table...")
+                    # Default 1 so all existing students are considered active (still in school)
+                    connection.execute(text("ALTER TABLE students ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"))
+                    connection.commit()
+                    print("✓ Added is_active column")
+                except Exception as e:
+                    print(f"Warning: Could not add is_active column: {e}")
+                    connection.rollback()
+
+def _ensure_school_last_promoted_at_column():
+    """Add last_promoted_at column to schools table if it doesn't exist (promotion lock)"""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+
+        if 'schools' in inspector.get_table_names():
+            columns = {col['name'] for col in inspector.get_columns('schools')}
+
+            if 'last_promoted_at' not in columns:
+                try:
+                    connection.execute(text("ALTER TABLE schools ADD COLUMN last_promoted_at TIMESTAMP"))
+                    connection.commit()
+                    print("✓ Added last_promoted_at column to schools table")
+                except Exception as e:
+                    print(f"Warning: Could not add last_promoted_at column: {e}")
                     connection.rollback()

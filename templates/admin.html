@@ -63,6 +63,68 @@
         </div>
     </div>
 
+    <!-- Edit Student Modal -->
+    <div id="edit-student-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40" onclick="closeEditStudentModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 animate-fade-in">
+            <div class="text-center mb-4">
+                <div class="bg-blue-100 text-blue-600 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Edit Student</h3>
+                <p id="edit-student-subtitle" class="text-gray-500 text-xs mt-1"></p>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 uppercase">Full Name</label>
+                    <input type="text" id="edit-student-name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none mt-1">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 uppercase">Class</label>
+                    <select id="edit-student-class" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white mt-1">
+                        <option value="S1">S1</option>
+                        <option value="S2">S2</option>
+                        <option value="S3">S3</option>
+                        <option value="L3 SOD">L3 SOD</option>
+                        <option value="L3 NIT">L3 NIT</option>
+                        <option value="L4 SOD">L4 SOD</option>
+                        <option value="L4 NIT">L4 NIT</option>
+                        <option value="L5 SOD">L5 SOD</option>
+                        <option value="L5 NIT">L5 NIT</option>
+                    </select>
+                </div>
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                    <input type="checkbox" id="edit-student-active" class="rounded border-gray-300 text-blue-600">
+                    Active student (unchecked = graduated/archived, still keeps all visit history)
+                </label>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="closeEditStudentModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">Cancel</button>
+                <button onclick="saveStudentEdit()" class="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promote Students Modal -->
+    <div id="promote-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40" onclick="closePromoteModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full relative z-10 animate-fade-in">
+            <div class="text-center mb-4">
+                <div class="bg-purple-100 text-purple-600 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l3 3m0 0l-3 3m3-3H8m9 8h2a2 2 0 002-2V7a2 2 0 00-2-2h-2M5 5H3a2 2 0 00-2 2v10a2 2 0 002 2h2"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Promote Students to Next Class</h3>
+                <p class="text-gray-500 text-xs mt-1">S1→S2 · S2→S3 · L3 SOD→L4 SOD · L3 NIT→L4 NIT · L4→L5 · S3 & L5 are archived (kept)</p>
+            </div>
+            <div id="promote-summary" class="text-sm text-gray-500 text-center py-4">Loading preview...</div>
+            <div id="promote-moves" class="space-y-2 mb-4"></div>
+            <div id="promote-warning" class="hidden bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-lg p-3 mb-4"></div>
+            <div class="flex gap-3">
+                <button onclick="closePromoteModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">Cancel</button>
+                <button id="promote-confirm-btn" onclick="runPromotion()" class="flex-1 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition shadow-lg shadow-purple-200">Confirm Promotion</button>
+            </div>
+        </div>
+    </div>
     <div id="loading-page" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-50 transition-opacity duration-500">
         <div class="text-center">
             <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -109,19 +171,36 @@
         <div id="manager-step" class="hidden mt-8 animate-fade-in space-y-6">
             <div class="flex justify-between items-center">
                 <button onclick="resetSelection()" class="flex items-center py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
-                <button id="bulk-delete-btn" onclick="askBulkDelete()" class="hidden py-2 px-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white font-bold transition flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    Delete Selected (<span id="selected-count">0</span>)
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="openPromoteModal()" class="py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l3 3m0 0l-3 3m3-3H8m9 8h2a2 2 0 002-2V7a2 2 0 00-2-2h-2M5 5H3a2 2 0 00-2 2v10a2 2 0 002 2h2"></path></svg>
+                        Promote Students (S1→S2 → S2→S3)
+                    </button>
+                    <button id="bulk-delete-btn" onclick="askBulkDelete()" class="hidden py-2 px-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white font-bold transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete Selected (<span id="selected-count">0</span>)
+                    </button>
+                </div>
             </div>
-            
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1 space-y-6">
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                         <h4 class="text-lg font-bold text-gray-800 mb-4">Add Single Student</h4>
                         <div class="space-y-3">
                             <input type="text" id="Student_name" placeholder="Full Name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="text" id="class_name" placeholder="Class (e.g. S1A)" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <select id="class_name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">Select class...</option>
+                                <option value="S1">S1</option>
+                                <option value="S2">S2</option>
+                                <option value="S3">S3</option>
+                                <option value="L3 SOD">L3 SOD</option>
+                                <option value="L3 NIT">L3 NIT</option>
+                                <option value="L4 SOD">L4 SOD</option>
+                                <option value="L4 NIT">L4 NIT</option>
+                                <option value="L5 SOD">L5 SOD</option>
+                                <option value="L5 NIT">L5 NIT</option>
+                            </select>
                             <button onclick="addSingleStudent()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">Add Student</button>
                         </div>
                     </div>
@@ -135,17 +214,19 @@
 
                 <div class="lg:col-span-2">
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                        <div class="p-4 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <h3 class="text-xl font-bold text-gray-800">Student Directory</h3>
-                            <div class="flex gap-2">
-                                <button onclick="exportStudentList()" class="flex items-center gap-1 py-1.5 px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-semibold">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    Export
-                                </button>
-                                <select id="class-filter" onchange="filterStudentsByClass()" class="border rounded-lg px-3 py-1.5 text-sm bg-white outline-none">
-                                    <option value="all">All Classes</option>
-                                </select>
+                        <div class="p-4 border-b bg-gray-50">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <h3 class="text-xl font-bold text-gray-800">Students by Class</h3>
+                                <label class="flex items-center gap-2 text-sm text-gray-600">
+                                    <input type="checkbox" id="show-archived-toggle" onchange="renderCurrentClassView()" class="rounded border-gray-300 text-blue-600">
+                                    Show graduated/archived
+                                </label>
                             </div>
+                            <div id="class-tabs" class="flex flex-wrap gap-2 mt-3"></div>
+                        </div>
+                        <div class="px-4 py-3 border-b bg-white flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <h4 id="current-class-title" class="font-bold text-gray-700">All Students</h4>
+                            <input type="text" id="manager-search" placeholder="Search by name..." oninput="renderCurrentClassView()" class="border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-56">
                         </div>
                         <div class="overflow-x-auto max-h-[600px] custom-scrollbar">
                             <table class="min-w-full divide-y divide-gray-200">
@@ -273,6 +354,8 @@
     <script>
         let allStudents = [];
         let selectedIds = new Set();
+        let currentClassView = 'all'; // manage students per class, not one big list
+        let editingStudentId = null;
         let chartInstance = null;
         let toastTimeout = null;
         
@@ -363,15 +446,57 @@
             const list = document.getElementById('manager-student-list');
             list.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-blue-500">Loading database...</td></tr>';
             try {
-                const res = await fetch(`/${schoolName}/admin/students`);
+                // Fetch everything including archived so the toggle can reveal graduated students
+                const res = await fetch(`/${schoolName}/admin/students/by-class?include_archived=true`);
                 const result = await res.json();
                 if (result.status === "success") {
-                    allStudents = result.students;
-                    updateClassFilterDropdown();
-                    renderStudentTable(allStudents);
+                    // Flatten grouped classes into one array (each student keeps class_name)
+                    allStudents = [];
+                    for (const cls in result.classes) {
+                        result.classes[cls].forEach(s => allStudents.push(s));
+                    }
+                    renderClassTabs();
+                    renderCurrentClassView();
                     updateBulkUI();
                 }
             } catch (err) { list.innerHTML = '<tr><td colspan="4" class="text-red-500 text-center">Connection Error.</td></tr>'; }
+        }
+
+        function renderClassTabs() {
+            const tabs = document.getElementById('class-tabs');
+            const activeStudents = allStudents.filter(s => s.is_active !== false);
+            const classes = [...new Set(activeStudents.map(s => s.class_name))].sort();
+            let html = `<button onclick="setClassView('all')" data-view="all" class="class-tab px-3 py-1.5 rounded-full text-sm font-semibold transition border ${currentClassView === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'}">All (${activeStudents.length})</button>`;
+            classes.forEach(c => {
+                const active = currentClassView === c;
+                const count = activeStudents.filter(s => s.class_name === c).length;
+                html += `<button onclick="setClassView('${c.replace(/'/g, "\\'")}')" class="class-tab px-3 py-1.5 rounded-full text-sm font-semibold transition border ${active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'}">${escapeHtml(c)} (${count})</button>`;
+            });
+            tabs.innerHTML = html;
+        }
+
+        function setClassView(cls) {
+            currentClassView = cls;
+            renderCurrentClassView();
+        }
+
+        function renderCurrentClassView() {
+            const showArchived = document.getElementById('show-archived-toggle')?.checked || false;
+            const searchTerm = (document.getElementById('manager-search')?.value || '').trim().toLowerCase();
+
+            let students = allStudents;
+            if (!showArchived) students = students.filter(s => s.is_active !== false);
+            if (currentClassView !== 'all') students = students.filter(s => s.class_name === currentClassView);
+            if (searchTerm) students = students.filter(s => s.student_name.toLowerCase().includes(searchTerm));
+
+            document.getElementById('current-class-title').innerText =
+                currentClassView === 'all' ? `All Students (${students.length})` : `Class ${currentClassView} (${students.length})`;
+
+            renderStudentTable(students);
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
         function renderStudentTable(students) {
@@ -381,15 +506,18 @@
             students.forEach(s => {
                 const isChecked = selectedIds.has(s.id);
                 const row = document.createElement('tr');
-                row.className = `hover:bg-blue-50 transition ${isChecked ? 'bg-blue-50' : ''}`;
+                const archivedStyle = s.is_active === false ? 'bg-gray-100 text-gray-400' : '';
+                row.className = `hover:bg-blue-50 transition ${isChecked ? 'bg-blue-50' : ''} ${archivedStyle}`;
+                const archivedBadge = s.is_active === false ? ' <span class="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">graduated</span>' : '';
                 row.innerHTML = `
                     <td class="px-6 py-4">
                         <input type="checkbox" onchange="toggleSelect(${s.id})" ${isChecked ? 'checked' : ''} class="rounded border-gray-300 text-blue-600">
                     </td>
-                    <td class="px-6 py-4 text-sm font-bold text-gray-900">${s.student_name}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${s.class_name}</td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="askSingleDelete(${s.id}, '${s.student_name}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">Delete</button>
+                    <td class="px-6 py-4 text-sm font-bold text-gray-900">${escapeHtml(s.student_name)}${archivedBadge}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(s.class_name)}</td>
+                    <td class="px-6 py-4 text-right whitespace-nowrap">
+                        <button onclick='openEditStudentModal(${s.id})' class="text-blue-500 hover:text-blue-700 font-bold px-2 py-1">Edit</button>
+                        <button onclick='askSingleDelete(${s.id})' class="text-red-500 hover:text-red-700 font-bold px-2 py-1">Delete</button>
                     </td>
                 `;
                 list.appendChild(row);
@@ -401,15 +529,29 @@
             if (selectedIds.has(id)) selectedIds.delete(id);
             else selectedIds.add(id);
             updateBulkUI();
-            renderStudentTable(allStudents); // Re-render to show background color
+            renderCurrentClassView(); // Re-render to show background color
         }
 
         function toggleAllSelection() {
             const isAllChecked = document.getElementById('select-all-checkbox').checked;
-            if (isAllChecked) allStudents.forEach(s => selectedIds.add(s.id));
-            else selectedIds.clear();
+            if (isAllChecked) {
+                // Select only students currently visible in this class view
+                getVisibleStudents().forEach(s => selectedIds.add(s.id));
+            } else {
+                selectedIds.clear();
+            }
             updateBulkUI();
-            renderStudentTable(allStudents);
+            renderCurrentClassView();
+        }
+
+        function getVisibleStudents() {
+            const showArchived = document.getElementById('show-archived-toggle')?.checked || false;
+            const searchTerm = (document.getElementById('manager-search')?.value || '').trim().toLowerCase();
+            let students = allStudents;
+            if (!showArchived) students = students.filter(s => s.is_active !== false);
+            if (currentClassView !== 'all') students = students.filter(s => s.class_name === currentClassView);
+            if (searchTerm) students = students.filter(s => s.student_name.toLowerCase().includes(searchTerm));
+            return students;
         }
 
         function updateBulkUI() {
@@ -421,7 +563,9 @@
         }
 
         // --- DELETE ACTIONS ---
-        function askSingleDelete(id, name) {
+        function askSingleDelete(id) {
+            const s = allStudents.find(st => st.id === id);
+            const name = s ? s.student_name : 'this student';
             showDeleteModal(() => executeDelete([id]), `Are you sure you want to delete ${name}? This will remove all their records from the system.`);
         }
 
@@ -438,26 +582,140 @@
             } catch (err) { showToast("Delete failed. Check connection.", "error"); }
         }
 
-        // --- UTILS ---
-        function updateClassFilterDropdown() {
-            const dropdown = document.getElementById('class-filter');
-            const classes = [...new Set(allStudents.map(s => s.class_name))].sort();
-            dropdown.innerHTML = '<option value="all">All Classes</option>';
-            classes.forEach(c => dropdown.innerHTML += `<option value="${c}">${c}</option>`);
+        // --- EDIT STUDENT ---
+        function openEditStudentModal(id) {
+            const s = allStudents.find(st => st.id === id);
+            if (!s) return;
+            editingStudentId = id;
+            document.getElementById('edit-student-name').value = s.student_name;
+            document.getElementById('edit-student-class').value = s.class_name;
+            document.getElementById('edit-student-active').checked = s.is_active !== false;
+            document.getElementById('edit-student-subtitle').innerText = `ID: ${s.id} · currently ${s.class_name}`;
+            document.getElementById('main-content').classList.add('blur-bg');
+            document.getElementById('edit-student-modal').classList.remove('hidden');
         }
 
-        function filterStudentsByClass() {
-            const val = document.getElementById('class-filter').value;
-            const filtered = val === "all" ? allStudents : allStudents.filter(s => s.class_name === val);
-            renderStudentTable(filtered);
+        function closeEditStudentModal() {
+            editingStudentId = null;
+            document.getElementById('main-content').classList.remove('blur-bg');
+            document.getElementById('edit-student-modal').classList.add('hidden');
         }
+
+        async function saveStudentEdit() {
+            if (!editingStudentId) return;
+            const name = document.getElementById('edit-student-name').value.trim();
+            const cls = document.getElementById('edit-student-class').value;
+            const isActive = document.getElementById('edit-student-active').checked;
+            if (!name || !cls) { showToast('Name and class are required.', 'error'); return; }
+
+            const formData = new FormData();
+            formData.append('student_name', name);
+            formData.append('class_name', cls);
+            formData.append('is_active', isActive ? 'true' : 'false');
+
+            try {
+                const res = await fetch(`/${schoolName}/admin/students/${editingStudentId}`, { method: 'PUT', body: formData });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    showToast('Student updated successfully.', 'success');
+                    closeEditStudentModal();
+                    loadAllStudents();
+                } else {
+                    showToast(result.message || 'Update failed.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Connection error. Could not update student.', 'error');
+            }
+        }
+
+        // --- PROMOTE STUDENTS ---
+        function openPromoteModal() {
+            document.getElementById('promote-modal').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('blur-bg');
+            loadPromotePreview();
+        }
+
+        function closePromoteModal() {
+            document.getElementById('promote-modal').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('blur-bg');
+        }
+
+        async function loadPromotePreview() {
+            const movesDiv = document.getElementById('promote-moves');
+            const summary = document.getElementById('promote-summary');
+            const warning = document.getElementById('promote-warning');
+            movesDiv.innerHTML = '';
+            summary.innerText = 'Loading preview...';
+            warning.classList.add('hidden');
+            try {
+                const res = await fetch(`/${schoolName}/admin/students/promote/preview`, { method: 'POST' });
+                const result = await res.json();
+                if (result.status !== 'success') {
+                    summary.innerText = result.message || 'Failed to load preview.';
+                    return;
+                }
+                summary.innerHTML = 'Check the numbers, then confirm. Each class moves with its track (SOD stays SOD, NIT stays NIT). <b>Students in S3 and L5 stay in the database</b> but are marked as graduated.';                movesDiv.innerHTML = result.moves.map(m => `
+                    <div class="flex justify-between items-center bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">
+                        <span class="font-semibold text-purple-800">${escapeHtml(m.from)} → ${escapeHtml(m.to)}</span>
+                        <span class="text-sm text-gray-600">${m.count} student${m.count !== 1 ? 's' : ''}</span>
+                    </div>`).join('') +
+                    Object.entries(result.graduated).map(([cls, count]) => `
+                    <div class="flex justify-between items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                        <span class="font-semibold text-gray-700">${escapeHtml(cls)} (archive)</span>
+                        <span class="text-sm text-gray-600">${count} student${count !== 1 ? 's' : ''}</span>
+                    </div>`).join('') +
+                    Object.entries(result.skipped || {}).map(([cls, count]) => `
+                    <div class="flex justify-between items-center bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        <span class="font-semibold text-amber-700">${escapeHtml(cls)} (unrecognized — not moved)</span>
+                        <span class="text-sm text-gray-600">${count} student${count !== 1 ? 's' : ''}</span>
+                    </div>`).join('');
+                if (result.already_promoted) {
+                    warning.classList.remove('hidden');
+                    warning.innerHTML = `⚠️ Promotion was already run on ${result.last_promoted_at || 'unknown date'}. Only students added after that will be affected.`;
+                }
+            } catch (err) {
+                console.error(err);
+                summary.innerText = 'Connection error. Could not load preview.';
+            }
+        }
+
+        async function runPromotion() {
+            const btn = document.getElementById('promote-confirm-btn');
+            btn.disabled = true;
+            btn.innerText = 'Promoting...';
+            try {
+                const res = await fetch(`/${schoolName}/admin/students/promote`, { method: 'POST' });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    const parts = [];
+                    for (const k in result.moved) if (result.moved[k] > 0) parts.push(`${k}: ${result.moved[k]}`);
+                    if (result.graduated > 0) parts.push(`Archived: ${result.graduated}`);
+                    showToast(`Promotion done! ${parts.join(' · ')}`, 'success');
+                    closePromoteModal();
+                    loadAllStudents();
+                } else {
+                    showToast(result.message || 'Promotion failed.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Connection error during promotion.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Confirm Promotion';
+            }
+        }
+
+        // --- UTILS ---
+        function updateClassFilterDropdown() { /* replaced by class tabs */ }
 
        async function addSingleStudent() {
     const nameInput = document.getElementById('Student_name');
     const classInput = document.getElementById('class_name');
     
     const studentName = nameInput.value.trim();
-    const className = classInput.value.trim();
+    // Pre-select the class from the currently viewed class tab (manage per class)
+    const className = (classInput.value || (currentClassView !== 'all' ? currentClassView : '')).trim();
 
     if (!studentName || !className) {
         showToast("Please enter both Name and Class.", "error");
@@ -480,7 +738,6 @@
         if (result.status === "success") {
             // Clear inputs
             nameInput.value = '';
-            classInput.value = '';
             
             // Refresh the table to show the new student
             await loadAllStudents();
@@ -848,7 +1105,7 @@
         
         async function exportStudentList() {
             try {
-                const selectedClass = document.getElementById('class-filter')?.value || 'all';
+                const selectedClass = currentClassView !== 'all' ? currentClassView : 'all';
                 let url = `/${schoolName}/export/students`;
                 if (selectedClass && selectedClass !== 'all') {
                     url += `?class_name=${encodeURIComponent(selectedClass)}`;

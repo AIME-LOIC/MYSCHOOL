@@ -543,6 +543,7 @@ def search_students(school_name: str, q: str = Query(..., min_length=1), db: Ses
 
     query = db.query(Student.id, Student.student_name, Student.class_name).filter(
         (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.is_active == 1,  # only students still in school (S3/L5 promoted out are hidden)
         Student.student_name.ilike(f"%{q}%")
     ).limit(20).all()
     return [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in query]
@@ -704,7 +705,8 @@ def get_all_students(school_name: str, db: Session = Depends(get_db)):
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     students = db.query(Student.id, Student.student_name, Student.class_name).filter(
-        (Student.school_id == school["id"]) | (Student.school_id.is_(None))
+        (Student.school_id == school["id"]) | (Student.school_id.is_(None)),
+        Student.is_active == 1  # active students only (archived ones are managed per class)
     ).all()
     return {"status": "success", "students": [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in students]}
 
@@ -739,6 +741,221 @@ def delete_visit(school_name: str, visit_id: int, db: Session = Depends(get_db))
     db.delete(visit)
     db.commit()
     return {"status": "success"}
+
+
+# ==================== STUDENT PROMOTION ====================
+
+# L3/L4/L5 are split into two tracks: SOD and NIT (e.g. 'L3 SOD', 'L3 NIT').
+# Promotion keeps each track together: 'L3 SOD' -> 'L4 SOD', 'L3 NIT' -> 'L4 NIT'.
+LEVEL_ORDER = ["S1", "S2", "S3", "L3", "L4", "L5"]
+NEXT_LEVEL = {"S1": "S2", "S2": "S3", "L3": "L4", "L4": "L5"}
+GRADUATED_LEVELS = {"S3", "L5"}  # archived on promotion (data kept, hidden from lists)
+LEVEL_RE = re.compile(r"^\s*(S[123]|L[345])(.*)$", re.IGNORECASE)
+
+
+def _parse_class_level(class_name: str) -> str | None:
+    """Extract the level token from a class name: 'L3 SOD' -> 'L3', 'l3sod' -> 'L3'."""
+    m = LEVEL_RE.match(class_name or "")
+    return m.group(1).upper() if m else None
+
+
+def _next_class_name(class_name: str) -> str | None:
+    """
+    Return the promoted class name, keeping the track suffix exactly as written:
+    'L3 SOD' -> 'L4 SOD', 'l3sod' -> 'l4sod', 'S1' -> 'S2'.
+    Returns None for final-year (S3*/L5*) and unrecognized classes so they are never touched.
+    """
+    level = _parse_class_level(class_name)
+    if level is None or level in GRADUATED_LEVELS:
+        return None
+    m = LEVEL_RE.match(class_name or "")
+    return NEXT_LEVEL[level] + (m.group(2) or "")
+
+
+@app.get("/{school_name}/admin/students/by-class")
+def get_students_by_class(
+    school_name: str,
+    class_name: str | None = Query(None),
+    include_archived: bool = Query(False),
+    db: Session = Depends(get_db)
+):
+    """List students per class (not one big list). Pass class_name to get a single class."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    query = db.query(Student).filter(Student.school_id == school.id)
+    if not include_archived:
+        query = query.filter(Student.is_active == 1)
+    if class_name:
+        query = query.filter(Student.class_name == class_name)
+
+    students = query.order_by(Student.class_name.asc(), Student.student_name.asc()).all()
+
+    grouped: dict = {}
+    for s in students:
+        grouped.setdefault(s.class_name, []).append({
+            "id": s.id,
+            "student_name": s.student_name,
+            "class_name": s.class_name,
+            "is_active": bool(s.is_active),
+        })
+
+    counts = {cls: len(items) for cls, items in grouped.items()}
+    return {"status": "success", "classes": grouped, "counts": counts, "total": len(students)}
+
+
+def _build_promotion_plan(students) -> tuple:
+    """
+    Compute the promotion target for each student from a single snapshot.
+    L3/L4/L5 tracks (SOD, NIT, ...) move together, e.g. 'L3 SOD' -> 'L4 SOD'.
+    Returns (moves, graduated, skipped) where moves maps 'Old -> New' to a count.
+    """
+    moves: dict = {}
+    graduated: dict = {}
+    skipped: dict = {}
+    for s in students:
+        level = _parse_class_level(s.class_name)
+        if level in GRADUATED_LEVELS:
+            key = s.class_name
+            graduated[key] = graduated.get(key, 0) + 1
+            continue
+        next_cls = _next_class_name(s.class_name)
+        if next_cls is None:
+            key = s.class_name or "(no class)"
+            skipped[key] = skipped.get(key, 0) + 1
+            continue
+        key = f"{s.class_name} → {next_cls}"
+        moves[key] = moves.get(key, 0) + 1
+    return moves, graduated, skipped
+
+
+def _sort_move_key(move_key: str):
+    """Sort moves by level order (S1, S2, L3, L4) then by class name."""
+    old_cls = move_key.split("→")[0].strip()
+    level = _parse_class_level(old_cls)
+    return (LEVEL_ORDER.index(level) if level in LEVEL_ORDER else 99, old_cls)
+
+
+@app.post("/{school_name}/admin/students/promote/preview")
+def promote_preview(school_name: str, db: Session = Depends(get_db)):
+    """Show exactly which classes move where (SOD and NIT stay in their tracks) before running."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    students = db.query(Student).filter(
+        Student.school_id == school.id,
+        Student.is_active == 1
+    ).all()
+    moves, graduated, skipped = _build_promotion_plan(students)
+
+    already_done = bool(school.last_promoted_at)
+    return {
+        "status": "success",
+        "moves": [
+            {"from": k.split("→")[0].strip(), "to": k.split("→")[1].strip(), "count": v}
+            for k, v in sorted(moves.items(), key=lambda kv: _sort_move_key(kv[0]))
+        ],
+        "graduated": dict(sorted(graduated.items())),
+        "skipped": dict(sorted(skipped.items())),
+        "already_promoted": already_done,
+        "last_promoted_at": school.last_promoted_at.isoformat() if school.last_promoted_at else None,
+        "message": "Already promoted this year. New students added after promotion will be affected."
+                  if already_done else "Review the numbers then confirm to run the promotion.",
+    }
+
+
+@app.post("/{school_name}/admin/students/promote")
+def promote_students(school_name: str, db: Session = Depends(get_db)):
+    """
+    Promote every active student of this school to the next level, keeping tracks intact:
+    S1->S2, S2->S3, and per track 'L3 SOD'->'L4 SOD', 'L3 NIT'->'L4 NIT', 'L4 ...'->'L5 ...'.
+    Final-year students (S3*, L5*) are archived (is_active = 0) — their data is kept but they
+    no longer appear in the active lists. Targets are computed from one snapshot, so no student
+    can be promoted twice in the same run.
+    """
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    try:
+        # Snapshot BEFORE any change so targets are stable (no double promotion)
+        students = db.query(Student).filter(
+            Student.school_id == school.id,
+            Student.is_active == 1
+        ).all()
+
+        moves, graduated, skipped = _build_promotion_plan(students)
+
+        promoted_count = 0
+        archived_count = 0
+        for s in students:
+            level = _parse_class_level(s.class_name)
+            if level in GRADUATED_LEVELS:
+                s.is_active = 0  # archive: data kept, hidden from active lists
+                archived_count += 1
+                continue
+            next_cls = _next_class_name(s.class_name)
+            if next_cls is None:
+                continue  # unrecognized class names are never touched
+            s.class_name = next_cls
+            promoted_count += 1
+
+        school.last_promoted_at = datetime.now()
+        db.commit()
+
+        return {
+            "status": "success",
+            "message": "Promotion completed successfully",
+            "promoted": promoted_count,
+            "graduated": archived_count,
+            "moved": moves,
+            "graduated_by_class": graduated,
+            "skipped": skipped,
+        }
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
+
+@app.put("/{school_name}/admin/students/{student_id}")
+def update_student(
+    school_name: str,
+    student_id: int,
+    student_name: str = Form(...),
+    class_name: str = Form(...),
+    is_active: bool = Form(True),
+    db: Session = Depends(get_db)
+):
+    """Edit a student's name and/or class (e.g. fix wrong class, or restore an archived student)."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id).first()
+    if not student:
+        return {"status": "error", "message": "Student not found"}
+
+    student_name_clean = student_name.strip()
+    class_name_clean = class_name.strip()
+    if not student_name_clean or not class_name_clean:
+        return {"status": "error", "message": "Name and class are required"}
+
+    duplicate = db.query(Student).filter(
+        Student.student_name == student_name_clean,
+        Student.class_name == class_name_clean,
+        Student.school_id == school.id,
+        Student.id != student_id
+    ).first()
+    if duplicate:
+        return {"status": "error", "message": "Another student with this name already exists in that class"}
+
+    student.student_name = student_name_clean
+    student.class_name = class_name_clean
+    student.is_active = 1 if is_active else 0
+    db.commit()
+    return {"status": "success", "message": "Student updated successfully"}
 
 
 @app.post("/{school_name}/admin/add_student")

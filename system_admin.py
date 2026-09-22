@@ -25,6 +25,9 @@ class School(Base):
     open_at = Column(DateTime, nullable=True)     # scheduled open time (optional)
     close_at = Column(DateTime, nullable=True)    # scheduled close time (optional)
 
+    # Promotion tracking
+    last_promoted_at = Column(DateTime, nullable=True)  # set when a promotion is run for this school
+
     def __repr__(self):
         return f"<School(id={self.id}, name={self.school_name}, code={self.school_code})>"
 
