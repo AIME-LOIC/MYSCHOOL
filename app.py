@@ -688,15 +688,20 @@ def upload_students(school_name: str, file: UploadFile = File(...), db: Session 
 
     added = 0
     skipped = 0
+    invalid = 0
     for _, row in df.iterrows():
         name, cls = row["student_name"], row["class_name"]
-        if db.query(Student).filter(Student.student_name == name, Student.class_name == cls, Student.school_id == school.id).first():
+        cls = normalize_class_name(cls)
+        if not name or not cls:
+            invalid += 1
+            continue
+        if db.query(Student).filter(Student.student_name == str(name).strip(), Student.class_name == cls, Student.school_id == school.id).first():
             skipped += 1
             continue
-        db.add(Student(student_name=name, class_name=cls, school_id=school.id))
+        db.add(Student(student_name=str(name).strip(), class_name=cls, school_id=school.id))
         added += 1
     db.commit()
-    return {"status": "success", "added": added, "skipped": skipped}
+    return {"status": "success", "added": added, "skipped": skipped, "invalid": invalid}
 
 
 @app.get("/{school_name}/admin/students")
@@ -743,10 +748,31 @@ def delete_visit(school_name: str, visit_id: int, db: Session = Depends(get_db))
     return {"status": "success"}
 
 
+# ==================== CLASS NAME NORMALIZATION ====================
+
+# Canonical class names (no space between level and track): 'L3SOD', 'L3NIT', 'L4SOD',
+# 'L4NIT', 'L5SOD', 'L5NIT', 'S1', 'S2', 'S3'. Historical data also contains spaced
+# variants ('L3 SOD', 'L4 NIT', ...) which all mean the same class, so every write path
+# normalizes class names to the canonical form to keep students in one single class.
+VALID_CLASSES = ["S1", "S2", "S3", "L3SOD", "L3NIT", "L4SOD", "L4NIT", "L5SOD", "L5NIT"]
+_CLASS_ALIASES = {"S.1": "S1", "S-1": "S1", "S.2": "S2", "S-2": "S2", "S.3": "S3", "S-3": "S3"}
+
+def normalize_class_name(class_name: str) -> str | None:
+    """
+    Map any class-name variant to its canonical form, or None if unrecognized.
+    'l4 nit' -> 'L4NIT', 'L4NIT' -> 'L4NIT', 'L4-NIT' -> 'L4NIT', 's1' -> 'S1'.
+    """
+    if not class_name:
+        return None
+    token = re.sub(r"[^A-Za-z0-9]", "", str(class_name)).upper()
+    token = _CLASS_ALIASES.get(token, token)
+    return token if token in VALID_CLASSES else None
+
+
 # ==================== STUDENT PROMOTION ====================
 
-# L3/L4/L5 are split into two tracks: SOD and NIT (e.g. 'L3 SOD', 'L3 NIT').
-# Promotion keeps each track together: 'L3 SOD' -> 'L4 SOD', 'L3 NIT' -> 'L4 NIT'.
+# L3/L4/L5 are split into two tracks: SOD and NIT (e.g. 'L3SOD', 'L3NIT').
+# Promotion keeps each track together: 'L3SOD' -> 'L4SOD', 'L3NIT' -> 'L4NIT'.
 LEVEL_ORDER = ["S1", "S2", "S3", "L3", "L4", "L5"]
 NEXT_LEVEL = {"S1": "S2", "S2": "S3", "L3": "L4", "L4": "L5"}
 GRADUATED_LEVELS = {"S3", "L5"}  # archived on promotion (data kept, hidden from lists)
@@ -761,15 +787,16 @@ def _parse_class_level(class_name: str) -> str | None:
 
 def _next_class_name(class_name: str) -> str | None:
     """
-    Return the promoted class name, keeping the track suffix exactly as written:
-    'L3 SOD' -> 'L4 SOD', 'l3sod' -> 'l4sod', 'S1' -> 'S2'.
+    Return the promoted class name in canonical form (no space):
+    'L3SOD' -> 'L4SOD', 'L3 SOD' -> 'L4SOD', 'l3sod' -> 'L4SOD', 'S1' -> 'S2'.
     Returns None for final-year (S3*/L5*) and unrecognized classes so they are never touched.
     """
     level = _parse_class_level(class_name)
     if level is None or level in GRADUATED_LEVELS:
         return None
     m = LEVEL_RE.match(class_name or "")
-    return NEXT_LEVEL[level] + (m.group(2) or "")
+    suffix = (m.group(2) or "").replace(" ", "")
+    return normalize_class_name(NEXT_LEVEL[level] + suffix)
 
 
 @app.get("/{school_name}/admin/students/by-class")
@@ -808,7 +835,7 @@ def get_students_by_class(
 def _build_promotion_plan(students) -> tuple:
     """
     Compute the promotion target for each student from a single snapshot.
-    L3/L4/L5 tracks (SOD, NIT, ...) move together, e.g. 'L3 SOD' -> 'L4 SOD'.
+    L3/L4/L5 tracks (SOD, NIT, ...) move together, e.g. 'L3SOD' -> 'L4SOD'.
     Returns (moves, graduated, skipped) where moves maps 'Old -> New' to a count.
     """
     moves: dict = {}
@@ -870,7 +897,7 @@ def promote_preview(school_name: str, db: Session = Depends(get_db)):
 def promote_students(school_name: str, db: Session = Depends(get_db)):
     """
     Promote every active student of this school to the next level, keeping tracks intact:
-    S1->S2, S2->S3, and per track 'L3 SOD'->'L4 SOD', 'L3 NIT'->'L4 NIT', 'L4 ...'->'L5 ...'.
+    S1->S2, S2->S3, and per track 'L3SOD'->'L4SOD', 'L3NIT'->'L4NIT', 'L4SOD'->'L5SOD'.
     Final-year students (S3*, L5*) are archived (is_active = 0) — their data is kept but they
     no longer appear in the active lists. Targets are computed from one snapshot, so no student
     can be promoted twice in the same run.
@@ -938,9 +965,9 @@ def update_student(
         return {"status": "error", "message": "Student not found"}
 
     student_name_clean = student_name.strip()
-    class_name_clean = class_name.strip()
+    class_name_clean = normalize_class_name(class_name)
     if not student_name_clean or not class_name_clean:
-        return {"status": "error", "message": "Name and class are required"}
+        return {"status": "error", "message": "Name and a valid class are required"}
 
     duplicate = db.query(Student).filter(
         Student.student_name == student_name_clean,
@@ -969,6 +996,11 @@ def add_student(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+
+    student_name = student_name.strip()
+    class_name = normalize_class_name(class_name)
+    if not student_name or not class_name:
+        return {"status": "error", "message": "Name and a valid class are required"}
 
     existing = db.query(Student).filter(
         Student.student_name == student_name,
