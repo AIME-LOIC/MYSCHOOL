@@ -1296,7 +1296,7 @@ def export_visits_to_excel(
 # ==================== KEEP ALIVE ====================
 
 def keep_awake():
-    url = os.environ.get("RENDER_URL", "https://myschool-rw-web.onrender.com")
+    url = os.environ.get("RENDER_URL", "https://myschool-web-rw.onrender.com")
     while True:
         try:
             requests.get(url)
