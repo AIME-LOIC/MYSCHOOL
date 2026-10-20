@@ -761,7 +761,7 @@
         const div = document.createElement('div');
         div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
         div.setAttribute('data-student-id', student.id);
-        div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span>`;
+        div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span> <span class="ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800">Student ID: ${student.id}</span>`;
         div.onclick = () => selectStudent(student.id, div);
         resultsDiv.appendChild(div);
     });
