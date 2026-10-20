@@ -16,6 +16,21 @@
 <form id="login-form" method="post" action="/{{ school.school_name }}/parent/login"><label for="login-email">Email</label><input id="login-email" name="email" type="email" autocomplete="email" required><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required><button style="width:100%;margin-top:18px" type="submit">Sign in</button></form>
 <form id="signup-form" class="hidden" method="post" action="/{{ school.school_name }}/parent/signup"><label for="parent-name">Parent or guardian name</label><input id="parent-name" name="parent_name" maxlength="120" autocomplete="name" required><label for="student-id">Student ID</label><input id="student-id" name="student_id" type="number" min="1" required><label for="link-code">School-issued parent linking code</label><input id="link-code" name="link_code" maxlength="32" autocomplete="off" required><label for="signup-email">Email</label><input id="signup-email" name="email" type="email" maxlength="254" autocomplete="email" required><label for="signup-password">Password (at least 8 characters)</label><input id="signup-password" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required><button style="width:100%;margin-top:18px" type="submit">Create parent account</button></form>
 <p class="msg" role="status">{% if request.query_params.get('error') %}{{ request.query_params.get('error') }}{% endif %}</p><p class="muted" style="font-size:12px;margin-top:20px">Do not share your linking code. If you do not have one, request it from the school administration.</p></section>
-<script>function showForm(which){const login=which==='login';document.getElementById('login-form').classList.toggle('hidden',!login);document.getElementById('signup-form').classList.toggle('hidden',login);document.getElementById('login-tab').classList.toggle('active',login);document.getElementById('signup-tab').classList.toggle('active',!login)}</script>
+<script>
+function showForm(which){const login=which==='login';document.getElementById('login-form').classList.toggle('hidden',!login);document.getElementById('signup-form').classList.toggle('hidden',login);document.getElementById('login-tab').classList.toggle('active',login);document.getElementById('signup-tab').classList.toggle('active',!login)}
+for (const id of ['login-form','signup-form']) {
+  document.getElementById(id).addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const form=this, msg=document.querySelector('.msg'), button=form.querySelector('button[type="submit"]');
+    button.disabled=true; msg.textContent='Please wait…'; msg.style.color='var(--muted)';
+    try {
+      const response=await fetch(form.action,{method:'POST',body:new URLSearchParams(new FormData(form)),redirect:'follow'});
+      if (!response.ok) { let data={}; try{data=await response.json()}catch{} throw new Error(data.detail||'Could not complete the request.'); }
+      window.location.href=response.url||form.action.replace(/\\/(login|signup)$/,'');
+    } catch(error) { msg.textContent=error.message||'Request failed.'; msg.style.color='#a32929'; }
+    finally { button.disabled=false; }
+  });
+}
+</script>
 {% endif %}
 </main></body></html>
