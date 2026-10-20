@@ -50,13 +50,15 @@
         const empty = document.createElement('div'); empty.className='state'; empty.textContent='No schools match that search. Try another name or code.'; grid.appendChild(empty); return;
       }
       shown.forEach(s => {
-        const a = document.createElement('a');
+        const a = document.createElement('article');
         a.className='school';
-        a.href='/' + encodeURIComponent(s.school_name) + '/parentportal';
         const icon = document.createElement('div'); icon.className='school-icon'; const schoolName=String(s.school_name || '').trim(); const schoolCode=String(s.school_code || '').trim(); const isSos=/\bsos\b/i.test(schoolName) || /^sos$/i.test(schoolCode); if(isSos){icon.classList.add('sos-logo');const logo=document.createElement('img');logo.src='/static/sos.webp';logo.alt='SOS school logo';logo.loading='lazy';icon.appendChild(logo);}else{icon.textContent=schoolName.charAt(0).toUpperCase() || 'S';}
         const title = document.createElement('h2'); title.textContent=s.school_name || 'School';
         const meta = document.createElement('div'); meta.className='meta'; meta.textContent='School code: ' + (s.school_code || '—');
-        const open = document.createElement('div'); open.className='open'; open.innerHTML='<span>Select school</span><span aria-hidden="true">→</span>';
+        const open = document.createElement('div'); open.className='open';
+        const parentLink = document.createElement('a'); parentLink.href='/' + encodeURIComponent(s.school_name) + '/parentportal'; parentLink.textContent='Parent portal →'; parentLink.style.color='var(--green)'; parentLink.style.textDecoration='none';
+        const studentLink = document.createElement('a'); studentLink.href='/' + encodeURIComponent(s.school_name) + '/student-login'; studentLink.textContent='Student sign in'; studentLink.style.color='var(--muted)'; studentLink.style.textDecoration='none'; studentLink.style.fontSize='12px';
+        open.style.flexWrap='wrap'; open.style.gap='12px'; open.append(parentLink,studentLink);
         a.append(icon,title,meta,open); grid.appendChild(a);
       });
     }
