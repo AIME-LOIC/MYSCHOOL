@@ -12,6 +12,8 @@ class Student(Base):
     class_name = Column(String(50), nullable=False)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True, default=1)  # Made nullable for migration compatibility
     is_active = Column(Integer, nullable=False, default=1)  # 1 = studying (in active class), 0 = promoted out / archived
+    password_hash = Column(String(255), nullable=True)  # Null means the initial zero-padded ID password has not been used yet
+    must_change_password = Column(Integer, nullable=False, default=1)
 
     # One-to-many relationship with visits
     visits = relationship(
