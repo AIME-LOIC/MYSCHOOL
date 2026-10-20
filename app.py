@@ -1607,7 +1607,7 @@ def student_login(school_name: str, request: Request, student_id: int = Form(...
     expires = int(time.time()) + _STUDENT_SESSION_SECONDS
     token = _student_session_token(student.id, school.id, expires)
     response = JSONResponse({"status": "success", "must_change_password": bool(student.must_change_password)})
-    response.set_cookie(_STUDENT_COOKIE, token, max_age=_STUDENT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path=f"/{school_name}")
+    response.set_cookie(_STUDENT_COOKIE, token, max_age=_STUDENT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/")
     return response
 
 @app.post("/{school_name}/student/change-password")
@@ -1629,7 +1629,7 @@ def student_change_password(school_name: str, request: Request, new_password: st
 @app.post("/{school_name}/student/logout")
 def student_logout(school_name: str, request: Request):
     response = JSONResponse({"status": "success"})
-    response.delete_cookie(_STUDENT_COOKIE, path=f"/{school_name}")
+    response.delete_cookie(_STUDENT_COOKIE, path="/")
     return response
 
 @app.get("/{school_name}/student")
