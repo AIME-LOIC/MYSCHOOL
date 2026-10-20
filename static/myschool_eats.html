@@ -170,7 +170,7 @@ function renderMenu() {
   });
 }
 async function loadMenu() {
-  $('menu').innerHTML = '<div class="loading">Loading today's menu…</div>';
+  $('menu').innerHTML = "<div class=\"loading\">Loading today's menu…</div>";
   try {
     const data = await requestJson(base + '/api/menu');
     items = Array.isArray(data) ? data : [];
