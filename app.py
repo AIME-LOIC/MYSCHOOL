@@ -1413,7 +1413,7 @@ def eats_transactions(school_name: str, request: Request, db: Session = Depends(
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     rows = db.query(EatsTransaction).filter(EatsTransaction.school_id == school.id).order_by(EatsTransaction.created_at.desc()).limit(limit).all()
-    return [{"id": x.id, "student_id": x.student_id, "item_id": x.item_id, "amount_rwf": x.amount_cents, "balance_after_rwf": x.balance_after_cents, "status": x.status, "created_at": x.created_at.isoformat()} for x in rows]
+    return [{"id": x.id, "student_id": x.student_id, "item_id": x.item_id, "type": x.transaction_type, "amount_rwf": x.amount_cents, "balance_after_rwf": x.balance_after_cents, "status": x.status, "created_at": x.created_at.isoformat()} for x in rows]
 
 
 class EatsTopUpInput(_PydanticModel):
