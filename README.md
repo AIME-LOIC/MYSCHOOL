@@ -13,6 +13,7 @@ A dedicated product branch for modernizing MYSCHOOL as a 1percent product and ad
 - `GET /{school_name}/eats/api/menu` — available menu items.
 - `POST /{school_name}/eats/api/menu` — add a menu item (school admin session required).
 - `POST /{school_name}/eats/api/cards/link` — link an NFC UID to a student (school admin session required).
+- `POST /{school_name}/eats/api/cards/top-up` — add balance with an admin session and recorded reference.
 - `POST /{school_name}/eats/api/pay` — debit a registered card and create a transaction.
 - `GET /{school_name}/eats/api/transactions` — recent transaction records (school admin session required).
 
