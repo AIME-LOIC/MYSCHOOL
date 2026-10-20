@@ -1414,3 +1414,28 @@ def eats_transactions(school_name: str, request: Request, db: Session = Depends(
         raise HTTPException(status_code=404, detail="School not found")
     rows = db.query(EatsTransaction).filter(EatsTransaction.school_id == school.id).order_by(EatsTransaction.created_at.desc()).limit(limit).all()
     return [{"id": x.id, "student_id": x.student_id, "item_id": x.item_id, "amount_rwf": x.amount_cents, "balance_after_rwf": x.balance_after_cents, "status": x.status, "created_at": x.created_at.isoformat()} for x in rows]
+
+
+class EatsTopUpInput(_PydanticModel):
+    student_id: int
+    amount_rwf: int = _Field(gt=0, le=1000000)
+    reference: str = _Field(min_length=3, max_length=120)
+
+@app.post("/{school_name}/eats/api/cards/top-up")
+def eats_top_up(school_name: str, payload: EatsTopUpInput, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School admin login required")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    card = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.student_id == payload.student_id, EatsCard.active == 1).with_for_update().first()
+    if not card:
+        raise HTTPException(status_code=404, detail="No active canteen card found for this student")
+    try:
+        card.balance_cents += payload.amount_rwf
+        tx = EatsTransaction(school_id=school.id, student_id=card.student_id, card_id=card.id, item_id=None, transaction_type="top_up", amount_cents=payload.amount_rwf, balance_after_cents=card.balance_cents, status="approved")
+        db.add(tx); db.commit(); db.refresh(tx)
+        return {"status":"approved", "transaction_id":tx.id, "student_id":card.student_id, "amount_rwf":payload.amount_rwf, "balance_rwf":card.balance_cents, "reference":payload.reference}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Top-up failed; verify the ledger before retrying")
