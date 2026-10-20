@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7faf7">
+  <title>Page not found · MYSCHOOL</title>
+  <style>
+    :root{color-scheme:light;--green:#176b45;--deep:#104b32;--ink:#17251c;--muted:#6b786f;--line:#e3eae4;--paper:#f6f8f5}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+    .top{width:min(1120px,100%);margin:0 auto;padding:24px 28px;display:flex;align-items:center;gap:12px}
+    .mark{width:40px;height:40px;display:grid;place-items:center;background:var(--green);color:#fff;border-radius:12px;font-size:13px;font-weight:850;letter-spacing:-.04em}
+    .brand{font-size:18px;font-weight:850;letter-spacing:-.04em}.brand small{display:block;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+    main{width:min(1120px,100%);margin:auto;padding:32px 28px 76px;display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);align-items:center;gap:42px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.16em}
+    .eyebrow:before{content:"";width:22px;height:2px;background:var(--green)}
+    h1{font-size:clamp(38px,6vw,68px);line-height:.98;letter-spacing:-.07em;margin:18px 0}
+    h1 span{color:var(--green)}
+    .copy{max-width:480px;color:var(--muted);font-size:16px;margin:0 0 28px}
+    .actions{display:flex;flex-wrap:wrap;gap:10px}
+    .btn{min-height:46px;display:inline-flex;align-items:center;justify-content:center;padding:0 18px;border-radius:11px;text-decoration:none;font-weight:750;border:1px solid var(--line);color:var(--ink);background:#fff}
+    .btn.primary{background:var(--green);border-color:var(--green);color:#fff}.btn:hover{transform:translateY(-1px)}
+    .art{min-height:320px;display:grid;place-items:center;position:relative}
+    .orb{width:min(100%,340px);aspect-ratio:1;border-radius:42% 58% 55% 45%;background:#e6f2e8;border:1px solid #d7e8d9;display:grid;place-items:center;position:relative;transform:rotate(-7deg)}
+    .number{font-size:clamp(90px,15vw,150px);font-weight:900;letter-spacing:-.1em;color:var(--green);line-height:1;transform:rotate(7deg)}
+    .float{position:absolute;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 15px;box-shadow:0 14px 35px #173d2510;font-size:12px;font-weight:750;transform:rotate(7deg)}
+    .float.one{top:22%;left:-3%}.float.two{right:-3%;bottom:20%;transform:rotate(-5deg);color:var(--green)}
+    footer{width:min(1120px,100%);margin:0 auto;padding:18px 28px 24px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}
+    @media(max-width:700px){.top{padding:18px 20px}main{grid-template-columns:1fr;gap:8px;padding:42px 20px 52px}.art{grid-row:1;min-height:210px}.orb{width:205px}.number{font-size:88px}.float.one{left:-12%}.float.two{right:-12%}h1{font-size:48px}.copy{font-size:15px}footer{padding:18px 20px 24px}}
+    @media(prefers-reduced-motion:reduce){.btn{transition:none}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="mark" aria-hidden="true">MS</div>
+    <div class="brand">MYSCHOOL<small>School management</small></div>
+  </header>
+  <main>
+    <section>
+      <div class="eyebrow">Error 404 · Page not found</div>
+      <h1>This page took<br>a <span>wrong turn.</span></h1>
+      <p class="copy">The page may have moved, the address may be incorrect, or the link may no longer be available. Let's get you back to the right place.</p>
+      <div class="actions">
+        <a class="btn primary" href="/">Go to MYSCHOOL home</a>
+        <a class="btn" href="javascript:history.back()">Go back</a>
+      </div>
+    </section>
+    <div class="art" aria-hidden="true">
+      <div class="orb"><div class="number">404</div><div class="float one">Page not found</div><div class="float two">Let's find your way ↗</div></div>
+    </div>
+  </main>
+  <footer>© MYSCHOOL · A simpler way to manage school life.</footer>
+</body>
+</html>
