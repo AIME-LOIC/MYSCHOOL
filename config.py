@@ -48,6 +48,7 @@ def init_db():
     _ensure_visit_transport_columns()
     _ensure_student_is_active_column()
     _ensure_student_password_columns()
+    _ensure_parent_link_code_column()
     _ensure_school_last_promoted_at_column()
 
 def _ensure_products_table():
@@ -211,3 +212,16 @@ def _ensure_student_password_columns():
         if "must_change_password" not in columns:
             connection.execute(text("ALTER TABLE students ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 1"))
         connection.commit()
+
+
+def _ensure_parent_link_code_column():
+    """Add the school-issued parent verification code column to existing student tables."""
+    from sqlalchemy import text, inspect
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if "students" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("students")}
+        if "parent_link_code" not in columns:
+            connection.execute(text("ALTER TABLE students ADD COLUMN parent_link_code VARCHAR(32)"))
+            connection.commit()
