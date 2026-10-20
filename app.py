@@ -1573,7 +1573,7 @@ def student_login_page(school_name: str, request: Request, db: Session = Depends
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     student_id = _read_student_session(request, school.id)
-    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first() if student_id else None
+    student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None))), Student.is_active == 1).first() if student_id else None
     return templates.TemplateResponse("student_portal.html", {"request": request, "school": school, "student": student})
 
 @app.get("/{school_name}/student-login/lookup")
@@ -1581,7 +1581,7 @@ def student_login_lookup(school_name: str, student_id: int = Query(..., ge=1), d
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first()
+    student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None))), Student.is_active == 1).first()
     if not student:
         raise HTTPException(status_code=404, detail="No active student with that ID was found in this school.")
     return {"student_id": student.id, "student_name": student.student_name, "class_name": student.class_name}
@@ -1591,7 +1591,7 @@ def student_login(school_name: str, request: Request, student_id: int = Form(...
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first()
+    student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None))), Student.is_active == 1).first()
     if not student:
         raise HTTPException(status_code=401, detail="Student ID or password is incorrect.")
     if student.password_hash:
@@ -1616,7 +1616,7 @@ def student_change_password(school_name: str, request: Request, new_password: st
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     student_id = _read_student_session(request, school.id)
-    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first() if student_id else None
+    student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None))), Student.is_active == 1).first() if student_id else None
     if not student:
         raise HTTPException(status_code=401, detail="Please sign in again.")
     if len(new_password) < 8 or len(new_password) > 128:
@@ -1638,7 +1638,7 @@ def student_dashboard(school_name: str, request: Request, db: Session = Depends(
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     student_id = _read_student_session(request, school.id)
-    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first() if student_id else None
+    student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None))), Student.is_active == 1).first() if student_id else None
     if not student:
         return RedirectResponse(url=f"/{school_name}/student-login", status_code=303)
     return templates.TemplateResponse("student_portal.html", {"request": request, "school": school, "student": student})
