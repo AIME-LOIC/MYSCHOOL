@@ -10,6 +10,7 @@ import pandas as pd
 import threading, time, requests, os, signal, hashlib, hmac
 from datetime import datetime
 import re
+from difflib import SequenceMatcher
 from openpyxl.styles import Font, PatternFill
 
 from config import get_db, engine, Base, init_db
@@ -34,12 +35,79 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+def _typo_redirect_target(request: Request) -> str | None:
+    """Find a safe, unambiguous URL correction for a mistyped browser path."""
+    path = request.url.path
+    if path.startswith(("/api/", "/static/")) or path in {"/docs", "/redoc", "/openapi.json"}:
+        return None
+
+    parts = path.strip("/").split("/") if path != "/" else []
+    if not parts:
+        return None
+
+    candidates: list[tuple[float, str]] = []
+    for route in app.routes:
+        route_path = getattr(route, "path", "")
+        methods = getattr(route, "methods", set()) or set()
+        if not route_path.startswith("/") or not ({"GET", "HEAD"} & methods):
+            continue
+        if route_path.startswith(("/api/", "/static/")) or route_path in {"/docs", "/redoc", "/openapi.json"}:
+            continue
+
+        route_parts = route_path.strip("/").split("/") if route_path != "/" else []
+        if len(parts) != len(route_parts):
+            continue
+
+        corrected = []
+        changed = 0
+        score = 1.0
+        valid = True
+        for actual, expected in zip(parts, route_parts):
+            if expected.startswith("{") and expected.endswith("}"):
+                # Keep dynamic values (such as a school name) exactly as entered.
+                corrected.append(actual)
+                continue
+            if actual == expected:
+                corrected.append(expected)
+                continue
+
+            # Only suggest clear, one-segment spelling corrections.
+            if len(actual) < 4 or len(expected) < 4:
+                valid = False
+                break
+            similarity = SequenceMatcher(None, actual.lower(), expected.lower()).ratio()
+            if similarity < 0.78:
+                valid = False
+                break
+            changed += 1
+            score = min(score, similarity)
+            corrected.append(expected)
+
+        if valid and changed == 1:
+            candidates.append((score, "/" + "/".join(corrected)))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    # Do not guess when two routes are similarly plausible.
+    if len(candidates) > 1 and candidates[0][0] - candidates[1][0] < 0.04:
+        return None
+    return candidates[0][1]
+
+
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Render the branded 404 for browser pages without changing API error behavior."""
+    """Correct obvious browser URL typos and render the branded 404 otherwise."""
     if exc.status_code == 404:
         accepts = request.headers.get("accept", "")
         is_api = "/api/" in request.url.path or "application/json" in accepts
+        if not is_api and request.method in {"GET", "HEAD"}:
+            corrected_path = _typo_redirect_target(request)
+            if corrected_path and corrected_path != request.url.path:
+                return RedirectResponse(
+                    url=f"{corrected_path}?{request.url.query}" if request.url.query else corrected_path,
+                    status_code=307,
+                )
         if not is_api:
             return templates.TemplateResponse(
                 "404.html",
