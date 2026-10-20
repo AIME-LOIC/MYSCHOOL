@@ -11,7 +11,7 @@ import re
 from openpyxl.styles import Font, PatternFill
 
 from config import get_db, engine, Base, init_db
-from model import Student, Visit, Product
+from model import Student, Visit, Product, SupportRequest
 from system_admin import School, create_school_database, list_all_schools, delete_school_database, get_school_database_info
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -175,22 +175,28 @@ def _school_access_guard(school, request):
     <h2 class="modal-title">Saba Ubufasha</h2>
     <p class="modal-subtitle">Uzuza ubu busabe usake ubufasha bwa sisiteme.</p>
     
-    <form action="https://formspree.io/f/xqeozoyn" method="POST">
+    <form id="supportForm" onsubmit="submitSupportRequest(event)">
       <input type="hidden" name="school_name" value="{school.school_name}">
 
       <div class="form-group">
-        <label>Amazina yombi / Full Name *</label>
-        <input type="text" name="name" required placeholder="e.g., John Doe">
+        <label for="support-name">Amazina yombi / Full Name *</label>
+        <input id="support-name" type="text" name="name" required maxlength="120" autocomplete="name" placeholder="e.g., John Doe">
+      </div>
+
+      <div class="form-group">
+        <label for="support-email">Email / Email address</label>
+        <input id="support-email" type="email" name="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
       </div>
       
       <div class="form-group">
-        <label>Ikibazo ufite / Describe Your Issue *</label>
-        <textarea name="message" required placeholder="Andika ikibazo cyose ufite hano..."></textarea>
+        <label for="support-message">Ikibazo ufite / Describe Your Issue *</label>
+        <textarea id="support-message" name="message" required maxlength="3000" placeholder="Andika ikibazo cyose ufite hano..."></textarea>
       </div>
+      <p id="support-feedback" role="status" aria-live="polite" style="font-size:13px;line-height:1.5;margin-top:8px"></p>
       
       <div class="modal-actions">
-        <button type="button" class="btn btn-cancel" onclick="toggleModal(false)">Bika (Cancel)</button>
-        <button type="submit" class="btn btn-submit">Ohereza (Send)</button>
+        <button type="button" class="btn btn-cancel" onclick="toggleModal(false)">Cancel</button>
+        <button id="support-submit" type="submit" class="btn btn-submit">Ohereza (Send)</button>
       </div>
     </form>
   </div>
@@ -203,6 +209,35 @@ function toggleModal(show) {{
     modal.classList.add('active');
   }} else {{
     modal.classList.remove('active');
+  }}
+}}
+
+async function submitSupportRequest(event) {{
+  event.preventDefault();
+  const form = document.getElementById('supportForm');
+  const feedback = document.getElementById('support-feedback');
+  const button = document.getElementById('support-submit');
+  const payload = new FormData(form);
+  feedback.style.color = '#4a5568';
+  feedback.textContent = 'Ohereza birimo gukorwa… / Sending your request…';
+  button.disabled = true;
+  button.textContent = 'Sending…';
+  try {{
+    const response = await fetch('/support/requests', {{ method: 'POST', body: payload }});
+    const result = await response.json();
+    if (!response.ok || result.status !== 'success') {{
+      throw new Error(result.message || 'Could not submit your request.');
+    }}
+    feedback.style.color = '#15803d';
+    feedback.textContent = 'Ubusabe bwawe bwoherejwe. / Your support request has been sent.';
+    form.reset();
+    setTimeout(() => toggleModal(false), 1800);
+  }} catch (error) {{
+    feedback.style.color = '#b91c1c';
+    feedback.textContent = error.message || 'Connection failed. Please try again.';
+  }} finally {{
+    button.disabled = false;
+    button.textContent = 'Ohereza (Send)';
   }}
 }}
 
@@ -371,6 +406,40 @@ def _get_school(school_name: str, db: Session):
         if school:
             _school_cache[school_name] = {"id": school.id, "school_code": school.school_code, "school_name": school.school_name}
     return _school_cache.get(school_name)
+
+
+@app.post("/support/requests")
+def create_support_request(
+    school_name: str = Form(...),
+    name: str = Form(...),
+    message: str = Form(...),
+    email: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Save a support request from a school portal access-disabled screen."""
+    school_name = school_name.strip()[:150]
+    name = name.strip()[:120]
+    email = email.strip()[:254]
+    message = message.strip()[:3000]
+    if not school_name or not name or len(message) < 5:
+        raise HTTPException(status_code=400, detail="Please provide your name and a clear description of the issue.")
+    if email and not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    ticket = SupportRequest(
+        school_name=school_name,
+        name=name,
+        email=email or None,
+        message=message,
+        status="open",
+    )
+    try:
+        db.add(ticket)
+        db.commit()
+        db.refresh(ticket)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=503, detail="Support is temporarily unavailable. Please try again later.")
+    return {"status": "success", "ticket_id": ticket.id, "message": "Support request received."}
 
 
 # ==================== SYSTEM ADMIN ENDPOINTS ====================
