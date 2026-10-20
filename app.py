@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, Query, HTTPException, Response
 from fastapi.responses import RedirectResponse, JSONResponse, FileResponse, HTMLResponse
 from fastapi.exception_handlers import http_exception_handler as default_http_exception_handler
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -33,8 +34,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Render the branded 404 for browser pages without changing API error behavior."""
     if exc.status_code == 404:
         accepts = request.headers.get("accept", "")
@@ -450,6 +451,13 @@ def create_support_request(
         db.rollback()
         raise HTTPException(status_code=503, detail="Support is temporarily unavailable. Please try again later.")
     return {"status": "success", "ticket_id": ticket.id, "message": "Support request received."}
+
+
+
+@app.get("/", response_class=HTMLResponse)
+def school_selector(request: Request):
+    """Public home page: show the school selector instead of a blank or missing route."""
+    return templates.TemplateResponse("school_select.html", {"request": request})
 
 
 # ==================== SYSTEM ADMIN ENDPOINTS ====================
