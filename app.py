@@ -1524,3 +1524,121 @@ def eats_top_up(school_name: str, payload: EatsTopUpInput, request: Request, db:
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="Top-up failed; verify the ledger before retrying")
+
+
+# ==================== STUDENT PORTAL AUTHENTICATION ====================
+import secrets as _secrets
+import base64 as _base64
+
+_STUDENT_COOKIE = "myschool_student_session"
+_STUDENT_SESSION_SECONDS = 8 * 60 * 60
+
+def _student_password_hash(password: str) -> str:
+    salt = _secrets.token_hex(16)
+    iterations = 310000
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("ascii"), iterations)
+    return "pbkdf2_sha256$" + str(iterations) + "$" + salt + "$" + _base64.urlsafe_b64encode(digest).decode("ascii")
+
+def _student_password_matches(password: str, encoded: str) -> bool:
+    try:
+        algorithm, rounds, salt, expected = encoded.split("$", 3)
+        if algorithm != "pbkdf2_sha256":
+            return False
+        digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("ascii"), int(rounds))
+        actual = _base64.urlsafe_b64encode(digest).decode("ascii")
+        return hmac.compare_digest(actual, expected)
+    except (ValueError, TypeError):
+        return False
+
+def _student_session_token(student_id: int, school_id: int, expires: int) -> str:
+    payload = f"{student_id}:{school_id}:{expires}"
+    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{signature}"
+
+def _read_student_session(request: Request, school_id: int):
+    token = request.cookies.get(_STUDENT_COOKIE, "")
+    try:
+        student_id, token_school_id, expires, signature = token.split(":", 3)
+        payload = f"{student_id}:{token_school_id}:{expires}"
+        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected) or int(token_school_id) != school_id or int(expires) < int(time.time()):
+            return None
+        return int(student_id)
+    except (ValueError, TypeError):
+        return None
+
+@app.get("/{school_name}/student-login")
+def student_login_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student_id = _read_student_session(request, school.id)
+    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first() if student_id else None
+    return templates.TemplateResponse("student_portal.html", {"request": request, "school": school, "student": student})
+
+@app.get("/{school_name}/student-login/lookup")
+def student_login_lookup(school_name: str, student_id: int = Query(..., ge=1), db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="No active student with that ID was found in this school.")
+    return {"student_id": student.id, "student_name": student.student_name, "class_name": student.class_name}
+
+@app.post("/{school_name}/student-login")
+def student_login(school_name: str, request: Request, student_id: int = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first()
+    if not student:
+        raise HTTPException(status_code=401, detail="Student ID or password is incorrect.")
+    if student.password_hash:
+        valid = _student_password_matches(password, student.password_hash)
+    else:
+        valid = hmac.compare_digest(password, str(student.id).zfill(4))
+    if not valid:
+        raise HTTPException(status_code=401, detail="Student ID or password is incorrect.")
+    if not student.password_hash:
+        student.password_hash = _student_password_hash(password)
+        student.must_change_password = 1
+        db.commit()
+    expires = int(time.time()) + _STUDENT_SESSION_SECONDS
+    token = _student_session_token(student.id, school.id, expires)
+    response = JSONResponse({"status": "success", "must_change_password": bool(student.must_change_password)})
+    response.set_cookie(_STUDENT_COOKIE, token, max_age=_STUDENT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path=f"/{school_name}")
+    return response
+
+@app.post("/{school_name}/student/change-password")
+def student_change_password(school_name: str, request: Request, new_password: str = Form(...), db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student_id = _read_student_session(request, school.id)
+    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first() if student_id else None
+    if not student:
+        raise HTTPException(status_code=401, detail="Please sign in again.")
+    if len(new_password) < 8 or len(new_password) > 128:
+        raise HTTPException(status_code=400, detail="Use a password between 8 and 128 characters.")
+    student.password_hash = _student_password_hash(new_password)
+    student.must_change_password = 0
+    db.commit()
+    return {"status": "success"}
+
+@app.post("/{school_name}/student/logout")
+def student_logout(school_name: str, request: Request):
+    response = JSONResponse({"status": "success"})
+    response.delete_cookie(_STUDENT_COOKIE, path=f"/{school_name}")
+    return response
+
+@app.get("/{school_name}/student")
+def student_dashboard(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student_id = _read_student_session(request, school.id)
+    student = db.query(Student).filter(Student.id == student_id, Student.school_id == school.id, Student.is_active == 1).first() if student_id else None
+    if not student:
+        return RedirectResponse(url=f"/{school_name}/student-login", status_code=303)
+    return templates.TemplateResponse("student_portal.html", {"request": request, "school": school, "student": student})
