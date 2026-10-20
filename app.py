@@ -423,7 +423,7 @@ def create_support_request(
     message = message.strip()[:3000]
     if not school_name or not name or len(message) < 5:
         raise HTTPException(status_code=400, detail="Please provide your name and a clear description of the issue.")
-    if email and not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", email):
+    if email and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
         raise HTTPException(status_code=400, detail="Please enter a valid email address.")
     ticket = SupportRequest(
         school_name=school_name,
