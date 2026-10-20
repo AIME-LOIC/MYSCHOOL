@@ -1782,7 +1782,7 @@ def parent_signup(school_name: str, request: Request, student_id: int = Form(...
     name_clean = parent_name.strip()[:120]
     if len(password) < 8 or len(password) > 128:
         raise HTTPException(status_code=400, detail="Use a password between 8 and 128 characters.")
-    if not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", email_clean):
+    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email_clean):
         raise HTTPException(status_code=400, detail="Enter a valid email address.")
     student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None))), Student.is_active == 1).first()
     if not student or not student.parent_link_code or not hmac.compare_digest(str(student.parent_link_code), link_code.strip()):
