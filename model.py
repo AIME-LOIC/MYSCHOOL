@@ -104,6 +104,7 @@ class SupportRequest(Base):
 class ParentAccount(Base):
     """Parent portal credentials; each account is linked to one student for this MVP."""
     __tablename__ = "parent_accounts"
+    __table_args__ = (UniqueConstraint("school_id", "email", name="uq_parent_school_email"),)
     id = Column(Integer, primary_key=True, index=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
     student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
@@ -133,6 +134,7 @@ class StudentMark(Base):
 class CanteenAdmin(Base):
     """Separate canteen staff login scoped to one school."""
     __tablename__ = "canteen_admins"
+    __table_args__ = (UniqueConstraint("school_id", "username", name="uq_canteen_admin_school_username"),)
     id = Column(Integer, primary_key=True, index=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
     username = Column(String(80), nullable=False, index=True)
