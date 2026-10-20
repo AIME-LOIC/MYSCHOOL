@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File, Depends, Query, HTTPException, Response
 from fastapi.responses import RedirectResponse, JSONResponse, FileResponse, HTMLResponse
+from fastapi.exception_handlers import http_exception_handler as default_http_exception_handler
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -34,29 +35,17 @@ templates = Jinja2Templates(directory="templates")
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Render branded HTML error pages for browser navigation while preserving API JSON errors."""
+    """Render the branded 404 for browser pages without changing API error behavior."""
     if exc.status_code == 404:
         accepts = request.headers.get("accept", "")
-        is_api = "/api/" in request.url.path or accepts.startswith("application/json")
+        is_api = "/api/" in request.url.path or "application/json" in accepts
         if not is_api:
             return templates.TemplateResponse(
                 "404.html",
                 {"request": request},
                 status_code=404,
             )
-    if "application/json" in request.headers.get("accept", "") or "/api/" in request.url.path:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
-    return HTMLResponse(
-        content=f"<h1>{exc.status_code}</h1><p>{str(exc.detail)}</p>",
-        status_code=exc.status_code,
-        headers=exc.headers,
-    )
-
-
-@app.get("/")
-def school_selector(request: Request):
-    """Public landing page where parents choose the school before selecting a student."""
-    return templates.TemplateResponse("school_select.html", {"request": request})
+    return await default_http_exception_handler(request, exc)
 
 # ==================== AUTH HELPERS ====================
 
