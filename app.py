@@ -32,6 +32,27 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Render branded HTML error pages for browser navigation while preserving API JSON errors."""
+    if exc.status_code == 404:
+        accepts = request.headers.get("accept", "")
+        is_api = "/api/" in request.url.path or accepts.startswith("application/json")
+        if not is_api:
+            return templates.TemplateResponse(
+                "404.html",
+                {"request": request},
+                status_code=404,
+            )
+    if "application/json" in request.headers.get("accept", "") or "/api/" in request.url.path:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
+    return HTMLResponse(
+        content=f"<h1>{exc.status_code}</h1><p>{str(exc.detail)}</p>",
+        status_code=exc.status_code,
+        headers=exc.headers,
+    )
+
+
 @app.get("/")
 def school_selector(request: Request):
     """Public landing page where parents choose the school before selecting a student."""
