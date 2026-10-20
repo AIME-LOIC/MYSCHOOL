@@ -14,6 +14,7 @@ class Student(Base):
     is_active = Column(Integer, nullable=False, default=1)  # 1 = studying (in active class), 0 = promoted out / archived
     password_hash = Column(String(255), nullable=True)  # Null means the initial zero-padded ID password has not been used yet
     must_change_password = Column(Integer, nullable=False, default=1)
+    parent_link_code = Column(String(32), nullable=True, index=True)  # School-issued code for securely linking parent accounts
 
     # One-to-many relationship with visits
     visits = relationship(
@@ -98,3 +99,43 @@ class SupportRequest(Base):
     message = Column(String(3000), nullable=False)
     status = Column(String(20), nullable=False, default="open", index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class ParentAccount(Base):
+    """Parent portal credentials; each account is linked to one student for this MVP."""
+    __tablename__ = "parent_accounts"
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
+    parent_name = Column(String(120), nullable=False)
+    email = Column(String(254), nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    is_active = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class StudentMark(Base):
+    """Published student marks visible to the student's authenticated parent."""
+    __tablename__ = "student_marks"
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
+    subject = Column(String(100), nullable=False)
+    term = Column(String(40), nullable=False)
+    academic_year = Column(String(20), nullable=False)
+    score = Column(Integer, nullable=False)
+    max_score = Column(Integer, nullable=False, default=100)
+    teacher_comment = Column(String(1000), nullable=True)
+    published = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class CanteenAdmin(Base):
+    """Separate canteen staff login scoped to one school."""
+    __tablename__ = "canteen_admins"
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    username = Column(String(80), nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    is_active = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
