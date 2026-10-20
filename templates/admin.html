@@ -169,6 +169,66 @@
             </div>
         </div>
 
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+            <div class="bg-white p-5 rounded-xl shadow border border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900 mb-1">Create canteen staff account</h2>
+                <p class="text-sm text-gray-500 mb-3">Give the canteen team access to menu and card operations only.</p>
+                <form id="canteen-admin-create" class="space-y-3">
+                    <input name="username" minlength="3" maxlength="80" pattern="[a-zA-Z0-9_.-]+" required placeholder="Canteen username" class="w-full border rounded-lg p-3">
+                    <input name="password" type="password" minlength="8" maxlength="128" required placeholder="Temporary password (8+ characters)" class="w-full border rounded-lg p-3">
+                    <button class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-semibold" type="submit">Create account</button>
+                    <p id="canteen-admin-feedback" class="text-sm" role="status"></p>
+                </form>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow border border-gray-200">
+                <h2 class="text-lg font-bold text-gray-900 mb-1">Publish student marks</h2>
+                <p class="text-sm text-gray-500 mb-3">Unpublished marks stay private until you publish them.</p>
+                <form id="student-mark-create" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input name="student_id" type="number" min="1" required placeholder="Student ID" class="w-full border rounded-lg p-3">
+                    <input name="subject" maxlength="100" required placeholder="Subject" class="w-full border rounded-lg p-3">
+                    <input name="term" maxlength="40" required placeholder="Term (e.g. Term 1)" class="w-full border rounded-lg p-3">
+                    <input name="academic_year" maxlength="20" required placeholder="Academic year (e.g. 2026)" class="w-full border rounded-lg p-3">
+                    <input name="score" type="number" min="0" required placeholder="Score" class="w-full border rounded-lg p-3">
+                    <input name="max_score" type="number" min="1" value="100" required placeholder="Maximum score" class="w-full border rounded-lg p-3">
+                    <textarea name="teacher_comment" maxlength="1000" placeholder="Teacher comment (optional)" class="w-full border rounded-lg p-3 sm:col-span-2"></textarea>
+                    <label class="flex items-center gap-2 text-sm text-gray-600 sm:col-span-2"><input name="published" type="checkbox" value="1" class="w-4 h-4"> Publish this mark to the linked parent</label>
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold sm:col-span-2" type="submit">Save mark</button>
+                    <p id="student-mark-feedback" class="text-sm sm:col-span-2" role="status"></p>
+                </form>
+            </div>
+        </section>
+        <script>
+        (function(){
+            const schoolPath = '/' + encodeURIComponent({{ school_name|tojson }});
+            async function submitAdminForm(form, endpoint, feedbackId, successText) {
+                const feedback = document.getElementById(feedbackId);
+                const button = form.querySelector('button[type="submit"]');
+                button.disabled = true;
+                feedback.textContent = 'Saving…';
+                feedback.style.color = '#475569';
+                try {
+                    const response = await fetch(schoolPath + endpoint, {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData(form))});
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.detail || data.message || 'Request failed.');
+                    feedback.textContent = successText;
+                    feedback.style.color = '#166534';
+                    form.reset();
+                } catch (error) {
+                    feedback.textContent = error.message || 'Request failed.';
+                    feedback.style.color = '#b91c1c';
+                } finally { button.disabled = false; }
+            }
+            document.getElementById('canteen-admin-create').addEventListener('submit', function(event) {
+                event.preventDefault();
+                submitAdminForm(this, '/admin/canteen-admins', 'canteen-admin-feedback', 'Canteen account created. Share the credentials securely.');
+            });
+            document.getElementById('student-mark-create').addEventListener('submit', function(event) {
+                event.preventDefault();
+                submitAdminForm(this, '/admin/marks', 'student-mark-feedback', 'Mark saved.');
+            });
+        })();
+        </script>
+
         <div id="manager-step" class="hidden mt-8 animate-fade-in space-y-6">
             <div class="flex justify-between items-center">
                 <button onclick="resetSelection()" class="flex items-center py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">← Back</button>
