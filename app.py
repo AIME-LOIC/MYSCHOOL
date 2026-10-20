@@ -31,6 +31,12 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+
+@app.get("/")
+def school_selector(request: Request):
+    """Public landing page where parents choose the school before selecting a student."""
+    return templates.TemplateResponse("school_select.html", {"request": request})
+
 # ==================== AUTH HELPERS ====================
 
 SESSION_COOKIE = "admin_session"
