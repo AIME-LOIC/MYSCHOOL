@@ -1305,3 +1305,137 @@ def keep_awake():
         time.sleep(10 * 60)
 
 threading.Thread(target=keep_awake, daemon=True).start()
+
+
+# ==================== 1PERCENT EATS ====================
+import hashlib as _hashlib
+from sqlalchemy import update as _sql_update
+from sqlalchemy.exc import IntegrityError as _IntegrityError
+from pydantic import BaseModel as _PydanticModel, Field as _Field
+from model import EatsCard, EatsItem, EatsTransaction
+
+class EatsCardLink(_PydanticModel):
+    student_id: int
+    card_uid: str = _Field(min_length=4, max_length=128)
+
+class EatsMenuItemInput(_PydanticModel):
+    name: str = _Field(min_length=2, max_length=120)
+    description: str = _Field(default="", max_length=300)
+    price_rwf: int = _Field(gt=0, le=1000000)
+
+class EatsPaymentInput(_PydanticModel):
+    card_uid: str = _Field(min_length=4, max_length=128)
+    item_id: int
+
+def _eats_uid_hash(uid: str) -> str:
+    pepper = os.getenv("CARD_UID_PEPPER")
+    if not pepper:
+        raise HTTPException(status_code=503, detail="Canteen card security is not configured (CARD_UID_PEPPER).")
+    return _hashlib.sha256((pepper + uid.strip().upper()).encode("utf-8")).hexdigest()
+
+@app.get("/{school_name}/eats")
+def eats_page(school_name: str, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    return FileResponse("static/myschool_eats.html")
+
+@app.get("/{school_name}/eats/api/menu")
+def eats_menu(school_name: str, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    items = db.query(EatsItem).filter(EatsItem.school_id == school.id, EatsItem.available == 1).order_by(EatsItem.name).all()
+    return [{"id": x.id, "name": x.name, "description": x.description or "", "price_rwf": x.price_cents} for x in items]
+
+@app.post("/{school_name}/eats/api/menu")
+def eats_add_menu_item(school_name: str, payload: EatsMenuItemInput, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School admin login required")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    item = EatsItem(school_id=school.id, name=payload.name.strip(), description=payload.description.strip(), price_cents=payload.price_rwf)
+    db.add(item); db.commit(); db.refresh(item)
+    return {"id": item.id, "name": item.name, "price_rwf": item.price_cents}
+
+@app.post("/{school_name}/eats/api/cards/link")
+def eats_link_card(school_name: str, payload: EatsCardLink, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School admin login required")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student = db.query(Student).filter(Student.id == payload.student_id, (Student.school_id == school.id) | (Student.school_id.is_(None))).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found in this school")
+    card = EatsCard(school_id=school.id, student_id=student.id, uid_hash=_eats_uid_hash(payload.card_uid), balance_cents=0, active=1)
+    db.add(card)
+    try:
+        db.commit()
+    except _IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="This card is already linked in this school")
+    return {"status": "linked", "student_id": student.id, "card_last4": payload.card_uid.strip()[-4:]}
+
+@app.post("/{school_name}/eats/api/pay")
+def eats_pay(school_name: str, payload: EatsPaymentInput, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    uid_hash = _eats_uid_hash(payload.card_uid)
+    try:
+        card = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.uid_hash == uid_hash, EatsCard.active == 1).with_for_update().first()
+        if not card:
+            raise HTTPException(status_code=404, detail="Card is not registered or is inactive")
+        item = db.query(EatsItem).filter(EatsItem.id == payload.item_id, EatsItem.school_id == school.id, EatsItem.available == 1).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Menu item is unavailable")
+        debit = db.execute(_sql_update(EatsCard).where(EatsCard.id == card.id, EatsCard.balance_cents >= item.price_cents).values(balance_cents=EatsCard.balance_cents - item.price_cents))
+        if debit.rowcount != 1:
+            db.rollback()
+            raise HTTPException(status_code=402, detail="Insufficient balance")
+        db.refresh(card)
+        tx = EatsTransaction(school_id=school.id, student_id=card.student_id, card_id=card.id, item_id=item.id, amount_cents=item.price_cents, balance_after_cents=card.balance_cents, status="approved")
+        db.add(tx); db.commit(); db.refresh(tx)
+        return {"status":"approved", "transaction_id":tx.id, "student_id":card.student_id, "item":item.name, "amount_rwf":tx.amount_cents, "balance_rwf":tx.balance_after_cents}
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Payment could not be completed; no approval was returned")
+
+@app.get("/{school_name}/eats/api/transactions")
+def eats_transactions(school_name: str, request: Request, db: Session = Depends(get_db), limit: int = Query(50, ge=1, le=200)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School admin login required")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    rows = db.query(EatsTransaction).filter(EatsTransaction.school_id == school.id).order_by(EatsTransaction.created_at.desc()).limit(limit).all()
+    return [{"id": x.id, "student_id": x.student_id, "item_id": x.item_id, "type": x.transaction_type, "amount_rwf": x.amount_cents, "balance_after_rwf": x.balance_after_cents, "status": x.status, "created_at": x.created_at.isoformat()} for x in rows]
+
+
+class EatsTopUpInput(_PydanticModel):
+    student_id: int
+    amount_rwf: int = _Field(gt=0, le=1000000)
+    reference: str = _Field(min_length=3, max_length=120)
+
+@app.post("/{school_name}/eats/api/cards/top-up")
+def eats_top_up(school_name: str, payload: EatsTopUpInput, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School admin login required")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    card = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.student_id == payload.student_id, EatsCard.active == 1).with_for_update().first()
+    if not card:
+        raise HTTPException(status_code=404, detail="No active canteen card found for this student")
+    try:
+        card.balance_cents += payload.amount_rwf
+        tx = EatsTransaction(school_id=school.id, student_id=card.student_id, card_id=card.id, item_id=None, transaction_type="top_up", amount_cents=payload.amount_rwf, balance_after_cents=card.balance_cents, status="approved")
+        db.add(tx); db.commit(); db.refresh(tx)
+        return {"status":"approved", "transaction_id":tx.id, "student_id":card.student_id, "amount_rwf":payload.amount_rwf, "balance_rwf":card.balance_cents, "reference":payload.reference}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Top-up failed; verify the ledger before retrying")
