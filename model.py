@@ -83,3 +83,16 @@ class EatsTransaction(Base):
     balance_after_cents = Column(Integer, nullable=False)
     status = Column(String(20), nullable=False, default="approved")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class SupportRequest(Base):
+    """Support requests submitted from school portal access/disabled pages."""
+    __tablename__ = "support_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    school_name = Column(String(150), nullable=False, index=True)
+    name = Column(String(120), nullable=False)
+    email = Column(String(254), nullable=True)
+    message = Column(String(3000), nullable=False)
+    status = Column(String(20), nullable=False, default="open", index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
