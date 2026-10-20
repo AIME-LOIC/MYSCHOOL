@@ -14,7 +14,7 @@ from difflib import SequenceMatcher
 from openpyxl.styles import Font, PatternFill
 
 from config import get_db, engine, Base, init_db
-from model import Student, Visit, Product, SupportRequest
+from model import Student, Visit, Product, SupportRequest, ParentAccount, StudentMark, CanteenAdmin
 from system_admin import School, create_school_database, list_all_schools, delete_school_database, get_school_database_info
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -1511,7 +1511,7 @@ def eats_menu(school_name: str, db: Session = Depends(get_db)):
 
 @app.post("/{school_name}/eats/api/menu")
 def eats_add_menu_item(school_name: str, payload: EatsMenuItemInput, request: Request, db: Session = Depends(get_db)):
-    if not _check_admin(request, school_name):
+    if not (_check_admin(request, school_name) or _read_canteen_session(request, school_name)):
         raise HTTPException(status_code=401, detail="School admin login required")
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
@@ -1718,3 +1718,170 @@ def student_dashboard(school_name: str, request: Request, db: Session = Depends(
     if not student:
         return RedirectResponse(url=f"/{school_name}/student-login", status_code=303)
     return templates.TemplateResponse("student_portal.html", {"request": request, "school": school, "student": student})
+
+
+# ==================== PARENT ACCOUNTS AND REPORTS ====================
+_PARENT_COOKIE = "myschool_parent_session"
+_PARENT_SESSION_SECONDS = 8 * 60 * 60
+_CANTEEN_COOKIE = "myschool_canteen_session"
+
+def _signed_role_token(role: str, user_id: int, school_id: int, expires: int) -> str:
+    payload = f"{role}:{user_id}:{school_id}:{expires}"
+    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{signature}"
+
+def _read_signed_role_token(request: Request, cookie_name: str, role: str, school_id: int):
+    token = request.cookies.get(cookie_name, "")
+    try:
+        token_role, user_id, token_school_id, expires, signature = token.split(":", 4)
+        payload = f"{token_role}:{user_id}:{token_school_id}:{expires}"
+        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if token_role != role or not hmac.compare_digest(signature, expected) or int(token_school_id) != school_id or int(expires) < int(time.time()):
+            return None
+        return int(user_id)
+    except (ValueError, TypeError):
+        return None
+
+def _read_parent_session(request: Request, school_id: int):
+    return _read_signed_role_token(request, _PARENT_COOKIE, "parent", school_id)
+
+def _read_canteen_session(request: Request, school_name: str):
+    token = request.cookies.get(_CANTEEN_COOKIE, "")
+    try:
+        role, school, expires, signature = token.split(":", 3)
+        payload = f"{role}:{school}:{expires}"
+        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if role != "canteen" or school != school_name or not hmac.compare_digest(signature, expected) or int(expires) < int(time.time()):
+            return False
+        return True
+    except (ValueError, TypeError):
+        return False
+
+def _make_canteen_token(school_name: str, expires: int) -> str:
+    payload = f"canteen:{school_name}:{expires}"
+    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{signature}"
+
+@app.get("/{school_name}/parent")
+def parent_portal_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    parent_id = _read_parent_session(request, school.id)
+    account = db.query(ParentAccount).filter(ParentAccount.id == parent_id, ParentAccount.school_id == school.id, ParentAccount.is_active == 1).first() if parent_id else None
+    student = db.query(Student).filter(Student.id == account.student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None)))).first() if account else None
+    marks = db.query(StudentMark).filter(StudentMark.school_id == school.id, StudentMark.student_id == student.id, StudentMark.published == 1).order_by(StudentMark.academic_year.desc(), StudentMark.term, StudentMark.subject).all() if student else []
+    return templates.TemplateResponse("parent_reports.html", {"request": request, "school": school, "parent": account, "student": student, "marks": marks})
+
+@app.post("/{school_name}/parent/signup")
+def parent_signup(school_name: str, request: Request, student_id: int = Form(...), link_code: str = Form(...), parent_name: str = Form(...), email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    email_clean = email.strip().lower()
+    name_clean = parent_name.strip()[:120]
+    if len(password) < 8 or len(password) > 128:
+        raise HTTPException(status_code=400, detail="Use a password between 8 and 128 characters.")
+    if not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", email_clean):
+        raise HTTPException(status_code=400, detail="Enter a valid email address.")
+    student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None))), Student.is_active == 1).first()
+    if not student or not student.parent_link_code or not hmac.compare_digest(str(student.parent_link_code), link_code.strip()):
+        raise HTTPException(status_code=400, detail="Student ID or parent linking code is incorrect. Ask the school to issue a linking code.")
+    if db.query(ParentAccount).filter(ParentAccount.school_id == school.id, ParentAccount.email == email_clean).first():
+        raise HTTPException(status_code=409, detail="An account with this email already exists for this school.")
+    account = ParentAccount(school_id=school.id, student_id=student.id, parent_name=name_clean, email=email_clean, password_hash=_student_password_hash(password), is_active=1)
+    db.add(account)
+    try:
+        db.commit()
+        db.refresh(account)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not create parent account.")
+    expires = int(time.time()) + _PARENT_SESSION_SECONDS
+    token = _signed_role_token("parent", account.id, school.id, expires)
+    response = RedirectResponse(f"/{school_name}/parent", status_code=303)
+    response.set_cookie(_PARENT_COOKIE, token, max_age=_PARENT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/")
+    return response
+
+@app.post("/{school_name}/parent/login")
+def parent_login(school_name: str, request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    account = db.query(ParentAccount).filter(ParentAccount.school_id == school.id, ParentAccount.email == email.strip().lower(), ParentAccount.is_active == 1).first()
+    if not account or not _student_password_matches(password, account.password_hash):
+        raise HTTPException(status_code=401, detail="Email or password is incorrect.")
+    expires = int(time.time()) + _PARENT_SESSION_SECONDS
+    token = _signed_role_token("parent", account.id, school.id, expires)
+    response = RedirectResponse(f"/{school_name}/parent", status_code=303)
+    response.set_cookie(_PARENT_COOKIE, token, max_age=_PARENT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/")
+    return response
+
+@app.post("/{school_name}/parent/logout")
+def parent_logout(school_name: str):
+    response = RedirectResponse(f"/{school_name}/parent", status_code=303)
+    response.delete_cookie(_PARENT_COOKIE, path="/")
+    return response
+
+@app.post("/{school_name}/admin/marks")
+def add_student_mark(school_name: str, request: Request, student_id: int = Form(...), subject: str = Form(...), term: str = Form(...), academic_year: str = Form(...), score: int = Form(...), max_score: int = Form(100), teacher_comment: str = Form(""), published: int = Form(0), db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student = db.query(Student).filter(Student.id == student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None)))).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found in this school.")
+    subject = subject.strip()[:100]
+    term = term.strip()[:40]
+    academic_year = academic_year.strip()[:20]
+    if not subject or not term or not academic_year or max_score < 1 or score < 0 or score > max_score:
+        raise HTTPException(status_code=400, detail="Enter a subject, term, academic year, and valid mark.")
+    mark = StudentMark(school_id=school.id, student_id=student.id, subject=subject, term=term, academic_year=academic_year, score=score, max_score=max_score, teacher_comment=teacher_comment.strip()[:1000], published=1 if published else 0)
+    db.add(mark); db.commit(); db.refresh(mark)
+    return {"status":"success","mark_id":mark.id,"published":bool(mark.published)}
+
+# ==================== CANTEEN ADMIN ACCESS ====================
+@app.get("/{school_name}/canteen-admin")
+def canteen_admin_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    if not _read_canteen_session(request, school_name):
+        return templates.TemplateResponse("canteen_admin.html", {"request": request, "school": school, "logged_in": False})
+    return templates.TemplateResponse("canteen_admin.html", {"request": request, "school": school, "logged_in": True})
+
+@app.post("/{school_name}/admin/canteen-admins")
+def create_canteen_admin(school_name: str, request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    username_clean = username.strip().lower()
+    if not re.fullmatch(r"[a-z0-9_.-]{3,80}", username_clean) or len(password) < 8 or len(password) > 128:
+        raise HTTPException(status_code=400, detail="Username must be 3–80 letters/numbers or ._-; password must be 8–128 characters.")
+    if db.query(CanteenAdmin).filter(CanteenAdmin.school_id == school.id, CanteenAdmin.username == username_clean).first():
+        raise HTTPException(status_code=409, detail="That canteen username already exists.")
+    staff = CanteenAdmin(school_id=school.id, username=username_clean, password_hash=_student_password_hash(password), is_active=1)
+    db.add(staff); db.commit()
+    return {"status":"success","username":username_clean}
+
+@app.post("/{school_name}/canteen-admin/login")
+def canteen_admin_login(school_name: str, request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    staff = db.query(CanteenAdmin).filter(CanteenAdmin.school_id == school.id, CanteenAdmin.username == username.strip().lower(), CanteenAdmin.is_active == 1).first()
+    if not staff or not _student_password_matches(password, staff.password_hash):
+        raise HTTPException(status_code=401, detail="Username or password is incorrect.")
+    response = RedirectResponse(f"/{school_name}/canteen-admin", status_code=303)
+    response.set_cookie(_CANTEEN_COOKIE, _make_canteen_token(school_name, int(time.time()) + _PARENT_SESSION_SECONDS), max_age=_PARENT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/")
+    return response
+
+@app.post("/{school_name}/canteen-admin/logout")
+def canteen_admin_logout(school_name: str):
+    response = RedirectResponse(f"/{school_name}/canteen-admin", status_code=303)
+    response.delete_cookie(_CANTEEN_COOKIE, path="/")
+    return response
