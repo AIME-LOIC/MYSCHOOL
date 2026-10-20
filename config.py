@@ -47,6 +47,7 @@ def init_db():
     _ensure_student_school_id_column()
     _ensure_visit_transport_columns()
     _ensure_student_is_active_column()
+    _ensure_student_password_columns()
     _ensure_school_last_promoted_at_column()
 
 def _ensure_products_table():
@@ -195,3 +196,18 @@ def _ensure_school_last_promoted_at_column():
                 except Exception as e:
                     print(f"Warning: Could not add last_promoted_at column: {e}")
                     connection.rollback()
+
+def _ensure_student_password_columns():
+    """Add student portal authentication columns to existing PostgreSQL databases."""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if "students" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("students")}
+        if "password_hash" not in columns:
+            connection.execute(text("ALTER TABLE students ADD COLUMN password_hash VARCHAR(255)"))
+        if "must_change_password" not in columns:
+            connection.execute(text("ALTER TABLE students ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 1"))
+        connection.commit()
