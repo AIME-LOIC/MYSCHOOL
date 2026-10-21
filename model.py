@@ -43,6 +43,9 @@ class Visit(Base):
     status = Column(String(20), default="waiting")
     movement_method = Column(String(20), nullable=True)  # with_car | without_car
     arrival_plate_number = Column(String(30), nullable=True)
+    parent_name = Column(String(120), nullable=True)
+    parent_relationship = Column(String(20), nullable=True)  # father | mother | other
+    parent_phone = Column(String(30), nullable=True)
     assigned_plate_number = Column(String(30), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=True)
 
