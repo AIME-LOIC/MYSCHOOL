@@ -677,7 +677,7 @@
             document.getElementById('parent-name').value = '';
             document.getElementById('parent-relationship').value = '';
             document.getElementById('parent-phone').value = '';
-            document.getElementById('parent-meeting-section').classList.toggle('hidden', type !== 'parent_meeting');
+            document.getElementById('parent-meeting-section').classList.add('hidden');
             if (isSOSSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
             } else {
@@ -719,6 +719,10 @@
             document.getElementById('movement-method').value = '';
             document.getElementById('plate-number').value = '';
             document.getElementById('plate-number-wrap').classList.add('hidden');
+            document.getElementById('parent-name').value = '';
+            document.getElementById('parent-relationship').value = '';
+            document.getElementById('parent-phone').value = '';
+            document.getElementById('parent-meeting-section').classList.toggle('hidden', type !== 'parent_meeting');
             if (isSOSSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
             } else {
