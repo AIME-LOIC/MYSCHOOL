@@ -10,6 +10,7 @@ import pandas as pd
 import threading, time, requests, os, signal, hashlib, hmac
 from datetime import datetime
 import re
+import logging
 from difflib import SequenceMatcher
 from openpyxl.styles import Font, PatternFill
 
@@ -20,6 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Initialize database tables on startup (creates all tables if they don't exist)
 init_db()
+
+logger = logging.getLogger("myschool.visits")
 
 app = FastAPI(title="School Visit Management System")
 app.add_middleware(
@@ -802,7 +805,13 @@ def add_visit(
         return {"status": "success", "visit_id": visit.id}
     except Exception as e:
         db.rollback()
-        return {"status": "error", "message": str(e)}
+        error_id = hashlib.sha256(f"{school_name}:{student_id}:{visit_type}:{time.time_ns()}".encode()).hexdigest()[:12]
+        logger.exception(
+            "Visit submission failed [error_id=%s school=%s student_id=%s visit_type=%s]",
+            error_id, school_name, student_id, visit_type
+        )
+        message = "Database error while saving this visit. Please contact the administrator and provide error ID " + error_id
+        return {"status": "error", "message": message, "error_id": error_id}
 
 
 @app.get("/{school_name}/admin/data/{visit_type}")
