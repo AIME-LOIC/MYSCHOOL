@@ -63,6 +63,46 @@
         </div>
     </div>
 
+    <!-- Parent Meeting Details Modal -->
+    <div id="parent-meeting-details-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="parent-meeting-details-title">
+        <div class="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onclick="closeParentMeetingDetails()"></div>
+        <div class="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl animate-fade-in">
+            <div class="flex items-start justify-between border-b border-gray-100 bg-red-50 px-6 py-5">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-red-600">Parent meeting record</p>
+                    <h3 id="parent-meeting-details-title" class="mt-1 text-xl font-extrabold text-gray-900">Meeting details</h3>
+                    <p id="parent-meeting-student-subtitle" class="mt-1 text-sm text-gray-500"></p>
+                </div>
+                <button type="button" onclick="closeParentMeetingDetails()" aria-label="Close meeting details" class="rounded-lg p-2 text-gray-500 hover:bg-white hover:text-gray-900">✕</button>
+            </div>
+            <div class="space-y-3 p-6">
+                <div class="rounded-xl border border-gray-100 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Who came</p>
+                    <p id="parent-meeting-person" class="mt-1 text-lg font-bold text-gray-900">—</p>
+                    <p id="parent-meeting-relationship" class="mt-1 text-sm text-gray-600">Relationship: —</p>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl bg-gray-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Phone number</p>
+                        <p id="parent-meeting-phone" class="mt-1 break-words font-semibold text-gray-900">Not provided</p>
+                    </div>
+                    <div class="rounded-xl bg-gray-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Meeting date</p>
+                        <p id="parent-meeting-date" class="mt-1 font-semibold text-gray-900">—</p>
+                        <p id="parent-meeting-time" class="mt-1 text-xs text-gray-500"></p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between rounded-xl border border-gray-100 px-4 py-3 text-sm">
+                    <span class="text-gray-500">Record number</span>
+                    <span id="parent-meeting-record-number" class="font-bold text-gray-800">—</span>
+                </div>
+            </div>
+            <div class="border-t border-gray-100 bg-gray-50 px-6 py-4 text-right">
+                <button type="button" onclick="closeParentMeetingDetails()" class="rounded-lg bg-gray-900 px-5 py-2 text-sm font-semibold text-white hover:bg-black">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Student Modal -->
     <div id="edit-student-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
         <div class="fixed inset-0 bg-black/40" onclick="closeEditStudentModal()"></div>
@@ -828,6 +868,41 @@
             } catch (err) { feedback.innerText = "Error uploading."; }
         }
 
+        const parentMeetingRecords = {};
+
+        function showParentMeetingDetails(visitId) {
+            const record = parentMeetingRecords[String(visitId)];
+            if (!record) {
+                showToast('Meeting details are not available. Refresh the data and try again.', 'error');
+                return;
+            }
+            const setText = (id, value, fallback = 'Not provided') => {
+                document.getElementById(id).textContent = value || fallback;
+            };
+            setText('parent-meeting-details-title', 'Meeting details');
+            setText('parent-meeting-student-subtitle', `${record.student_name || 'Student'} · ${record.class_name || 'Class not recorded'}`, '');
+            setText('parent-meeting-person', record.parent_name, 'Name not recorded');
+            const relationship = String(record.parent_relationship || '').toLowerCase();
+            const relationshipLabel = relationship ? relationship.charAt(0).toUpperCase() + relationship.slice(1) : '';
+            setText('parent-meeting-relationship', relationshipLabel ? `Relationship: ${relationshipLabel}` : 'Relationship not recorded', '');
+            setText('parent-meeting-phone', record.parent_phone, 'Not provided');
+            setText('parent-meeting-date', record.date, 'Date not recorded');
+            let timeLabel = '';
+            if (record.timestamp) {
+                const parsed = new Date(record.timestamp);
+                if (!Number.isNaN(parsed.getTime())) {
+                    timeLabel = parsed.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                }
+            }
+            setText('parent-meeting-time', timeLabel ? `Recorded at ${timeLabel}` : '', '');
+            setText('parent-meeting-record-number', `#${record.id}`, '—');
+            document.getElementById('parent-meeting-details-modal').classList.remove('hidden');
+        }
+
+        function closeParentMeetingDetails() {
+            document.getElementById('parent-meeting-details-modal').classList.add('hidden');
+        }
+
         function selectType(type) {
             selectedType = type;
             document.getElementById('choice-step').classList.add('hidden');
@@ -848,6 +923,7 @@
                 }
                 const res = await fetch(url);
                 const result = await res.json();
+                Object.keys(parentMeetingRecords).forEach(key => delete parentMeetingRecords[key]);
                 statsDiv.innerHTML = `<div class="p-3 bg-gray-50 border rounded text-center"><p class="text-xs uppercase font-bold text-gray-400">Total</p><p class="text-2xl font-black">${result.total}</p></div>`;
                 container.innerHTML = '<h4 class="text-xl font-bold mb-4">Class Detail (Newest First)</h4>';
                 for (const cls in result.data) {
@@ -856,12 +932,18 @@
                     div.innerHTML = `<h5 class="font-bold border-b mb-2">${cls}</h5>`;
                     // Sort by date - newest first
                     const sorted = result.data[cls].sort((a, b) => new Date(b.date) - new Date(a.date));
-                    sorted.forEach(s => div.innerHTML += `
-                        <div class="flex justify-between items-center text-xs py-1 gap-2">
-                            <span class="flex-1">${s.student_name}</span>
-                            <span class="text-gray-400">${s.date}</span>
-                            <button onclick="deleteVisit(${s.id})" class="text-red-400 hover:text-red-600 font-bold px-1">✕</button>
-                        </div>`);
+                    sorted.forEach(s => {
+                        if (selectedType === 'parent_meeting') parentMeetingRecords[String(s.id)] = s;
+                        const studentLabel = selectedType === 'parent_meeting'
+                            ? `<button type="button" onclick="showParentMeetingDetails(${Number(s.id)})" class="flex-1 text-left font-semibold text-red-700 hover:text-red-900 hover:underline focus:outline-none focus:ring-2 focus:ring-red-300 rounded">${escapeHtml(s.student_name)} <span class="ml-1 text-[10px] font-normal text-gray-400">View details</span></button>`
+                            : `<span class="flex-1">${escapeHtml(s.student_name)}</span>`;
+                        div.innerHTML += `
+                        <div class="flex justify-between items-center text-xs py-2 gap-2 border-b border-gray-50 last:border-0">
+                            ${studentLabel}
+                            <span class="text-gray-400 whitespace-nowrap">${escapeHtml(s.date)}</span>
+                            <button onclick="deleteVisit(${Number(s.id)})" class="text-red-400 hover:text-red-600 font-bold px-1" aria-label="Delete visit record">✕</button>
+                        </div>`;
+                    });
                     container.appendChild(div);
                 }
                 drawChart(result.stats);
