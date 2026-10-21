@@ -26,12 +26,20 @@ init_db()
 logger = logging.getLogger("myschool.visits")
 
 app = FastAPI(title="School Visit Management System")
+# Cross-origin access is opt-in. Same-origin browser requests do not require CORS.
+# Set CORS_ALLOWED_ORIGINS to a comma-separated list only when a separate trusted
+# frontend must call this API. Never combine credentialed requests with a wildcard.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 # Templates & static files
@@ -675,7 +683,10 @@ def admin_login(
     if username == expected_user and password == expected_pass:
         token = _make_token(school_name)
         response = RedirectResponse(f"/{school_name}/admin", status_code=302)
-        response.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax", max_age=86400 * 7)
+        response.set_cookie(
+            SESSION_COOKIE, token, httponly=True, secure=request.url.scheme == "https",
+            samesite="lax", max_age=86400 * 7, path="/",
+        )
         return response
     return templates.TemplateResponse("login.html", {"request": request, "school_name": school_name, "error": "Invalid username or password"})
 
