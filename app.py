@@ -132,13 +132,24 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 SESSION_COOKIE = "admin_session"
 
+def _admin_secret_configured() -> bool:
+    """Require a deployment-provided signing secret; never use a known fallback."""
+    return len(os.getenv("SECRET_KEY", "").strip()) >= 32
+
 def _make_token(school_name: str) -> str:
-    secret = os.getenv("SECRET_KEY", "myschool_secret_key")
+    secret = os.getenv("SECRET_KEY", "").strip()
+    if len(secret) < 32:
+        raise HTTPException(
+            status_code=503,
+            detail="Admin authentication is not configured. Set SECRET_KEY to a random value of at least 32 characters.",
+        )
     return hmac.new(secret.encode(), school_name.encode(), hashlib.sha256).hexdigest()
 
 def _check_admin(request: Request, school_name: str) -> bool:
     token = request.cookies.get(SESSION_COOKIE)
-    return token == _make_token(school_name)
+    if not token or not _admin_secret_configured():
+        return False
+    return hmac.compare_digest(token, _make_token(school_name))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -678,6 +689,16 @@ def admin_login(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+    if not _admin_secret_configured():
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "school_name": school_name,
+                "error": "Administrator authentication is not configured. Please contact the system administrator.",
+            },
+            status_code=503,
+        )
     expected_user = school_name
     expected_pass = f"{school_name}001"
     if username == expected_user and password == expected_pass:
