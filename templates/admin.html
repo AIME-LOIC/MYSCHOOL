@@ -178,6 +178,33 @@
         #timetable-step { width: 100%; min-width: 0; max-width: 100%; }
         #timetable-step .card { min-width: 0; max-width: 100%; }
         #timetable-step .overflow-x-auto > table { min-width: 760px; }
+        /* Keep the timetable legible on narrow screens while preserving all five weekdays. */
+        #timetable-step .overflow-x-auto { max-height: min(68vh, 680px); }
+        #timetable-step #tt-head th {
+            position: sticky; top: 0; z-index: 3;
+            padding: 12px 10px; background: #f7f9f7;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+        }
+        #timetable-step #tt-head th:first-child,
+        #timetable-step #tt-body td:first-child {
+            position: sticky; left: 0; z-index: 2;
+            min-width: 84px; width: 84px;
+            background: #f7f9f7;
+            box-shadow: 1px 0 0 var(--line);
+        }
+        #timetable-step #tt-head th:first-child { z-index: 4; }
+        #timetable-step #tt-body tr:hover td { background-color: #fbfdfb; }
+        #timetable-step #tt-body tr:hover td:first-child { background: #f1f7f2; }
+        #timetable-step #tt-body button { min-height: 62px; }
+        #timetable-step #tt-body button:focus-visible {
+            outline: 3px solid rgba(31,138,84,.35); outline-offset: 1px;
+        }
+        @media (max-width: 640px) {
+            #timetable-step .card-header { padding: 14px 16px; }
+            #timetable-step #tt-body button { min-height: 72px; padding: 10px 8px; }
+            #timetable-step #tt-body td { padding: 5px; }
+        }
         .card { min-width: 0; }
         .wrap-anywhere { overflow-wrap: anywhere; }
         .chip button { color: inherit; font-size: 10px; }
