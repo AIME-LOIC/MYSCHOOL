@@ -615,6 +615,19 @@ def delete_school(school_id: int, db: Session = Depends(get_db)):
 
 # ==================== SCHOOL-SPECIFIC ENDPOINTS ====================
 
+@app.get("/{school_name}/portals", response_class=HTMLResponse)
+def school_portal_hub(school_name: str, request: Request, db: Session = Depends(get_db)):
+    """Role-based portal directory for a school."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    return templates.TemplateResponse("role_hub.html", {
+        "request": request,
+        "school": school,
+        "school_name": school_name,
+    })
+
+
 # Parent portal — GUARDED
 @app.get("/{school_name}/parentportal")
 def parent_choice(school_name: str, request: Request, db: Session = Depends(get_db)):

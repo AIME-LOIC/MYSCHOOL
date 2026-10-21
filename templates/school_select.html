@@ -73,7 +73,8 @@
         const open = document.createElement('div'); open.className='open';
         const parentLink = document.createElement('a'); parentLink.href=parentPortalUrl; parentLink.textContent='Parent portal →'; parentLink.style.color='var(--green)'; parentLink.style.textDecoration='none';
         const studentLink = document.createElement('a'); studentLink.href='/' + encodeURIComponent(s.school_name) + '/student-login'; studentLink.textContent='Student sign in'; studentLink.style.color='var(--muted)'; studentLink.style.textDecoration='none'; studentLink.style.fontSize='12px';
-        open.style.flexWrap='wrap'; open.style.gap='12px'; open.append(parentLink,studentLink);
+        const portalsLink = document.createElement('a'); portalsLink.href='/' + encodeURIComponent(s.school_name) + '/portals'; portalsLink.textContent='All school roles →'; portalsLink.style.color='var(--green)'; portalsLink.style.textDecoration='none'; portalsLink.style.fontWeight='700'; portalsLink.style.fontSize='12px';
+        open.style.flexWrap='wrap'; open.style.gap='12px'; open.append(portalsLink,parentLink,studentLink);
         a.append(icon,title,meta,open); grid.appendChild(a);
       });
     }

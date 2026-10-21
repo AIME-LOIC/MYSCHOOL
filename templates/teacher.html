@@ -78,7 +78,7 @@
             opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
-    </style>
+    .auth-shell{width:min(1120px,calc(100% - 40px));min-height:calc(100vh - 40px);margin:20px auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(350px,440px);gap:22px;align-items:stretch}.auth-story{border-radius:22px;background:linear-gradient(145deg,#14532d,#176b45);color:#fff;padding:clamp(26px,4vw,48px);display:flex;flex-direction:column;justify-content:space-between;min-height:580px}.auth-story .story-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#bce8c5;font-weight:800}.auth-story h1{font-size:clamp(31px,4vw,46px);line-height:1.08;letter-spacing:-.05em;margin:16px 0}.auth-story .story-copy{font-size:14px;line-height:1.7;color:#e0eee2;max-width:440px}.auth-story ul{padding:0;margin:28px 0;list-style:none;display:grid;gap:16px}.auth-story li{display:flex;gap:11px;color:#f2faf3;font-size:12px}.auth-story li b{display:block;font-size:13px}.auth-story .story-check{flex:0 0 25px;height:25px;border-radius:8px;background:#ffffff1c;display:grid;place-items:center}.auth-story .story-foot{border-top:1px solid #ffffff2b;padding-top:17px;color:#d0e6d3;font-size:11px}.auth-form{background:#fff;border:1px solid var(--line);border-radius:22px;padding:clamp(26px,4vw,40px);box-shadow:0 18px 50px #183c200b;display:flex;flex-direction:column;justify-content:center;min-width:0}.auth-form .form-mark{width:44px;height:44px;border-radius:13px;background:#e9f5eb;color:var(--green);display:grid;place-items:center;font-weight:900;margin-bottom:24px}.auth-form h2{font-size:25px;letter-spacing:-.04em;margin:0 0 6px}.auth-form .form-sub{color:var(--muted);font-size:13px;margin:0 0 25px}.auth-form .auth-error{background:#fff1f0;color:#a32929;border:1px solid #f5d4d1;border-radius:10px;padding:12px 14px;margin-bottom:15px;font-size:13px}.auth-form label{display:block;font-size:12px;font-weight:750;margin:16px 0 7px}.auth-form input{padding:12px 13px;border-radius:10px}.auth-form .auth-submit{width:100%;margin-top:22px;padding:12px 16px}.auth-form .form-help{font-size:11px;color:var(--muted);text-align:center;margin-top:17px}@media(max-width:760px){.auth-shell{grid-template-columns:1fr;max-width:520px;min-height:0;margin:14px auto}.auth-story{min-height:0;padding:26px}.auth-story h1{font-size:32px}.auth-story ul{grid-template-columns:1fr 1fr;gap:12px}.auth-story .story-foot{margin-top:24px}}@media(max-width:500px){.auth-shell{width:calc(100% - 24px)}.auth-story,.auth-form{padding:23px;border-radius:16px}.auth-story ul{grid-template-columns:1fr}}</style>
 </head>
 <body class="min-h-screen" style="background: var(--paper); color: var(--ink)">
 
@@ -89,6 +89,7 @@
         <div class="min-w-0">
             <p class="font-bold text-[14.5px] leading-none truncate">MYSCHOOL · Teachers</p>
             <p class="text-[11px] text-slate-500 truncate">{{ school.school_name|title }}</p>
+                <a href="/{{ school_name }}/portals" class="ml-3 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">All roles</a>
         </div>
         <div class="ml-auto flex items-center gap-3">
             <div class="hidden sm:block text-right">
@@ -556,30 +557,15 @@
 
     {% else %}
     <!-- ══════════ TEACHER LOGIN ══════════ -->
-    <div class="min-h-screen flex items-center justify-center p-4">
-        <div class="text-center w-full max-w-sm">
-            <div class="w-11 h-11 mx-auto mb-4 rounded-[12px] grid place-items-center text-white font-bold text-[13px]" style="background: var(--green)">MS</div>
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 text-left">
-                <h1 class="text-xl font-bold mb-0.5">Teacher Login</h1>
-                <p class="text-[12.5px] text-slate-500 mb-6">{{ school.school_name|title }} · MYSCHOOL · Powered by 1percent</p>
-                {% if error %}
-                <div class="mb-4 px-4 py-3 rounded-lg text-[13px] font-medium" style="background:#fdf1ef;border:1px solid #f5d7d3;color:#b42318">{{ error }}</div>
-                {% endif %}
-                <form method="POST" action="/{{ school_name }}/teacher/login" class="space-y-4">
-                    <div>
-                        <label class="block text-[12.5px] font-semibold text-slate-700 mb-1">School email</label>
-                        <input type="email" name="email" required autofocus class="input-ms">
-                    </div>
-                    <div>
-                        <label class="block text-[12.5px] font-semibold text-slate-700 mb-1">Password</label>
-                        <input type="password" name="password" required class="input-ms">
-                    </div>
-                    <button type="submit" class="btn-primary w-full !py-2.5">Login</button>
-                </form>                    <p class="text-[11px] text-slate-400 mt-5 text-center">Accounts are created by the school administrator. Log in with your school email.</p>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-4">MYSCHOOL · Teacher &amp; canteen portals · Powered by <b>1percent</b></p>
-        </div>
-    </div>
+    <main class="auth-shell">
+      <aside class="auth-story"><div><div class="story-label">Teach with clarity</div><h1>Your classes.<br>Your tools.<br>One workspace.</h1><p class="story-copy">MYSCHOOL keeps your teaching responsibilities organized, from class assignments to academic records.</p><ul><li><span class="story-check">✓</span><span><b>Assigned classes</b>Focus on the classes and subjects linked to your account.</span></li><li><span class="story-check">✓</span><span><b>Timetable access</b>See your schedule and available academic tools.</span></li><li><span class="story-check">✓</span><span><b>Mark management</b>Use authorized tools to record student results.</span></li><li><span class="story-check">✓</span><span><b>Role-based permissions</b>DOS features appear only for staff with the right authorization.</span></li></ul></div><div class="story-foot">Teacher workspace · Use your school-issued email and password.</div></aside>
+      <section class="auth-form"><div class="form-mark">MS</div><h2>Teacher sign in</h2><p class="form-sub">{{ school.school_name|title }} · MYSCHOOL</p>
+        {% if error %}<div class="auth-error" role="alert">{{ error }}</div>{% endif %}
+        <form method="POST" action="/{{ school_name }}/teacher/login"><label for="teacher-email">School email</label><input id="teacher-email" type="email" name="email" required autofocus autocomplete="username" placeholder="name@school.rw"><label for="teacher-password">Password</label><input id="teacher-password" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password"><button type="submit" class="btn-primary auth-submit">Sign in to MYSCHOOL →</button></form>
+        <p class="form-help">Accounts are created by your school administrator. If you cannot sign in, ask them to check your account.</p>
+        <p class="form-help"><a href="/{{ school_name }}/portals" style="color:var(--green);font-weight:700;text-decoration:none">← All school roles</a></p>
+      </section>
+    </main>
     {% endif %}
 
 </body>
