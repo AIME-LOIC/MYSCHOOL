@@ -847,7 +847,16 @@
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => fd.append(k, v));
         const res = await fetch(`/${schoolname}/visits/add`, { method: 'POST', body: fd });
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch (parseError) {
+            throw new Error(`Server returned an invalid response (HTTP ${res.status}). Please try again or contact the administrator.`);
+        }
+
+        if (!res.ok && data.status !== 'error') {
+            throw new Error(data.detail || `Request failed with HTTP ${res.status}.`);
+        }
 
         if (data.status === 'success' || data.message === 'Already recorded today') {
             feedbackEl.innerText = 'Success! Your request has been recorded.';
@@ -859,14 +868,26 @@
             feedbackEl.classList.remove('text-green-600');
             feedbackEl.classList.add('text-red-500');
         }
-    } catch {
-        // Offline — queue it
-        await queueVisit(payload);
-        wentOffline = true;
-        feedbackEl.innerText = 'Sending... (will sync when online)';
-        feedbackEl.classList.remove('text-red-500');
-        feedbackEl.classList.add('text-amber-500');
-        submitBtn.innerText = 'Sending...';
+    } catch (error) {
+        // Only queue on likely network/offline failures. Server/database errors must be visible,
+        // not silently queued as if the visit will sync later.
+        if (!navigator.onLine || error instanceof TypeError) {
+            await queueVisit(payload);
+            wentOffline = true;
+            feedbackEl.innerText = 'Connection unavailable. Your visit is queued and will sync when online.';
+            feedbackEl.classList.remove('text-red-500');
+            feedbackEl.classList.add('text-amber-500');
+            submitBtn.innerText = 'Sending...';
+        } else {
+            feedbackEl.innerText = error.message || 'Submission failed. Please try again.';
+            feedbackEl.classList.remove('text-green-600', 'text-amber-500');
+            feedbackEl.classList.add('text-red-500');
+            submitBtn.disabled = false;
+            // Preserve entered parent details and selected student so the user can retry.
+            submitBtn.innerText = originalText;
+            submitBtn.classList.remove('animate-pulse');
+            return;
+        }
     } finally {
         if (!wentOffline) {
             submitBtn.innerText = originalText;
