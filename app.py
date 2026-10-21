@@ -1217,7 +1217,10 @@ def add_student(
         return {"status": "error", "message": "Student already exists"}
 
     student = Student(student_name=student_name, class_name=class_name, school_id=school.id)
+    student.canteen_card_id = _new_student_canteen_card_id(db, school.id)
     db.add(student)
+    db.flush()
+    _ensure_student_eats_card(db, school.id, student.id, student.canteen_card_id)
     db.commit()
     return {"status": "success", "student_id": student.id, "message": "Student added successfully"}
 
@@ -1556,13 +1559,23 @@ def eats_link_card(school_name: str, payload: EatsCardLink, request: Request, db
     student = db.query(Student).filter(Student.id == payload.student_id, (Student.school_id == school.id) | (Student.school_id.is_(None))).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in this school")
-    card = EatsCard(school_id=school.id, student_id=student.id, uid_hash=_eats_uid_hash(payload.card_uid), balance_cents=0, active=1)
-    db.add(card)
+    uid_hash = _eats_uid_hash(payload.card_uid)
+    linked_uid = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.uid_hash == uid_hash).first()
+    if linked_uid and linked_uid.student_id != student.id:
+        raise HTTPException(status_code=409, detail="This NFC card is already linked to another student in this school")
+    # Reuse the student's existing account so manual-ID and NFC purchases share one balance.
+    card = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.student_id == student.id).first()
+    if card:
+        card.uid_hash = uid_hash
+        card.active = 1
+    else:
+        card = EatsCard(school_id=school.id, student_id=student.id, uid_hash=uid_hash, balance_cents=0, active=1)
+        db.add(card)
     try:
         db.commit()
     except _IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This card is already linked in this school")
+        raise HTTPException(status_code=409, detail="This NFC card is already linked in this school")
     return {"status": "linked", "student_id": student.id, "card_last4": payload.card_uid.strip()[-4:]}
 
 @app.post("/{school_name}/eats/api/pay")
@@ -2881,3 +2894,104 @@ def canteen_admin_logout(school_name: str):
     response = RedirectResponse(f"/{school_name}/canteen-admin", status_code=303)
     response.delete_cookie(_CANTEEN_COOKIE, path="/")
     return response
+
+
+# ==================== FIVE-DIGIT STUDENT CANTEEN IDS ====================
+def _ensure_student_eats_card(db: Session, school_id: int, student_id: int, card_code: str):
+    """Create a zero-balance canteen account for manual-ID checkout; NFC can be linked later."""
+    existing = db.query(EatsCard).filter(EatsCard.school_id == school_id, EatsCard.student_id == student_id, EatsCard.active == 1).first()
+    if existing:
+        return existing
+    internal_hash = _hashlib.sha256(f"myschool-student-card:{school_id}:{student_id}:{card_code}".encode("utf-8")).hexdigest()
+    card = EatsCard(school_id=school_id, student_id=student_id, uid_hash=internal_hash, balance_cents=0, active=1)
+    db.add(card)
+    db.flush()
+    return card
+
+
+def _new_student_canteen_card_id(db: Session, school_id: int) -> str:
+    """Issue a unique five-digit code for a school; this is a lookup ID, not a secret."""
+    for _ in range(1000):
+        code = str(secrets.randbelow(90000) + 10000)
+        exists = db.query(Student.id).filter(Student.school_id == school_id, Student.canteen_card_id == code).first()
+        if not exists:
+            return code
+    raise HTTPException(status_code=503, detail="Could not allocate a student card ID. Please retry.")
+
+
+@app.post("/{school_name}/admin/canteen-cards/generate")
+def generate_student_canteen_card_ids(school_name: str, request: Request, db: Session = Depends(get_db)):
+    """Generate five-digit IDs for active students who do not have one yet."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    students = db.query(Student).filter(Student.school_id == school.id, Student.is_active == 1, Student.canteen_card_id.is_(None)).order_by(Student.id).all()
+    created = 0
+    try:
+        for student in students:
+            student.canteen_card_id = _new_student_canteen_card_id(db, school.id)
+            db.flush()  # Session autoflush is disabled; flush so the next uniqueness check sees this ID.
+            created += 1
+        for student in db.query(Student).filter(Student.school_id == school.id, Student.is_active == 1, Student.canteen_card_id.is_not(None)).all():
+            _ensure_student_eats_card(db, school.id, student.id, student.canteen_card_id)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not generate student card IDs. No changes were saved.")
+    return {"status": "success", "generated": created, "message": f"Generated {created} student card ID(s). Existing IDs were preserved."}
+
+
+@app.get("/{school_name}/admin/canteen-cards")
+def list_student_canteen_card_ids(school_name: str, request: Request, db: Session = Depends(get_db), class_name: str | None = Query(None)):
+    """Admin-only list for printing/issuing student canteen cards."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    query = db.query(Student).filter(Student.school_id == school.id, Student.is_active == 1)
+    if class_name and class_name.strip().lower() != "all":
+        query = query.filter(Student.class_name == class_name.strip())
+    rows = query.order_by(Student.class_name, Student.student_name).all()
+    return {"status": "success", "students": [{"student_id": s.id, "student_name": s.student_name, "class_name": s.class_name, "card_id": s.canteen_card_id} for s in rows], "total": len(rows), "without_card_id": sum(1 for s in rows if not s.canteen_card_id)}
+
+
+class EatsStudentCodePaymentInput(_PydanticModel):
+    student_card_id: str = _Field(min_length=5, max_length=5, pattern=r"^[0-9]{5}$")
+    item_id: int
+
+
+@app.post("/{school_name}/eats/api/pay-by-student-card-id")
+def eats_pay_by_student_card_id(school_name: str, payload: EatsStudentCodePaymentInput, request: Request, db: Session = Depends(get_db)):
+    """Canteen-staff-only fallback payment flow while NFC hardware is not deployed."""
+    if not (_check_admin(request, school_name) or _read_canteen_session(request, school_name)):
+        raise HTTPException(status_code=401, detail="Canteen staff login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    student = db.query(Student).filter(Student.school_id == school.id, Student.canteen_card_id == payload.student_card_id, Student.is_active == 1).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student card ID was not found in this school.")
+    card = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.student_id == student.id, EatsCard.active == 1).with_for_update().first()
+    if not card:
+        raise HTTPException(status_code=404, detail="This student has no active canteen balance card yet. Ask an administrator to activate it.")
+    item = db.query(EatsItem).filter(EatsItem.id == payload.item_id, EatsItem.school_id == school.id, EatsItem.available == 1).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Menu item is unavailable.")
+    try:
+        debit = db.execute(_sql_update(EatsCard).where(EatsCard.id == card.id, EatsCard.balance_cents >= item.price_cents, EatsCard.active == 1).values(balance_cents=EatsCard.balance_cents - item.price_cents))
+        if debit.rowcount != 1:
+            db.rollback()
+            raise HTTPException(status_code=402, detail="Insufficient balance.")
+        db.refresh(card)
+        tx = EatsTransaction(school_id=school.id, student_id=student.id, card_id=card.id, item_id=item.id, amount_cents=item.price_cents, balance_after_cents=card.balance_cents, status="approved")
+        db.add(tx)
+        db.commit()
+        return {"status": "approved", "transaction_id": tx.id, "student_id": student.id, "student_name": student.student_name, "student_card_id": student.canteen_card_id, "item": item.name, "amount_rwf": tx.amount_cents, "balance_rwf": tx.balance_after_cents}
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Payment could not be completed. No approval was returned.")

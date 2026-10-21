@@ -15,6 +15,7 @@ class Student(Base):
     password_hash = Column(String(255), nullable=True)  # Null means the initial zero-padded ID password has not been used yet
     must_change_password = Column(Integer, nullable=False, default=1)
     parent_link_code = Column(String(32), nullable=True, index=True)  # School-issued code for securely linking parent accounts
+    canteen_card_id = Column(String(5), nullable=True, index=True)  # Five-digit school-issued canteen card ID; NFC can be linked later
 
     # One-to-many relationship with visits
     visits = relationship(
