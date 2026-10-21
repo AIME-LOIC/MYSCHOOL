@@ -167,9 +167,8 @@
                 </button>
                 <a href="/{{ school_name }}/canteen-admin" class="py-4 px-6 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition shadow-md text-center">Canteen Admin</a>
             </div>
-        </div>
 
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
             <div class="bg-white p-5 rounded-xl shadow border border-gray-200">
                 <h2 class="text-lg font-bold text-gray-900 mb-1">Create canteen staff account</h2>
                 <p class="text-sm text-gray-500 mb-3">Give the canteen team access to menu and card operations only.</p>
@@ -196,7 +195,8 @@
                     <p id="student-mark-feedback" class="text-sm sm:col-span-2" role="status"></p>
                 </form>
             </div>
-        </section>
+            </section>
+        </div>
         <script>
         (function(){
             const schoolPath = '/' + encodeURIComponent({{ school_name|tojson }});
