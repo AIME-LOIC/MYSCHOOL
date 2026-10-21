@@ -5,7 +5,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from typing import List, Dict, Optional
+from pydantic import BaseModel
 import pandas as pd
 import threading, time, requests, os, signal, hashlib, hmac
 from datetime import datetime
@@ -15,7 +16,7 @@ from difflib import SequenceMatcher
 from openpyxl.styles import Font, PatternFill
 
 from config import get_db, engine, Base, init_db
-from model import Student, Visit, Product, SupportRequest, ParentAccount, StudentMark, CanteenAdmin
+from model import Student, Visit, Product, SupportRequest, ParentAccount, StudentMark, CanteenAdmin, Teacher, TimetableSlot
 from system_admin import School, create_school_database, list_all_schools, delete_school_database, get_school_database_info
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -1875,6 +1876,954 @@ def add_student_mark(school_name: str, request: Request, student_id: int = Form(
     mark = StudentMark(school_id=school.id, student_id=student.id, subject=subject, term=term, academic_year=academic_year, score=score, max_score=max_score, teacher_comment=teacher_comment.strip()[:1000], published=1 if published else 0)
     db.add(mark); db.commit(); db.refresh(mark)
     return {"status":"success","mark_id":mark.id,"published":bool(mark.published)}
+
+# ==================== TEACHER PAGES ====================
+_TEACHER_COOKIE = "teacher_session"
+_TEACHER_SESSION_SECONDS = 86400 * 7
+
+
+def _read_teacher_session(request: Request, school_id: int):
+    return _read_signed_role_token(request, _TEACHER_COOKIE, "teacher", school_id)
+
+
+def _hmac_password(new_password: str) -> str:
+    return _student_password_hash(new_password)
+
+
+def _string_to_list(value: str) -> list[str]:
+    return [part.strip() for part in (value or "").split(",") if part.strip()]
+
+
+def _teacher_pair_conflicts(db: Session, school, class_names: list[str], subject_names: list[str], exclude_teacher_id=None):
+    """Each (class, subject) combination can only be covered by one teacher.
+    Subjects are not taught school-wide — other classes do not take them."""
+    wanted = {(c.strip().lower(), s.strip().lower()) for c in class_names for s in subject_names}
+    if not wanted:
+        return []
+    others = db.query(Teacher).filter(Teacher.school_id == school.id, Teacher.is_active == 1)
+    if exclude_teacher_id:
+        others = others.filter(Teacher.id != exclude_teacher_id)
+    conflicts = []
+    for other in others:
+        pairs = {(c.strip().lower(), s.strip().lower()) for c in _string_to_list(other.classes) for s in _string_to_list(other.subjects)}
+        overlap = wanted & pairs
+        if overlap:
+            conflicts.append(f"{other.full_name}: " + ", ".join(f"{cls} × {sub}" for cls, sub in sorted(overlap)))
+    return conflicts
+
+
+def _teacher_has_assignment(teacher: Teacher, field_value: str, wanted: str) -> bool:
+    wanted_clean = (wanted or "").strip().lower()
+    return wanted_clean in [item.lower() for item in _string_to_list(field_value)]
+
+
+def _require_teacher(school_name: str, request: Request, db: Session):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    teacher_id = _read_teacher_session(request, school.id)
+    if not teacher_id:
+        raise HTTPException(status_code=401, detail="Teacher login required.")
+    teacher = db.query(Teacher).filter(Teacher.id == teacher_id, Teacher.school_id == school.id, Teacher.is_active == 1).first()
+    if not teacher:
+        raise HTTPException(status_code=401, detail="Teacher login required.")
+    return school, teacher
+
+
+class TeacherMarkRow(BaseModel):
+    student_id: int
+    score: Optional[int] = None
+    teacher_comment: Optional[str] = ""
+    published: Optional[bool] = False
+
+
+class TeacherMarksSave(BaseModel):
+    subject: str
+    term: str
+    academic_year: str
+    max_score: int = 100
+    rows: List[TeacherMarkRow]
+
+
+@app.get("/{school_name}/teacher")
+def teacher_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    teacher_id = _read_teacher_session(request, school.id)
+    teacher = db.query(Teacher).filter(Teacher.id == teacher_id, Teacher.school_id == school.id, Teacher.is_active == 1).first() if teacher_id else None
+    return templates.TemplateResponse("teacher.html", {
+        "request": request,
+        "school": school,
+        "school_name": school_name,
+        "teacher": teacher,
+        "logged_in": bool(teacher),
+        "teacher_is_dos": bool(teacher.is_dos) if teacher else False,
+        "teacher_subjects": _string_to_list(teacher.subjects) if teacher else [],
+        "teacher_classes": sorted(_string_to_list(teacher.classes)) if teacher else [],
+    })
+
+
+@app.post("/{school_name}/teacher/login")
+def teacher_login(school_name: str, request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    email_clean = email.strip().lower()
+    teacher = db.query(Teacher).filter(Teacher.school_id == school.id, Teacher.email == email_clean, Teacher.is_active == 1).first()
+    if not teacher or not _student_password_matches(password, teacher.password_hash):
+        return templates.TemplateResponse("teacher.html", {
+            "request": request, "school": school, "school_name": school_name, "teacher": None,
+            "logged_in": False, "teacher_subjects": [], "teacher_classes": [],
+            "error": "Invalid email or password",
+        })
+    expires = int(time.time()) + _TEACHER_SESSION_SECONDS
+    token = _signed_role_token("teacher", teacher.id, school.id, expires)
+    response = RedirectResponse(f"/{school_name}/teacher", status_code=303)
+    response.set_cookie(_TEACHER_COOKIE, token, max_age=_TEACHER_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/")
+    return response
+
+
+@app.post("/{school_name}/teacher/logout")
+def teacher_logout(school_name: str):
+    response = RedirectResponse(f"/{school_name}/teacher", status_code=303)
+    response.delete_cookie(_TEACHER_COOKIE)
+    return response
+
+
+@app.get("/{school_name}/teacher/api/table")
+def teacher_marks_table(
+    school_name: str,
+    request: Request,
+    class_name: str = Query(..., min_length=1),
+    subject: str = Query(..., min_length=1),
+    term: str = Query(..., min_length=1),
+    academic_year: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+):
+    """Auto table maker: builds the marks entry table for one class + subject + term."""
+    school, teacher = _require_teacher(school_name, request, db)
+    class_name = class_name.strip()
+    subject_clean = subject.strip()[:100]
+    term_clean = term.strip()[:40]
+    year_clean = academic_year.strip()[:20]
+    if not _teacher_has_assignment(teacher, teacher.classes, class_name):
+        raise HTTPException(status_code=403, detail="You are not assigned to this class.")
+    if not _teacher_has_assignment(teacher, teacher.subjects, subject_clean):
+        raise HTTPException(status_code=403, detail="You are not assigned to teach this subject.")
+
+    students = db.query(Student).filter(
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.class_name == class_name,
+        Student.is_active == 1,
+    ).order_by(Student.student_name).all()
+    student_ids = [s.id for s in students]
+    marks = db.query(StudentMark).filter(
+        StudentMark.school_id == school.id,
+        StudentMark.student_id.in_(student_ids),
+        StudentMark.subject == subject_clean,
+        StudentMark.term == term_clean,
+        StudentMark.academic_year == year_clean,
+    ).all() if student_ids else []
+    marks_by_student = {m.student_id: m for m in marks}
+
+    rows = []
+    for s in students:
+        m = marks_by_student.get(s.id)
+        rows.append({
+            "student_id": s.id,
+            "student_name": s.student_name,
+            "mark_id": m.id if m else None,
+            "score": m.score if m else None,
+            "score_in_percent": round(m.score * 100 / m.max_score) if m else None,
+            "max_score": m.max_score if m else 100,
+            "teacher_comment": m.teacher_comment if m else "",
+            "published": bool(m.published) if m else False,
+            "entered_by_me": bool(m and m.teacher_id == teacher.id) if m else False,
+        })
+
+    entered = [r["score"] / r["max_score"] * 100 for r in rows if r["score"] is not None]
+    stats = {
+        "students": len(rows),
+        "entered": len(entered),
+        "average_percent": round(sum(entered) / len(entered)) if entered else None,
+        "highest_percent": round(max(entered)) if entered else None,
+        "lowest_percent": round(min(entered)) if entered else None,
+        "pass_count": sum(1 for p in entered if p >= 50),
+    }
+    return {"status": "success", "class_name": class_name, "subject": subject_clean, "term": term_clean,
+            "academic_year": year_clean, "rows": rows, "stats": stats}
+
+
+@app.post("/{school_name}/teacher/api/marks")
+def teacher_save_marks(school_name: str, request: Request, payload: TeacherMarksSave, db: Session = Depends(get_db)):
+    """Bulk save (upsert) marks for the students in the generated table."""
+    school, teacher = _require_teacher(school_name, request, db)
+    subject_clean = payload.subject.strip()[:100]
+    term_clean = payload.term.strip()[:40]
+    year_clean = payload.academic_year.strip()[:20]
+    max_score = payload.max_score
+    if not subject_clean or not term_clean or not year_clean or max_score < 1:
+        raise HTTPException(status_code=400, detail="Subject, term, academic year and max score are required.")
+    if not payload.rows:
+        raise HTTPException(status_code=400, detail="Enter at least one mark.")
+
+    # All rows in one table belong to one class; validate with the first student.
+    first_student = db.query(Student).filter(Student.id == payload.rows[0].student_id,
+                                             ((Student.school_id == school.id) | (Student.school_id.is_(None)))).first()
+    if not first_student:
+        raise HTTPException(status_code=404, detail="Student not found in this school.")
+    if not _teacher_has_assignment(teacher, teacher.classes, first_student.class_name):
+        raise HTTPException(status_code=403, detail="You are not assigned to this class.")
+    if not _teacher_has_assignment(teacher, teacher.subjects, subject_clean):
+        raise HTTPException(status_code=403, detail="You are not assigned to teach this subject.")
+
+    saved, skipped = [], []
+    for row in payload.rows:
+        student = db.query(Student).filter(Student.id == row.student_id,
+                                           ((Student.school_id == school.id) | (Student.school_id.is_(None)))).first()
+        if not student:
+            skipped.append(row.student_id); continue
+        existing = db.query(StudentMark).filter(
+            StudentMark.school_id == school.id,
+            StudentMark.student_id == student.id,
+            StudentMark.subject == subject_clean,
+            StudentMark.term == term_clean,
+            StudentMark.academic_year == year_clean,
+        ).first()
+        if row.score is None:
+            if existing:
+                db.delete(existing)
+            skipped.append(student.id); continue
+        if row.score < 0 or row.score > max_score:
+            skipped.append(student.id); continue
+        if existing:
+            existing.score = row.score
+            existing.max_score = max_score
+            existing.teacher_comment = (row.teacher_comment or "").strip()[:1000]
+            existing.published = 1 if row.published else 0
+            existing.teacher_id = teacher.id
+        else:
+            existing = StudentMark(school_id=school.id, student_id=student.id, teacher_id=teacher.id,
+                                   subject=subject_clean, term=term_clean, academic_year=year_clean,
+                                   score=row.score, max_score=max_score,
+                                   teacher_comment=(row.teacher_comment or "").strip()[:1000],
+                                   published=1 if row.published else 0)
+            db.add(existing)
+        saved.append(student.id)
+    db.commit()
+    return {"status": "success", "saved": len(saved), "skipped": skipped}
+
+
+# ==================== TEACHER MANAGEMENT (ADMIN) ====================
+@app.get("/{school_name}/admin/teachers")
+def list_teachers(school_name: str, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    teachers = db.query(Teacher).filter(Teacher.school_id == school.id).order_by(Teacher.created_at.desc()).all()
+    return {"status": "success", "teachers": [{
+        "id": t.id, "full_name": t.full_name, "email": t.email, "username": t.username,
+        "subjects": _string_to_list(t.subjects), "classes": sorted(_string_to_list(t.classes)),
+        "is_dos": bool(t.is_dos),
+        "is_active": bool(t.is_active), "created_at": t.created_at.strftime("%Y-%m-%d") if t.created_at else "",
+    } for t in teachers]}
+
+
+@app.post("/{school_name}/admin/teachers")
+def create_teacher(
+    school_name: str,
+    request: Request,
+    full_name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    username: Optional[str] = Form(None),
+    subjects: str = Form(""),
+    classes: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Create a teacher: names, email (used to log in), password, one or many subjects and classes."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    name_clean = full_name.strip()[:120]
+    email_clean = email.strip().lower()
+    subject_list = _string_to_list(subjects)
+    class_list = _string_to_list(classes)
+    if not name_clean or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email_clean):
+        raise HTTPException(status_code=400, detail="Full name and a valid email address are required.")
+    if len(password) < 8 or len(password) > 128:
+        raise HTTPException(status_code=400, detail="Password must be 8-128 characters.")
+    if not subject_list or not class_list:
+        raise HTTPException(status_code=400, detail="Assign at least one subject and one class to the teacher — a teacher may teach many subjects.")
+    if len(subject_list) > 10 or len(class_list) > 12 or any(len(s) > 100 for s in subject_list):
+        raise HTTPException(status_code=400, detail="Too many subjects/classes assigned.")
+    conflicts = _teacher_pair_conflicts(db, school, class_list, subject_list)
+    if conflicts:
+        raise HTTPException(status_code=409, detail="A teacher teaches each subject in one class only. Already covered by: " + "; ".join(conflicts))
+    # Teachers log in with their email; the username is only a unique key derived from it.
+    username_clean = (username or "").strip().lower()
+    if not username_clean:
+        username_clean = re.sub(r"[^a-z0-9_.-]", "_", email_clean.split("@")[0])[:60] or "teacher"
+    if not re.fullmatch(r"[a-z0-9_.-]{3,80}", username_clean):
+        raise HTTPException(status_code=400, detail="Username must be 3-80 letters/numbers or ._-")
+    suffix = 2
+    while db.query(Teacher).filter(Teacher.school_id == school.id, Teacher.username == username_clean).first():
+        stem = re.sub(r"[0-9]+$", "", username_clean) or username_clean
+        username_clean = f"{stem[:70]}{suffix}"
+        suffix += 1
+    teacher = Teacher(school_id=school.id, full_name=name_clean, email=email_clean, username=username_clean,
+                      password_hash=_student_password_hash(password),
+                      subjects=", ".join(subject_list)[:300], classes=", ".join(class_list)[:200], is_active=1)
+    db.add(teacher)
+    try:
+        db.commit(); db.refresh(teacher)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not create teacher account.")
+    return {"status": "success", "teacher_id": teacher.id, "username": username_clean, "email": email_clean}
+
+
+@app.delete("/{school_name}/admin/teachers/{teacher_id}")
+def delete_teacher(school_name: str, teacher_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    teacher = db.query(Teacher).filter(Teacher.id == teacher_id, Teacher.school_id == school.id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found.")
+    db.delete(teacher); db.commit()
+    return {"status": "success"}
+
+
+@app.get("/{school_name}/admin/marks/report")
+def admin_marks_report(
+    school_name: str,
+    request: Request,
+    class_name: str = Query(..., min_length=1),
+    term: str = Query(..., min_length=1),
+    academic_year: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+):
+    """Class marks report: students x subjects matrix with averages, for admin tracking."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    class_clean = class_name.strip()
+    term_clean = term.strip()[:40]
+    year_clean = academic_year.strip()[:20]
+
+    students = db.query(Student).filter(
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.class_name == class_clean,
+    ).order_by(Student.is_active.desc(), Student.student_name).all()
+    student_ids = [s.id for s in students]
+    marks = db.query(StudentMark).filter(
+        StudentMark.school_id == school.id,
+        StudentMark.student_id.in_(student_ids),
+        StudentMark.term == term_clean,
+        StudentMark.academic_year == year_clean,
+    ).all() if student_ids else []
+
+    subjects = sorted({m.subject for m in marks})
+    by_student: dict[int, list] = {}
+    for m in marks:
+        by_student.setdefault(m.student_id, []).append(m)
+
+    def _percent(m):
+        return round(m.score * 100 / m.max_score) if m.max_score else 0
+
+    rows = []
+    all_percents = []
+    subject_percents: dict[str, list] = {s: [] for s in subjects}
+    for s in students:
+        student_marks = by_student.get(s.id, [])
+        scores = {}
+        student_percents = []
+        for m in student_marks:
+            p = _percent(m)
+            scores[m.subject] = {"percent": p, "score": m.score, "max_score": m.max_score,
+                                 "comment": m.teacher_comment or "", "published": bool(m.published), "mark_id": m.id}
+            student_percents.append(p)
+            subject_percents[m.subject].append(p)
+            all_percents.append(p)
+        rows.append({
+            "student_id": s.id, "student_name": s.student_name, "is_active": s.is_active != 0,
+            "scores": scores,
+            "average_percent": round(sum(student_percents) / len(student_percents)) if student_percents else None,
+            "subjects_count": len(student_percents),
+        })
+
+    subject_averages = {s: round(sum(v) / len(v)) for s, v in subject_percents.items() if v}
+    return {"status": "success", "class_name": class_clean, "term": term_clean, "academic_year": year_clean,
+            "subjects": subjects, "rows": rows,
+            "class_average": round(sum(all_percents) / len(all_percents)) if all_percents else None,
+            "subject_averages": subject_averages}
+
+
+@app.delete("/{school_name}/admin/marks/{mark_id}")
+def delete_mark(school_name: str, mark_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    mark = db.query(StudentMark).filter(StudentMark.id == mark_id, StudentMark.school_id == school.id).first()
+    if not mark:
+        raise HTTPException(status_code=404, detail="Mark not found.")
+    db.delete(mark); db.commit()
+    return {"status": "success"}
+
+
+@app.get("/{school_name}/export/marks")
+def export_marks_to_excel(
+    school_name: str,
+    request: Request,
+    class_name: str = Query(..., min_length=1),
+    term: str = Query(..., min_length=1),
+    academic_year: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    try:
+        class_clean = class_name.strip(); term_clean = term.strip(); year_clean = academic_year.strip()
+        marks = db.query(StudentMark, Student).join(Student, StudentMark.student_id == Student.id).filter(
+            StudentMark.school_id == school.id,
+            Student.class_name == class_clean,
+            StudentMark.term == term_clean,
+            StudentMark.academic_year == year_clean,
+        ).order_by(Student.class_name, Student.student_name, StudentMark.subject).all()
+        data = [{
+            "Student": student.student_name,
+            "Class": student.class_name,
+            "Subject": mark.subject,
+            "Term": mark.term,
+            "Year": mark.academic_year,
+            "Score": mark.score,
+            "Out of": mark.max_score,
+            "Percent": round(mark.score * 100 / mark.max_score) if mark.max_score else 0,
+            "Published": "Yes" if mark.published else "No",
+            "Comment": mark.teacher_comment or "",
+        } for mark, student in marks]
+        if not data:
+            return JSONResponse({"error": "No marks found for this report."}, status_code=404)
+        df = pd.DataFrame(data)
+        filename = f"marks_{school_name}_{class_clean}_{term_clean}_{year_clean}.xlsx".replace(" ", "_")
+        filepath = f"/tmp/{filename}"
+        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Marks', index=False)
+            worksheet = writer.sheets['Marks']
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except: pass
+                worksheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
+            header_fill = PatternFill(start_color="1F8A54", end_color="1F8A54", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            for cell in worksheet[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+        return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ==================== FULL CRUD MANAGEMENT (ADMIN) ====================
+class EatsMenuUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price_rwf: Optional[int] = None
+    available: Optional[bool] = None
+
+
+@app.put("/{school_name}/admin/teachers/{teacher_id}")
+def update_teacher(
+    school_name: str,
+    teacher_id: int,
+    request: Request,
+    full_name: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    username: Optional[str] = Form(None),
+    subjects: Optional[str] = Form(None),
+    classes: Optional[str] = Form(None),
+    is_active: Optional[int] = Form(None),
+    is_dos: Optional[int] = Form(None),
+    new_password: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Edit a teacher: names, email, username, subjects, classes, DOS/active flags or password reset."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    teacher = db.query(Teacher).filter(Teacher.id == teacher_id, Teacher.school_id == school.id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found.")
+
+    if full_name is not None and full_name.strip():
+        teacher.full_name = full_name.strip()[:120]
+    if email is not None:
+        email_clean = email.strip().lower()
+        if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email_clean):
+            raise HTTPException(status_code=400, detail="Enter a valid email address.")
+        clash = db.query(Teacher).filter(Teacher.school_id == school.id, Teacher.email == email_clean, Teacher.id != teacher_id).first()
+        if clash:
+            raise HTTPException(status_code=409, detail="Another teacher already uses this email.")
+        teacher.email = email_clean
+    if username is not None:
+        username_clean = username.strip().lower()
+        if not re.fullmatch(r"[a-z0-9_.-]{3,80}", username_clean):
+            raise HTTPException(status_code=400, detail="Username must be 3-80 letters/numbers or ._-")
+        clash = db.query(Teacher).filter(Teacher.school_id == school.id, Teacher.username == username_clean, Teacher.id != teacher_id).first()
+        if clash:
+            raise HTTPException(status_code=409, detail="Another teacher already uses this username.")
+        teacher.username = username_clean
+    if subjects is not None:
+        subject_list = _string_to_list(subjects)
+        if not subject_list:
+            raise HTTPException(status_code=400, detail="A teacher must teach at least one subject.")
+        teacher.subjects = ", ".join(subject_list)[:300]
+    if classes is not None:
+        class_list = _string_to_list(classes)
+        if not class_list:
+            raise HTTPException(status_code=400, detail="A teacher must be assigned to at least one class.")
+        teacher.classes = ", ".join(class_list)[:200]
+    if is_active is not None:
+        teacher.is_active = 1 if is_active else 0
+    if is_dos is not None:
+        teacher.is_dos = 1 if is_dos else 0
+    if new_password:
+        if len(new_password) < 8 or len(new_password) > 128:
+            raise HTTPException(status_code=400, detail="New password must be 8-128 characters.")
+        teacher.password_hash = _hmac_password(new_password)
+    final_classes = _string_to_list(classes) if classes is not None else _string_to_list(teacher.classes)
+    final_subjects = _string_to_list(subjects) if subjects is not None else _string_to_list(teacher.subjects)
+    conflicts = _teacher_pair_conflicts(db, school, final_classes, final_subjects, exclude_teacher_id=teacher.id)
+    if conflicts:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="A teacher teaches each subject in one class only. Already covered by: " + "; ".join(conflicts))
+    db.commit()
+    return {"status": "success", "id": teacher.id}
+
+
+@app.get("/{school_name}/admin/canteen-admins")
+def list_canteen_admins(school_name: str, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    staff = db.query(CanteenAdmin).filter(CanteenAdmin.school_id == school.id).order_by(CanteenAdmin.created_at.desc()).all()
+    return {"status": "success", "accounts": [{
+        "id": a.id, "username": a.username, "is_active": bool(a.is_active),
+        "created_at": a.created_at.strftime("%Y-%m-%d") if a.created_at else "",
+    } for a in staff]}
+
+
+@app.put("/{school_name}/admin/canteen-admins/{admin_id}")
+def update_canteen_admin(
+    school_name: str, admin_id: int, request: Request,
+    is_active: Optional[int] = Form(None), new_password: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    staff = db.query(CanteenAdmin).filter(CanteenAdmin.id == admin_id, CanteenAdmin.school_id == school.id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Canteen account not found.")
+    if is_active is not None:
+        staff.is_active = 1 if is_active else 0
+    if new_password:
+        if len(new_password) < 8 or len(new_password) > 128:
+            raise HTTPException(status_code=400, detail="New password must be 8-128 characters.")
+        staff.password_hash = _hmac_password(new_password)
+    db.commit()
+    return {"status": "success", "id": staff.id}
+
+
+@app.delete("/{school_name}/admin/canteen-admins/{admin_id}")
+def delete_canteen_admin(school_name: str, admin_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    staff = db.query(CanteenAdmin).filter(CanteenAdmin.id == admin_id, CanteenAdmin.school_id == school.id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Canteen account not found.")
+    db.delete(staff); db.commit()
+    return {"status": "success"}
+
+
+@app.get("/{school_name}/admin/parents")
+def list_parent_accounts(school_name: str, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    students = {s.id: s for s in db.query(Student).filter((Student.school_id == school.id) | (Student.school_id.is_(None))).all()}
+    accounts = db.query(ParentAccount).filter(ParentAccount.school_id == school.id).order_by(ParentAccount.created_at.desc()).all()
+    return {"status": "success", "accounts": [{
+        "id": a.id, "parent_name": a.parent_name, "email": a.email,
+        "student_id": a.student_id, "student_name": (students.get(a.student_id).student_name if students.get(a.student_id) else ""),
+        "student_class": (students.get(a.student_id).class_name if students.get(a.student_id) else ""),
+        "is_active": bool(a.is_active),
+        "created_at": a.created_at.strftime("%Y-%m-%d") if a.created_at else "",
+    } for a in accounts]}
+
+
+@app.put("/{school_name}/admin/parents/{account_id}")
+def update_parent_account(
+    school_name: str, account_id: int, request: Request,
+    is_active: Optional[int] = Form(None), new_password: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    account = db.query(ParentAccount).filter(ParentAccount.id == account_id, ParentAccount.school_id == school.id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Parent account not found.")
+    if is_active is not None:
+        account.is_active = 1 if is_active else 0
+    if new_password:
+        if len(new_password) < 8 or len(new_password) > 128:
+            raise HTTPException(status_code=400, detail="New password must be 8-128 characters.")
+        account.password_hash = _hmac_password(new_password)
+    db.commit()
+    return {"status": "success", "id": account.id}
+
+
+@app.delete("/{school_name}/admin/parents/{account_id}")
+def delete_parent_account(school_name: str, account_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    account = db.query(ParentAccount).filter(ParentAccount.id == account_id, ParentAccount.school_id == school.id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Parent account not found.")
+    db.delete(account); db.commit()
+    return {"status": "success"}
+
+
+@app.put("/{school_name}/admin/marks/{mark_id}")
+def update_mark(
+    school_name: str, mark_id: int, request: Request,
+    score: Optional[int] = Form(None), max_score: Optional[int] = Form(None),
+    teacher_comment: Optional[str] = Form(None), published: Optional[int] = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Admin can correct a mark, change its out-of value, comment or publish state."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    mark = db.query(StudentMark).filter(StudentMark.id == mark_id, StudentMark.school_id == school.id).first()
+    if not mark:
+        raise HTTPException(status_code=404, detail="Mark not found.")
+    new_max = max_score if max_score is not None else mark.max_score
+    new_score = score if score is not None else mark.score
+    if not new_max or new_max < 1:
+        raise HTTPException(status_code=400, detail="Maximum score must be at least 1.")
+    if new_score is None or new_score < 0 or new_score > new_max:
+        raise HTTPException(status_code=400, detail=f"Score must be between 0 and {new_max}.")
+    mark.max_score = new_max
+    mark.score = new_score
+    if teacher_comment is not None:
+        mark.teacher_comment = teacher_comment.strip()[:1000]
+    if published is not None:
+        mark.published = 1 if published else 0
+    db.commit()
+    return {"status": "success", "id": mark.id, "percent": round(mark.score * 100 / mark.max_score), "published": bool(mark.published)}
+
+
+@app.put("/{school_name}/admin/visits/{visit_id}")
+def update_visit(
+    school_name: str, visit_id: int, request: Request,
+    movement_method: Optional[str] = Form(None),
+    arrival_plate_number: Optional[str] = Form(None),
+    parent_name: Optional[str] = Form(None),
+    parent_relationship: Optional[str] = Form(None),
+    parent_phone: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Correct a visit record: how the student travelled and parent/car details."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    visit = db.query(Visit).join(Student, Visit.student_id == Student.id).filter(
+        Visit.id == visit_id, (Student.school_id == school.id) | (Student.school_id.is_(None))).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit record not found in this school.")
+    if movement_method is not None:
+        value = movement_method.strip()
+        if value and value not in ("with_car", "without_car"):
+            raise HTTPException(status_code=400, detail="Movement must be with_car or without_car (or empty).")
+        visit.movement_method = value or None
+    if arrival_plate_number is not None:
+        visit.arrival_plate_number = arrival_plate_number.strip()[:30] or None
+    if parent_name is not None:
+        visit.parent_name = parent_name.strip()[:120] or None
+    if parent_relationship is not None:
+        relation = parent_relationship.strip().lower()
+        if relation and relation not in ("father", "mother", "other"):
+            raise HTTPException(status_code=400, detail="Relationship must be father, mother or other (or empty).")
+        visit.parent_relationship = relation or None
+    if parent_phone is not None:
+        visit.parent_phone = parent_phone.strip()[:30] or None
+    db.commit()
+    return {"status": "success", "id": visit.id}
+
+
+# ---- Eats menu: full management for canteen staff/admin (update item, price, availability) ----
+@app.put("/{school_name}/eats/api/menu/{item_id}")
+def eats_update_menu_item(school_name: str, item_id: int, payload: EatsMenuUpdate, request: Request, db: Session = Depends(get_db)):
+    if not (_check_admin(request, school_name) or _read_canteen_session(request, school_name)):
+        raise HTTPException(status_code=401, detail="School admin or canteen login required")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    item = db.query(EatsItem).filter(EatsItem.id == item_id, EatsItem.school_id == school.id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Menu item not found")
+    if payload.name is not None:
+        item.name = payload.name.strip()[:120]
+    if payload.description is not None:
+        item.description = payload.description.strip()[:300]
+    if payload.price_rwf is not None:
+        if payload.price_rwf < 1 or payload.price_rwf > 1000000:
+            raise HTTPException(status_code=400, detail="Price must be between 1 and 1000000 RWF")
+        item.price_cents = payload.price_rwf
+    if payload.available is not None:
+        # Keep the item instead of deleting it so past transactions stay traceable.
+        item.available = 1 if payload.available else 0
+    db.commit(); db.refresh(item)
+    return {"id": item.id, "name": item.name, "description": item.description or "", "price_rwf": item.price_cents, "available": bool(item.available)}
+
+
+@app.get("/{school_name}/eats/api/menu/manage")
+def eats_manage_menu(school_name: str, request: Request, db: Session = Depends(get_db)):
+    if not (_check_admin(request, school_name) or _read_canteen_session(request, school_name)):
+        raise HTTPException(status_code=401, detail="School admin or canteen login required")
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    items = db.query(EatsItem).filter(EatsItem.school_id == school.id).order_by(EatsItem.available.desc(), EatsItem.name).all()
+    return [{"id": x.id, "name": x.name, "description": x.description or "", "price_rwf": x.price_cents, "available": bool(x.available)} for x in items]
+
+
+# ==================== TIMETABLES (DOS / ADMIN) ====================
+_VAULT_COOKIE = "vault_session"
+_VAULT_SESSION_SECONDS = 600  # vault stays open for 10 minutes after unlocking
+
+
+def _make_vault_token(school_name: str, expires: int) -> str:
+    payload = f"vault:{school_name}:{expires}"
+    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{signature}"
+
+
+def _read_vault_session(request: Request, school_name: str) -> bool:
+    token = request.cookies.get(_VAULT_COOKIE, "")
+    try:
+        role, school, expires, signature = token.split(":", 3)
+        payload = f"{role}:{school}:{expires}"
+        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        return role == "vault" and school == school_name and hmac.compare_digest(signature, expected) and int(expires) >= int(time.time())
+    except (ValueError, TypeError):
+        return False
+
+
+@app.post("/{school_name}/admin/vault/unlock")
+def vault_unlock(school_name: str, request: Request, password: str = Form(...), db: Session = Depends(get_db)):
+    """Extra re-authentication step before the Default Access vault opens."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    expected = f"{school_name}001"
+    if not hmac.compare_digest(password.strip(), expected):
+        raise HTTPException(status_code=403, detail="Wrong vault password.")
+    expires = int(time.time()) + _VAULT_SESSION_SECONDS
+    response = JSONResponse({"status": "success", "valid_for_minutes": _VAULT_SESSION_SECONDS // 60})
+    response.set_cookie(_VAULT_COOKIE, _make_vault_token(school_name, expires), max_age=_VAULT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/")
+    return response
+
+
+@app.get("/{school_name}/admin/vault/secrets")
+def vault_secrets(school_name: str, request: Request):
+    """Vault values are only released after the unlock step."""
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    if not _read_vault_session(request, school_name):
+        raise HTTPException(status_code=403, detail="Vault is locked. Unlock first.")
+    return {"status": "success", "admin_default_password": f"{school_name}001", "expires_minutes": _VAULT_SESSION_SECONDS // 60}
+
+
+def _get_dos_actor(school_name: str, request: Request, db: Session):
+    """Timetables can be built by the school admin or by a teacher flagged as DOS."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    if _check_admin(request, school_name):
+        return school, "admin", None
+    teacher_id = _read_teacher_session(request, school.id)
+    if teacher_id:
+        teacher = db.query(Teacher).filter(Teacher.id == teacher_id, Teacher.school_id == school.id, Teacher.is_active == 1, Teacher.is_dos == 1).first()
+        if teacher:
+            return school, "teacher", teacher
+    raise HTTPException(status_code=401, detail="Dean of Studies or school administrator login required.")
+
+
+class TimetableSlotInput(BaseModel):
+    class_name: str
+    day: int
+    period: int
+    subject: str
+    teacher_id: Optional[int] = None
+
+
+TIMETABLE_DAYS = 5      # Monday..Friday
+TIMETABLE_PERIODS = 8
+
+
+def _class_subject_options(school_id: int, class_name: str, db: Session):
+    """Which subjects exist for this class, straight from teacher assignments."""
+    subject_options: dict[str, list] = {}
+    wanted = (class_name or "").strip().lower()
+    for t in db.query(Teacher).filter(Teacher.school_id == school_id, Teacher.is_active == 1).all():
+        if wanted not in [c.strip().lower() for c in _string_to_list(t.classes)]:
+            continue
+        for s in _string_to_list(t.subjects):
+            subject_options.setdefault(s, []).append({"teacher_id": t.id, "teacher_name": t.full_name})
+    return subject_options
+
+
+@app.get("/{school_name}/admin/timetable")
+def get_timetable(school_name: str, request: Request, class_name: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    school, _, _ = _get_dos_actor(school_name, request, db)
+    class_clean = class_name.strip()[:50]
+    slots = db.query(TimetableSlot).filter(
+        TimetableSlot.school_id == school.id, TimetableSlot.class_name == class_clean
+    ).order_by(TimetableSlot.day, TimetableSlot.period).all()
+    slot_rows = []
+    for s in slots:
+        slot_rows.append({"id": s.id, "day": s.day, "period": s.period, "subject": s.subject, "teacher_id": s.teacher_id})
+    return {"status": "success", "class_name": class_clean, "slots": slot_rows,
+            "subject_options": _class_subject_options(school.id, class_clean, db)}
+
+
+@app.put("/{school_name}/admin/timetable")
+def set_timetable_slot(school_name: str, request: Request, payload: TimetableSlotInput, db: Session = Depends(get_db)):
+    school, _, _ = _get_dos_actor(school_name, request, db)
+    class_clean = payload.class_name.strip()[:50]
+    subject_clean = payload.subject.strip()[:100]
+    if not (1 <= payload.day <= TIMETABLE_DAYS and 1 <= payload.period <= TIMETABLE_PERIODS):
+        raise HTTPException(status_code=400, detail="Day must be 1-5 and period 1-8.")
+    if not subject_clean:
+        raise HTTPException(status_code=400, detail="Choose a subject for the slot.")
+
+    slot = db.query(TimetableSlot).filter(
+        TimetableSlot.school_id == school.id, TimetableSlot.class_name == class_clean,
+        TimetableSlot.day == payload.day, TimetableSlot.period == payload.period,
+    ).first()
+
+    new_teacher_id = payload.teacher_id
+    if new_teacher_id:
+        teacher = db.query(Teacher).filter(Teacher.id == new_teacher_id, Teacher.school_id == school.id, Teacher.is_active == 1).first()
+        if not teacher:
+            raise HTTPException(status_code=404, detail="Teacher not found in this school.")
+        if not _teacher_has_assignment(teacher, teacher.classes, class_clean):
+            raise HTTPException(status_code=400, detail=f"{teacher.full_name} is not assigned to {class_clean}.")
+        if not _teacher_has_assignment(teacher, teacher.subjects, subject_clean):
+            raise HTTPException(status_code=400, detail=f"{teacher.full_name} does not teach {subject_clean}.")
+        clash = db.query(TimetableSlot).filter(
+            TimetableSlot.school_id == school.id,
+            TimetableSlot.teacher_id == new_teacher_id,
+            TimetableSlot.day == payload.day,
+            TimetableSlot.period == payload.period,
+        ).first()
+        if clash and (slot is None or clash.id != slot.id):
+            raise HTTPException(status_code=409, detail=f"That teacher already has {clash.class_name} ({clash.subject}) in this slot.")
+
+    if slot is None:
+        slot = TimetableSlot(school_id=school.id, class_name=class_clean, day=payload.day, period=payload.period, subject=subject_clean, teacher_id=new_teacher_id)
+        db.add(slot)
+    else:
+        slot.subject = subject_clean
+        slot.teacher_id = new_teacher_id
+    db.commit(); db.refresh(slot)
+    return {"status": "success", "slot": {"id": slot.id, "day": slot.day, "period": slot.period, "subject": slot.subject, "teacher_id": slot.teacher_id}}
+
+
+@app.delete("/{school_name}/admin/timetable/{slot_id}")
+def clear_timetable_slot(school_name: str, slot_id: int, request: Request, db: Session = Depends(get_db)):
+    school, _, _ = _get_dos_actor(school_name, request, db)
+    slot = db.query(TimetableSlot).filter(TimetableSlot.id == slot_id, TimetableSlot.school_id == school.id).first()
+    if not slot:
+        raise HTTPException(status_code=404, detail="Slot not found.")
+    db.delete(slot); db.commit()
+    return {"status": "success"}
+
+
+@app.get("/{school_name}/teacher/api/students")
+def teacher_student_rosters(school_name: str, request: Request, class_name: str = Query(None), db: Session = Depends(get_db)):
+    """Teachers can see the students in the classes they are assigned to."""
+    school, teacher = _require_teacher(school_name, request, db)
+    assigned = [c for c in _string_to_list(teacher.classes)]
+    wanted = [c.strip() for c in assigned]
+    if class_name:
+        class_clean = class_name.strip()
+        if class_clean.lower() not in [c.lower() for c in assigned]:
+            raise HTTPException(status_code=403, detail="You are not assigned to this class.")
+        wanted = [class_clean]
+    roster = {}
+    for c in sorted(set(wanted)):
+        students = db.query(Student).filter(
+            (Student.school_id == school.id) | (Student.school_id.is_(None)),
+            Student.class_name == c, Student.is_active == 1,
+        ).order_by(Student.student_name).all()
+        roster[c] = [{"id": s.id, "student_name": s.student_name} for s in students]
+    return {"status": "success", "my_classes": sorted(set(wanted)), "roster": roster}
+
+
+@app.get("/{school_name}/teacher/api/my-timetable")
+def teacher_my_timetable(school_name: str, request: Request, db: Session = Depends(get_db)):
+    """The teacher's personal timetable: every slot they teach, across all their classes."""
+    school, teacher = _require_teacher(school_name, request, db)
+    slots = db.query(TimetableSlot).filter(
+        TimetableSlot.school_id == school.id, TimetableSlot.teacher_id == teacher.id,
+    ).order_by(TimetableSlot.day, TimetableSlot.period).all()
+    return {"status": "success", "teacher_name": teacher.full_name, "slots": [
+        {"class_name": s.class_name, "day": s.day, "period": s.period, "subject": s.subject} for s in slots
+    ], "days": TIMETABLE_DAYS, "periods": TIMETABLE_PERIODS}
+
 
 # ==================== CANTEEN ADMIN ACCESS ====================
 @app.get("/{school_name}/canteen-admin")

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard · MySchool Eats</title>
+    <title>MYSCHOOL · Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -139,6 +139,13 @@
         .stat-value { margin-top: 4px; font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
         .stat-value.green { color: var(--green-ink); }
 
+        /* Layout & overflow guards */
+        body { overflow-x: hidden; }
+        main { min-width: 0; }
+        .card { min-width: 0; }
+        .wrap-anywhere { overflow-wrap: anywhere; }
+        .chip button { color: inherit; font-size: 10px; }
+
         /* Toast */
         @keyframes slideUp   { from { opacity: 0; transform: translateY(30px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
         @keyframes slideDown { from { opacity: 1; transform: translateY(0) translateX(-50%); } to { opacity: 0; transform: translateY(30px) translateX(-50%); } }
@@ -151,9 +158,9 @@
     <!-- ══════════════════ SIDEBAR ══════════════════ -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 flex flex-col">
         <div class="flex items-center gap-3 px-5 py-4" style="border-bottom: 1px solid var(--line)">
-            <div class="w-9 h-9 rounded-[10px] grid place-items-center text-white font-bold text-[13px]" style="background: var(--green)">M</div>
+            <div class="w-9 h-9 rounded-[10px] grid place-items-center text-white font-bold text-[12px]" style="background: var(--green)">MS</div>
             <div>
-                <p class="font-bold tracking-tight leading-none text-[14.5px]" style="color:var(--ink)">MySchool Eats</p>
+                <p class="font-bold tracking-tight leading-none text-[14.5px]" style="color:var(--ink)">MYSCHOOL</p>
                 <p class="text-[10px] font-semibold uppercase tracking-[0.1em] mt-1" style="color:#9aa79e">Admin Panel</p>
             </div>
             <button type="button" class="ml-auto lg:hidden p-1.5 rounded-lg hover:bg-slate-100 text-slate-400" onclick="closeSidebar()" aria-label="Close sidebar">✕</button>
@@ -192,6 +199,22 @@
                 </button>
             </div>
 
+            <p class="nav-group-title">Teachers</p>
+            <button data-nav="teachers" class="nav-item" onclick="goTeachers()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.498 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                Teachers & Reports
+            </button>
+            <button data-nav="timetable" class="nav-item" onclick="goTimetables()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7h4a3 3 0 010 6H9m8 4h2M4 21V5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2z"/></svg>
+                Timetables
+            </button>
+
+            <p class="nav-group-title">Security</p>
+            <button data-nav="vault" class="nav-item" onclick="goVault()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                Vault — Default Access
+            </button>
+
             <p class="nav-group-title">Canteen</p>
             <button data-nav="products" class="nav-item" onclick="goProducts()">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
@@ -215,7 +238,7 @@
     <!-- ══════════════════ LOADER ══════════════════ -->
     <div id="loading-page" class="fixed inset-0 flex flex-col items-center justify-center z-[200] transition-opacity duration-500" style="background: var(--paper)">
         <div class="text-center">
-            <div class="w-11 h-11 mx-auto mb-4 rounded-[12px] grid place-items-center text-white font-bold" style="background: var(--green)">M</div>
+            <div class="w-11 h-11 mx-auto mb-4 rounded-[12px] grid place-items-center text-white font-bold text-[13px]" style="background: var(--green)">MS</div>
             <svg class="animate-spin h-6 w-6 mx-auto mb-3" style="color:var(--green)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -233,7 +256,7 @@
             </button>
             <div class="min-w-0">
                 <h2 id="topbar-title" class="font-bold text-[15px] tracking-tight truncate" style="color:var(--ink)">Dashboard</h2>
-                <p id="topbar-sub" class="text-[11.5px] text-slate-500 truncate">Attendance tracking · student database management</p>
+                <p id="topbar-sub" class="text-[11.5px] text-slate-500 truncate">MYSCHOOL admin · attendance, students &amp; canteen</p>
             </div>
             <div class="ml-auto flex items-center gap-3">
                 <span id="topbar-date" class="hidden sm:block text-[12.5px] font-medium text-slate-500"></span>
@@ -574,7 +597,228 @@
                 </div>
             </section>
 
-            <footer class="mt-10 text-center text-[11px] text-slate-400 pb-4">MySchool Eats Admin · {{ school_name|title }}</footer>
+            <!-- ─────────── TEACHERS & REPORTS ─────────── -->
+            <section id="teachers-step" class="hidden animate-fade-in space-y-5">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <button onclick="resetSelection()" class="btn-ghost mb-3"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg> Back</button>
+                        <div>
+                            <h2 class="section-title">Teachers & Marks Reports</h2>
+                            <p class="section-sub">Create teacher accounts, see who teaches what, and track class marks · teacher portal: <a class="font-semibold" target="_blank" style="color:var(--green-ink)" href="/{{ school_name }}/teacher">/{{ school_name }}/teacher</a></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    <div class="card">
+                        <div class="card-header"><h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Create Teacher Account</h4></div>
+                        <form id="teacher-create-form" class="p-5 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <input name="full_name" required maxlength="120" placeholder="Full names (e.g. Jean Mugisha)" class="input-admin">
+                                <input name="email" type="email" required maxlength="254" placeholder="School email — used to log in (e.g. jean@school.rw)" class="input-admin">
+                                <input name="password" type="password" required minlength="8" maxlength="128" placeholder="Temporary password (8+ characters)" class="input-admin sm:col-span-2">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-500 uppercase">Subjects the teacher teaches</label>
+                                <div id="teacher-subject-chips" class="flex flex-wrap gap-1.5 mb-1.5"></div>
+                                <input id="teacher-subject-input" placeholder="Type a subject, press Enter to add (e.g. Mathematics, then Biology…)" class="input-admin">
+                            </div>
+                            <input type="hidden" name="subjects" id="teacher-subjects-hidden">
+                            <p class="text-[11px] text-slate-500">One teacher can teach <b>many subjects</b> — add each subject, then pick their classes below.</p>
+                            <div>
+                                <p class="text-[11px] font-semibold text-slate-500 uppercase mb-2">Assigned classes</p>
+                                <div id="teacher-class-checkboxes" class="flex flex-wrap gap-2"></div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button class="btn-primary" type="submit">Create teacher</button>
+                                <p id="teacher-create-feedback" class="text-xs font-medium" role="status"></p>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card overflow-hidden">
+                        <div class="card-header"><h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Teacher Accounts</h4></div>
+                        <div class="overflow-x-auto max-h-[430px] custom-scrollbar">
+                            <table class="min-w-full">
+                                <thead class="table-head"><tr><th>Name</th><th>Email</th><th>Username</th><th>Subjects</th><th>Classes</th><th class="!text-right">Action</th></tr></thead>
+                                    <tbody id="teacher-list" class="bg-white"></tbody>
+                                </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    <div class="card overflow-hidden">
+                        <div class="card-header"><h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Canteen Staff Accounts</h4></div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="min-w-[560px] w-full">
+                                <thead class="table-head"><tr><th>Username</th><th>Status</th><th>Created</th><th class="!text-right">Action</th></tr></thead>
+                                <tbody id="canteen-list" class="bg-white"></tbody>
+                            </table>
+                        </div>
+                        <div class="px-5 py-3 border-t text-[11.5px] text-slate-500" style="border-color:var(--line-soft)">New canteen accounts are created from the dashboard home page.</div>
+                    </div>
+                    <div class="card overflow-hidden">
+                        <div class="card-header"><h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Parent Accounts</h4></div>
+                        <div class="overflow-x-auto max-h-[320px] custom-scrollbar">
+                            <table class="min-w-[560px] w-full">
+                                <thead class="table-head"><tr><th>Parent</th><th>Email</th><th>Student</th><th>Status</th><th class="!text-right">Action</th></tr></thead>
+                                <tbody id="parents-list" class="bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header flex-col sm:flex-row sm:items-center gap-3">
+                        <div>
+                            <h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Class Marks Report</h4>
+                            <p class="text-[12px] text-slate-500">Students × subjects matrix — what teachers entered, term by term.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
+                            <select id="report-class" class="input-admin !w-auto"><option value="">Class…</option></select>
+                            <select id="report-term" class="input-admin !w-auto"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+                            <input id="report-year" class="input-admin !w-24" value="2026" maxlength="20">
+                            <button onclick="generateAdminReport()" class="btn-primary">Generate report</button>
+                            <button onclick="exportMarksExcel()" class="btn-ghost">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                Export Excel
+                            </button>
+                        </div>
+                    </div>
+                    <div id="report-stats" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3 p-5 pb-0"></div>
+                    <div id="report-area" class="p-5"></div>
+                </div>
+            </section>
+
+            <!-- ─────────── VAULT ─────────── -->
+            <section id="vault-step" class="hidden animate-fade-in space-y-5">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <button onclick="resetSelection()" class="btn-ghost mb-3"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg> Back</button>
+                        <div>
+                            <h2 class="section-title">Vault — Default Access</h2>
+                            <p class="section-sub">System default credentials. Keep this page private — screen-share with care.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vault first-auth lock -->
+                <div id="vault-lock" class="card p-8 text-center max-w-sm mx-auto">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-[14px] grid place-items-center" style="background:var(--mint);color:var(--green)">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </div>
+                    <h3 class="font-bold text-[16px]" style="color:var(--ink)">Vault is locked</h3>
+                    <p class="text-[12.5px] text-slate-500 mt-1 mb-4">Re-authenticate with the school admin password to open the vault. It stays open for 10 minutes.</p>
+                    <form id="vault-unlock-form" class="space-y-3">
+                        <input type="password" id="vault-password" placeholder="School admin password" class="input-admin" autocomplete="current-password" required>
+                        <button type="submit" class="btn-primary w-full">Unlock vault</button>
+                        <p id="vault-feedback" class="text-[12px] font-medium" role="status"></p>
+                    </form>
+                </div>
+
+                <div id="vault-content" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div class="card p-6">
+                        <h4 class="font-bold text-[14.5px]" style="color:var(--ink)">School Admin access</h4>
+                        <p class="text-[12px] text-slate-500 mt-1">The main administrator login for this school's portal.</p>
+                        <div class="mt-4 space-y-2.5 text-[13px]">
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Login page</span><a class="font-semibold wrap-anywhere" target="_blank" style="color:var(--green-ink)" href="/{{ school_name }}/admin/login">/{{ school_name }}/admin/login</a>
+                            </div>
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Username</span><div class="flex items-center gap-2"><span id="vault-admin-user" data-value="{{ school_name }}">••••••</span><button onclick="vaultReveal('vault-admin-user', this)" class="btn-ghost !px-2.5 !py-1 !text-[11px]">Reveal</button><button onclick="vaultCopy('vault-admin-user')" class="btn-ghost !px-2.5 !py-1 !text-[11px]">Copy</button></div>
+                            </div>
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Default password</span><div class="flex items-center gap-2"><span id="vault-admin-pass" data-value="">••••••••</span><button onclick="vaultReveal('vault-admin-pass', this)" class="btn-ghost !px-2.5 !py-1 !text-[11px]">Reveal</button><button onclick="vaultCopy('vault-admin-pass')" class="btn-ghost !px-2.5 !py-1 !text-[11px]">Copy</button></div>
+                            </div>
+                        </div>
+                        <p class="text-[11.5px] text-slate-500 mt-3">This default is set by MYSCHOOL at school creation. Keep it safe — it always works unless the school requests a change.</p>
+                    </div>
+
+                    <div class="card p-6">
+                        <h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Student portal access</h4>
+                        <p class="text-[12px] text-slate-500 mt-1">How students get in the first time.</p>
+                        <div class="mt-4 space-y-2.5 text-[13px]">
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Login page</span><a class="font-semibold wrap-anywhere" target="_blank" style="color:var(--green-ink)" href="/{{ school_name }}/student-login">/{{ school_name }}/student-login</a>
+                            </div>
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Username</span><span class="font-semibold">Their student ID (e.g. <b>27</b>)</span>
+                            </div>
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Default password</span><span class="font-semibold">4-digit zero-padded ID (e.g. <b>0027</b>)</span>
+                            </div>
+                        </div>
+                        <p class="text-[11.5px] text-slate-500 mt-3">Students are asked to set their own password at first login, so the default only works until then.</p>
+                    </div>
+
+                    <div class="card p-6">
+                        <h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Teacher access</h4>
+                        <p class="text-[12px] text-slate-500 mt-1">Teachers log in with their <b>school email</b> — no username needed.</p>
+                        <div class="mt-4 space-y-2.5 text-[13px]">
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Login page</span><a class="font-semibold wrap-anywhere" target="_blank" style="color:var(--green-ink)" href="/{{ school_name }}/teacher">/{{ school_name }}/teacher</a>
+                            </div>
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Credentials</span><span class="font-semibold">Email + the password you set at creation</span>
+                            </div>
+                        </div>
+                        <p class="text-[11.5px] text-slate-500 mt-3">Passwords are encrypted and never stored in plain text. If a teacher forgets theirs, use <b>Edit → new password</b> in Teachers &amp; Reports.</p>
+                    </div>
+
+                    <div class="card p-6">
+                        <h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Canteen staff &amp; parents</h4>
+                        <div class="mt-4 space-y-2.5 text-[13px]">
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Canteen login</span><a class="font-semibold wrap-anywhere" target="_blank" style="color:var(--green-ink)" href="/{{ school_name }}/canteen-admin">/{{ school_name }}/canteen-admin</a>
+                            </div>
+                            <div class="flex flex-wrap justify-between items-center gap-2 rounded-lg px-3.5 py-2.5" style="background:#fafbfa">
+                                <span class="text-slate-500">Canteen &amp; parent passwords</span><span class="font-semibold">Set at account creation</span>
+                            </div>
+                        </div>
+                        <p class="text-[11.5px] text-slate-500 mt-3">Manage both in Teachers &amp; Reports — deactivate, reset password or delete in one click.</p>
+                    </div>
+                </div>
+                </div>
+
+                <div class="card p-4 text-center">
+                    <p class="text-[11px] text-slate-400">MYSCHOOL — admin, teachers, parents & canteen — powered by <b style="color:var(--green-ink)">1percent</b></p>
+                </div>
+            </section>
+
+            <!-- ─────────── TIMETABLES ─────────── -->
+            <section id="timetable-step" class="hidden animate-fade-in space-y-5">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <button onclick="resetSelection()" class="btn-ghost mb-3"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg> Back</button>
+                        <div>
+                            <h2 class="section-title">Class Timetables</h2>
+                            <p class="section-sub">Subjects come straight from each class's teachers · a teacher can only be in one place at a time</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-4">
+                    <div class="flex flex-col md:flex-row md:items-center gap-3">
+                        <select id="tt-class" class="input-admin md:!w-auto"></select>
+                        <button onclick="loadTimetable()" class="btn-primary">Load timetable</button>
+                        <p id="tt-feedback" class="text-[12px] font-medium" role="status"></p>
+                    </div>
+                    <p class="text-[11.5px] text-slate-500 mt-2">S1–S3 classes share the same subjects; L3/L4/L5 combos study their own track (Math, Physics, Kinyarwanda, English, French, Business… per class).</p>
+                </div>
+
+                <div class="card overflow-hidden">
+                    <div class="card-header"><div><h4 class="font-bold text-[14.5px]" style="color:var(--ink)">Timetable grid</h4><p class="text-[12px] text-slate-500">Click any slot to set its subject & teacher.</p></div></div>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full min-w-[760px] border-collapse">
+                            <thead class="table-head"><tr id="tt-head"></tr></thead>
+                            <tbody id="tt-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="mt-10 text-center text-[11px] text-slate-400 pb-4">MYSCHOOL Admin · {{ school_name|title }} · Powered by 1percent</footer>
         </main>
     </div>
 
@@ -709,6 +953,130 @@
         <span id="toast-message">Message</span>
     </div>
 
+    <!-- Edit Teacher Modal -->
+    <div id="edit-teacher-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40" onclick="closeEditTeacher()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full relative z-10 animate-fade-in max-h-[92vh] overflow-y-auto custom-scrollbar">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-[10px] grid place-items-center" style="background:var(--mint);color:var(--green)"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></div>
+                <div>
+                    <h3 class="text-[16px] font-bold" style="color:var(--ink)">Edit Teacher</h3>
+                    <p id="edit-teacher-subtitle" class="text-slate-500 text-[11.5px]"></p>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <input type="text" id="et-name" placeholder="Full names" class="input-admin">
+                <input type="email" id="et-email" placeholder="Email address" class="input-admin">
+                <input type="text" id="et-username" placeholder="Login username" class="input-admin">
+                <input type="password" id="et-password" placeholder="New password (leave blank to keep current)" class="input-admin">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Subjects</label>
+                    <div id="et-subject-chips" class="flex flex-wrap gap-1.5 my-1"></div>
+                    <input id="et-subject-input" placeholder="Type a subject, press Enter" class="input-admin">
+                </div>
+                <input type="hidden" id="et-subjects-hidden">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Assigned classes</label>
+                    <div id="et-class-checkboxes" class="flex flex-wrap gap-2 mt-1"></div>
+                </div>
+                <label class="flex items-center gap-2 text-[12.5px] text-slate-600">
+                    <input type="checkbox" id="et-active" class="rounded border-slate-300" style="accent-color:var(--green)">
+                    Account active (unchecked = teacher cannot log in)
+                </label>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="closeEditTeacher()" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition text-[13px]">Cancel</button>
+                <button onclick="submitTeacherEdit()" class="flex-1 px-4 py-2 text-white font-semibold rounded-lg transition" style="background:var(--green)">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Mark Modal -->
+    <div id="edit-mark-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40" onclick="closeEditMark()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-[16px] font-bold" style="color:var(--ink)">Edit mark</h3>
+                    <p id="em-subtitle" class="text-slate-500 text-[11.5px]"></p>
+                </div>
+                <button type="button" onclick="closeEditMark()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">✕</button>
+            </div>
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Score</label><input type="number" min="0" id="em-score" class="input-admin mt-1"></div>
+                    <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Out of</label><input type="number" min="1" id="em-max" class="input-admin mt-1"></div>
+                </div>
+                <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Teacher comment</label><textarea id="em-comment" rows="2" class="input-admin mt-1"></textarea></div>
+                <label class="flex items-center gap-2 text-[12.5px] text-slate-600"><input type="checkbox" id="em-published" class="rounded border-slate-300" style="accent-color:var(--green)"> Published — visible to the parent</label>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button id="em-delete" onclick="deleteMarkFromModal()" class="btn-danger">Delete mark</button>
+                <button onclick="submitMarkEdit()" class="flex-1 px-4 py-2 text-white font-semibold rounded-lg transition" style="background:var(--green)">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Visit Modal (car management) -->
+    <div id="edit-visit-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40" onclick="closeEditVisit()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-[16px] font-bold" style="color:var(--ink)">Edit visit record</h3>
+                    <p id="ev-subtitle" class="text-slate-500 text-[11.5px]"></p>
+                </div>
+                <button type="button" onclick="closeEditVisit()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">✕</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Movement</label>
+                    <select id="ev-movement" class="input-admin mt-1"><option value="">Not recorded</option><option value="with_car">By private car</option><option value="without_car">Without car</option></select>
+                </div>
+                <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Arrival plate</label><input id="ev-arrival-plate" class="input-admin mt-1"></div>
+                <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Parent name</label><input id="ev-parent-name" class="input-admin mt-1"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Relationship</label><select id="ev-relationship" class="input-admin mt-1"><option value="">Not recorded</option><option value="father">Father</option><option value="mother">Mother</option><option value="other">Other</option></select></div>
+                    <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Phone</label><input id="ev-phone" class="input-admin mt-1"></div>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="closeEditVisit()" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition text-[13px]">Cancel</button>
+                <button onclick="submitVisitEdit()" class="flex-1 px-4 py-2 text-white font-semibold rounded-lg transition" style="background:var(--green)">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timetable Slot Modal -->
+    <div id="timetable-cell-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40" onclick="closeTTCell()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-[16px] font-bold" style="color:var(--ink)">Edit slot</h3>
+                    <p id="ttc-sub" class="text-slate-500 text-[11.5px]"></p>
+                </div>
+                <button type="button" onclick="closeTTCell()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">✕</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Subject</label>
+                    <select id="ttc-subject" onchange="populateTTTeachers(this.value)" class="input-admin mt-1"></select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Teacher</label>
+                    <select id="ttc-teacher" class="input-admin mt-1"></select>
+                </div>
+                <p class="text-[11.5px] text-slate-500">Subjects & teachers come from this class's teacher assignments. A teacher already booked in another class for the same period is rejected automatically.</p>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button id="ttc-clear" onclick="clearTTCell()" class="btn-danger">Clear</button>
+                <button onclick="closeTTCell()" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition text-[13px]">Cancel</button>
+                <button id="ttc-save" onclick="saveTTCell()" class="flex-1 px-4 py-2 text-white font-semibold rounded-lg transition" style="background:var(--green)">Save slot</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Products Admin Modal -->
     <div id="products-admin-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/40" onclick="closeProductsAdmin()"></div>
@@ -755,6 +1123,29 @@
                 event.preventDefault();
                 submitAdminForm(this, '/admin/marks', 'student-mark-feedback', 'Mark saved.');
             });
+
+            // Many-subject tag input: Enter or comma adds a subject chip; ✕ removes it
+            const subjectsHidden = document.getElementById('teacher-subjects-hidden');
+            const subjectInput = document.getElementById('teacher-subject-input');
+            const subjectChips = document.getElementById('teacher-subject-chips');
+            const teacherSubjects = new Set();
+            function addSubjectTyped() {
+                const value = subjectInput.value.trim().slice(0, 100);
+                if (value) { teacherSubjects.add(value); }
+                subjectInput.value = '';
+                refreshSubjectUI();
+            }
+            function refreshSubjectUI() {
+                subjectChips.innerHTML = [...teacherSubjects].map(s =>
+                    `<span class="chip chip-green">${escapeHtml(s)}<button type="button" data-remove="${escapeHtml(s)}" style="margin-left:5px;font-weight:800">&#10005;</button></span>`).join('');
+                subjectChips.querySelectorAll('[data-remove]').forEach(btn =>
+                    btn.addEventListener('click', () => { teacherSubjects.delete(btn.dataset.remove); refreshSubjectUI(); }));
+                subjectsHidden.value = [...teacherSubjects].join(', ');
+            }
+            subjectInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSubjectTyped(); }
+            });
+            subjectInput.addEventListener('blur', addSubjectTyped);
         })();
         </script>
 
@@ -817,7 +1208,7 @@
                     document.getElementById('nav-car-wrap')?.classList.add('hidden');
                 }
                 document.getElementById('data-visit-date').value = new Date().toISOString().split('T')[0];
-                setTopbar('Attendance tracking · student database management');
+                setTopbar('MYSCHOOL admin · attendance, students & canteen');
             }, 700);
         };
 
@@ -846,9 +1237,12 @@
             document.getElementById('manager-step').classList.add('hidden');
             document.getElementById('live-track-step').classList.add('hidden');
             document.getElementById('car-management-step').classList.add('hidden');
+            document.getElementById('teachers-step').classList.add('hidden');
+            document.getElementById('vault-step').classList.add('hidden');
+            document.getElementById('timetable-step').classList.add('hidden');
             document.getElementById('choice-step').classList.remove('hidden');
             document.getElementById('topbar-title').innerText = 'Dashboard';
-            setTopbar('Attendance tracking · student database management');
+            setTopbar('MYSCHOOL admin · attendance, students & canteen');
         }
 
         // --- MANAGER LOGIC ---
@@ -857,6 +1251,9 @@
             document.getElementById('data-step').classList.add('hidden');
             document.getElementById('live-track-step').classList.add('hidden');
             document.getElementById('car-management-step').classList.add('hidden');
+            document.getElementById('teachers-step').classList.add('hidden');
+            document.getElementById('vault-step').classList.add('hidden');
+            document.getElementById('timetable-step').classList.add('hidden');
             document.getElementById('manager-step').classList.remove('hidden');
             document.getElementById('topbar-title').innerText = 'Manage Students';
             setTopbar('Add, edit, promote and organise the student database');
@@ -1231,6 +1628,9 @@
             document.getElementById('manager-step').classList.add('hidden');
             document.getElementById('live-track-step').classList.add('hidden');
             document.getElementById('car-management-step').classList.add('hidden');
+            document.getElementById('teachers-step').classList.add('hidden');
+            document.getElementById('vault-step').classList.add('hidden');
+            document.getElementById('timetable-step').classList.add('hidden');
             document.getElementById('data-step').classList.remove('hidden');
             document.getElementById('data-title').innerText = type === 'visit_day' ? "Visit Day Data" : "Parent Meeting Data";
             document.getElementById('topbar-title').innerText = type === 'visit_day' ? 'Visit Day Data' : 'Parent Meeting Data';
@@ -1358,6 +1758,9 @@
             document.getElementById('manager-step').classList.add('hidden');
             document.getElementById('data-step').classList.add('hidden');
             document.getElementById('car-management-step').classList.add('hidden');
+            document.getElementById('teachers-step').classList.add('hidden');
+            document.getElementById('vault-step').classList.add('hidden');
+            document.getElementById('timetable-step').classList.add('hidden');
             document.getElementById('live-track-step').classList.remove('hidden');
             document.getElementById('topbar-title').innerText = 'Live Track';
             setTopbar('Real-time arrivals for today');
@@ -1538,6 +1941,9 @@
             document.getElementById('manager-step').classList.add('hidden');
             document.getElementById('data-step').classList.add('hidden');
             document.getElementById('live-track-step').classList.add('hidden');
+            document.getElementById('teachers-step').classList.add('hidden');
+            document.getElementById('vault-step').classList.add('hidden');
+            document.getElementById('timetable-step').classList.add('hidden');
             document.getElementById('car-management-step').classList.remove('hidden');
             document.getElementById('topbar-title').innerText = 'Car Management';
             setTopbar('Assign pickup plate numbers');
@@ -1590,7 +1996,8 @@
                     <td class="px-5 py-3 text-[13px] text-slate-600">${record.arrival_plate_number || '-'}</td>
                     <td class="px-5 py-3 text-[13px] text-slate-600">${record.assigned_plate_number || '-'}</td>
                     <td class="px-5 py-3 text-[13px]">
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="openEditVisit(${record.visit_id})" class="btn-ghost !px-3 !py-1.5 !text-[12px]" title="Edit travel & parent details">Edit</button>
                             <input id="assign-plate-${record.visit_id}" type="text" placeholder="Plate no." value="${record.assigned_plate_number || ''}" class="input-admin !w-32 !px-2.5 !py-1.5">
                             <button onclick="assignCarPlate(${record.visit_id})" class="text-[12.5px] font-semibold text-white px-3 py-1.5 rounded-lg transition" style="background:var(--green)">Assign</button>
                         </div>
@@ -1854,6 +2261,724 @@
         </script>
 
         <script>
+        // ==================== TEACHERS & MARKS REPORTS ====================
+        const TEACHER_CLASSES = ['S1', 'S2', 'S3', 'L3SOD', 'L3NIT', 'L4SOD', 'L4NIT', 'L5SOD', 'L5NIT'];
+
+        function openTeachers() {
+            ['choice-step', 'data-step', 'manager-step', 'live-track-step', 'car-management-step', 'vault-step', 'timetable-step'].forEach(id =>
+                document.getElementById(id).classList.add('hidden'));
+            document.getElementById('teachers-step').classList.remove('hidden');
+            document.getElementById('topbar-title').innerText = 'Teachers & Reports';
+            setTopbar('Teacher accounts, subjects and class marks tracking');
+            renderTeacherClassCheckboxes();
+            populateReportClassSelect();
+            loadTeacherList();
+            loadCanteenAccounts();
+            loadParentAccounts();
+        }
+
+        function openVault() {
+            ['choice-step', 'data-step', 'manager-step', 'live-track-step', 'car-management-step', 'teachers-step', 'timetable-step'].forEach(id =>
+                document.getElementById(id).classList.add('hidden'));
+            document.getElementById('vault-step').classList.remove('hidden');
+            document.getElementById('topbar-title').innerText = 'Vault';
+            setTopbar('Default access credentials for the school system');
+        }
+
+        function renderTeacherClassCheckboxes() {
+            const wrap = document.getElementById('teacher-class-checkboxes');
+            wrap.innerHTML = TEACHER_CLASSES.map(c => `
+                <label class="flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium cursor-pointer hover:bg-[#eef7f1]" style="border-color:var(--line)">
+                    <input type="checkbox" class="teacher-class-ck rounded border-slate-300" value="${c}" style="accent-color:var(--green)">${c}
+                </label>`).join('');
+        }
+
+        function populateReportClassSelect() {
+            const select = document.getElementById('report-class');
+            if (select.options.length > 1) return; // already populated
+            TEACHER_CLASSES.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c;
+                select.appendChild(opt);
+            });
+        }
+
+        async function loadTeacherList() {
+            const list = document.getElementById('teacher-list');
+            list.innerHTML = '<tr><td colspan="6" class="px-5 py-8 text-center text-[13px] font-medium" style="color:var(--green)">Loading teachers…</td></tr>';
+            try {
+                const res = await fetch(`/${schoolName}/admin/teachers`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                if (!data.teachers.length) {
+                    list.innerHTML = '<tr><td colspan="6" class="px-5 py-8 text-center text-slate-400 text-[13px]">No teacher accounts yet. Create the first one on the left.</td></tr>';
+                    return;
+                }                window._teacherListData = data.teachers;
+                list.innerHTML = data.teachers.map(t => `
+                    <tr class="table-row ${t.is_active ? '' : 'bg-slate-50'}">
+                        <td class="px-5 py-3 text-[13.5px] font-semibold" style="color:var(--ink)">${escapeHtml(t.full_name)}${t.is_active ? '' : ' <span class="chip chip-rose !text-[9px]">inactive</span>'}</td>
+                        <td class="px-5 py-3 text-[13px] text-slate-600 wrap-anywhere">${escapeHtml(t.email || '—')}</td>
+                        <td class="px-5 py-3 text-[13px] text-slate-500">${escapeHtml(t.username)}</td>
+                        <td class="px-5 py-3 text-[12px]">${t.subjects.map(s => `<span class="chip chip-green mr-1">${escapeHtml(s)}</span>`).join('')}</td>
+                        <td class="px-5 py-3 text-[12px]">${t.classes.map(c => `<span class="chip chip-muted mr-1">${escapeHtml(c)}</span>`).join('')}</td>
+                        <td class="px-5 py-3 text-right whitespace-nowrap">
+                            <button onclick='openEditTeacher(${t.id})' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#eef7f1]" style="color:var(--green-ink)">Edit</button>
+                            <button onclick='deleteTeacher(${t.id}, "${t.full_name.replace(/'/g, "\\'")}")' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#fdf1ef]" style="color:#b42318">Delete</button>
+                        </td>
+                    </tr>`).join('');
+            } catch {
+                list.innerHTML = '<tr><td colspan="6" class="px-5 py-8 text-center text-[13px]" style="color:#b42318">Could not load teachers.</td></tr>';
+            }
+        }
+
+        document.getElementById('teacher-create-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const feedback = document.getElementById('teacher-create-feedback');
+            const button = this.querySelector('button[type="submit"]');
+            const classes = [...document.querySelectorAll('.teacher-class-ck:checked')].map(cb => cb.value);
+            const subjects = document.getElementById('teacher-subjects-hidden').value;
+            if (!classes.length) {
+                feedback.textContent = 'Assign at least one class.';
+                feedback.style.color = '#b42318';
+                return;
+            }
+            if (!subjects.trim()) {
+                feedback.textContent = 'Add at least one subject.';
+                feedback.style.color = '#b42318';
+                return;
+            }
+            const fd = new FormData(this);
+            fd.append('classes', classes.join(', '));
+            button.disabled = true;
+            feedback.textContent = 'Creating teacher…';
+            feedback.style.color = '#66726a';
+            try {
+                const res = await fetch(`/${schoolName}/admin/teachers`, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Could not create the teacher.');
+                feedback.textContent = `Teacher created — they log in with their email: ${data.email}`;
+                feedback.style.color = '#1f8a54';
+                this.reset();
+                document.getElementById('teacher-subjects-hidden').value = '';
+                document.getElementById('teacher-subject-chips').innerHTML = '';
+                document.getElementById('teacher-subject-input').value = '';
+                loadTeacherList();
+            } catch (err) {
+                feedback.textContent = err.message;
+                feedback.style.color = '#b42318';
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        function deleteTeacher(id, name) {
+            showDeleteModal(async () => {
+                try {
+                    const res = await fetch(`/${schoolName}/admin/teachers/${id}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.status === 'success') { showToast('Teacher account deleted.', 'success'); loadTeacherList(); }
+                    else showToast(data.detail || 'Delete failed.', 'error');
+                } catch { showToast('Connection error.', 'error'); }
+            }, `Delete the account for ${name}? The teacher will lose portal access immediately.`);
+        }
+
+        let reportData = null;
+
+        async function generateAdminReport() {
+            const area = document.getElementById('report-area');
+            const statsEl = document.getElementById('report-stats');
+            const cls = document.getElementById('report-class').value;
+            const term = document.getElementById('report-term').value.trim();
+            const year = document.getElementById('report-year').value.trim();
+            if (!cls || !term || !year) { showToast('Choose class, term and academic year.', 'error'); return; }
+            area.innerHTML = '<p class="text-center text-[13px] text-slate-400 py-8">Building report…</p>';
+            try {
+                const url = `/${schoolName}/admin/marks/report?class_name=${encodeURIComponent(cls)}&term=${encodeURIComponent(term)}&academic_year=${encodeURIComponent(year)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Could not build the report.');
+                reportData = data;
+                renderAdminReport();
+            } catch (err) {
+                area.innerHTML = `<p class="text-center text-[13px] py-8" style="color:#b42318">${escapeHtml(err.message || 'Could not build the report.')}</p>`;
+                statsEl.classList.add('hidden');
+            }
+        }
+
+        function renderAdminReport() {
+            const data = reportData;
+            const area = document.getElementById('report-area');
+            const statsEl = document.getElementById('report-stats');
+            if (!data.rows.length || !data.subjects.length) {
+                statsEl.classList.add('hidden');
+                area.innerHTML = `<p class="text-center text-[13px] text-slate-400 py-8">No marks recorded for ${escapeHtml(data.class_name)} in ${escapeHtml(data.term)} ${escapeHtml(data.academic_year)} yet.</p><p class="text-center text-[12px] text-slate-400">Marks appear here once teachers enter them in the teacher portal.</p>`;
+                return;
+            }
+            const tiles = [
+                ['Students', data.rows.length],
+                ['Subjects recorded', data.subjects.length],
+                ['Class average', data.class_average !== null ? data.class_average + '%' : '—'],
+                ['Published marks', data.rows.reduce((n, r) => n + Object.values(r.scores).filter(s => s.published).length, 0)],
+            ];
+            statsEl.innerHTML = tiles.map(([label, value]) => `
+                <div class="stat-tile"><p class="stat-label">${label}</p><p class="stat-value green !text-[22px]">${value}</p></div>`).join('');
+            statsEl.classList.remove('hidden');
+
+            const headerCells = data.subjects.map(s => `<th class="!text-center">${escapeHtml(s)}</th>`).join('') + '<th class="!text-center">Average</th>';
+            const bodyRows = data.rows.map(r => {
+                const cells = data.subjects.map(s => {
+                    const sc = r.scores[s];
+                    if (!sc) return '<td class="!text-center text-slate-300">—</td>';
+                    const tone = sc.percent >= 85 ? 'chip-green' : sc.percent >= 50 ? 'chip-amber' : 'chip-rose';
+                    return `<td class="!text-center cursor-pointer hover:bg-[#fafbfa]" onclick="openEditMark(${sc.mark_id})" title="Click to edit this mark"><span class="chip ${tone}">${sc.percent}%</span>${sc.published ? '' : ' <span class="text-[9px] text-slate-400">draft</span>'}</td>`;
+                }).join('');
+                const avg = r.average_percent === null ? '—' : `<span class="chip ${r.average_percent >= 50 ? 'chip-green' : 'chip-rose'}">${r.average_percent}%</span>`;
+                return `<tr class="table-row hover:bg-[#f7fbf8]">
+                    <td class="font-semibold" style="color:var(--ink)">${escapeHtml(r.student_name)}${r.is_active ? '' : ' <span class="chip chip-muted !text-[9px]">graduated</span>'}</td>
+                    ${cells}<td class="!text-center">${avg}</td>
+                </tr>`;
+            }).join('');
+            const subjectAvgRow = '<tr class="table-row bg-[#fafbfa] font-semibold"><td class="!text-[12px]" style="color:var(--green-ink)">Subject average</td>' +
+                data.subjects.map(s => `<td class="!text-center !text-[12px]" style="color:var(--green-ink)">${data.subject_averages[s] !== undefined ? data.subject_averages[s] + '%' : '—'}</td>`).join('') +
+                `<td class="!text-center !text-[12px]" style="color:var(--green-ink)">${data.class_average !== null ? data.class_average + '%' : '—'}</td></tr>`;
+
+            area.innerHTML = `
+                <div class="rounded-xl border overflow-hidden custom-scrollbar" style="border-color:var(--line-soft)">
+                    <div class="overflow-x-auto max-h-[560px]">
+                        <table class="min-w-full">
+                            <thead class="table-head sticky top-0"><tr><th>Student</th>${headerCells}</tr></thead>
+                            <tbody>${bodyRows}${subjectAvgRow}</tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-[11.5px] text-slate-500 mt-3">Percentages are calculated per subject from each teacher's max score. Marks marked "draft" are not yet visible to parents.</p>`;
+        }
+
+        function exportMarksExcel() {
+            const cls = document.getElementById('report-class').value;
+            const term = document.getElementById('report-term').value.trim();
+            const year = document.getElementById('report-year').value.trim();
+            if (!cls || !term || !year) { showToast('Choose class, term and academic year first.', 'error'); return; }
+            const url = `/${schoolName}/export/marks?class_name=${encodeURIComponent(cls)}&term=${encodeURIComponent(term)}&academic_year=${encodeURIComponent(year)}`;
+            downloadExcelFromUrl(url, `marks_${cls}_${term}_${year}`);
+        }
+
+        // ==================== EDIT TEACHER ====================
+        let editingTeacherId = null;
+        const etSubjects = new Set();
+
+        function openEditTeacher(id) {
+            const t = (window._teacherListData || []).find(x => x.id === id);
+            if (!t) return;
+            editingTeacherId = id;
+            etSubjects.clear();
+            (t.subjects || []).forEach(s => etSubjects.add(s));
+            document.getElementById('et-name').value = t.full_name;
+            document.getElementById('et-email').value = t.email || '';
+            document.getElementById('et-username').value = t.username;
+            document.getElementById('et-password').value = '';
+            document.getElementById('et-active').checked = !!t.is_active;
+            document.getElementById('et-subjects-hidden').value = (t.subjects || []).join(', ');
+            document.getElementById('edit-teacher-subtitle').innerText = `ID ${t.id} · logs in with school email`;
+            document.getElementById('et-class-checkboxes').innerHTML = TEACHER_CLASSES.map(c => `
+                <label class="flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium cursor-pointer hover:bg-[#eef7f1]" style="border-color:var(--line)">
+                    <input type="checkbox" class="et-class-ck rounded border-slate-300" value="${c}" style="accent-color:var(--green)" ${(t.classes || []).includes(c) ? 'checked' : ''}>${c}
+                </label>`).join('');
+            renderEtSubjectChips();
+            document.getElementById('edit-teacher-modal').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('blur-bg');
+        }
+
+        function closeEditTeacher() {
+            editingTeacherId = null;
+            document.getElementById('edit-teacher-modal').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('blur-bg');
+        }
+
+        function renderEtSubjectChips() {
+            const chips = document.getElementById('et-subject-chips');
+            chips.innerHTML = [...etSubjects].map(s =>
+                `<span class="chip chip-green">${escapeHtml(s)}<button type="button" data-et-remove="${escapeHtml(s)}" style="margin-left:5px;font-weight:800">&#10005;</button></span>`).join('');
+            chips.querySelectorAll('[data-et-remove]').forEach(btn =>
+                btn.addEventListener('click', () => { etSubjects.delete(btn.dataset.etRemove); renderEtSubjectChips(); }));
+            document.getElementById('et-subjects-hidden').value = [...etSubjects].join(', ');
+        }
+
+        (function () {
+            const si = document.getElementById('et-subject-input');
+            function addTyped() {
+                const value = si.value.trim().slice(0, 100);
+                if (value) etSubjects.add(value);
+                si.value = '';
+                renderEtSubjectChips();
+            }
+            si.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTyped(); }
+            });
+            si.addEventListener('blur', addTyped);
+        })();
+
+        async function submitTeacherEdit() {
+            if (!editingTeacherId) return;
+            const name = document.getElementById('et-name').value.trim();
+            const email = document.getElementById('et-email').value.trim();
+            const username = document.getElementById('et-username').value.trim();
+            const classes = [...document.querySelectorAll('.et-class-ck:checked')].map(cb => cb.value);
+            const password = document.getElementById('et-password').value;
+            if (!name || !email) { showToast('Name and email are required.', 'error'); return; }
+            if (!etSubjects.size) { showToast('Add at least one subject.', 'error'); return; }
+            if (!classes.length) { showToast('Assign at least one class.', 'error'); return; }
+            if (password && password.length < 8) { showToast('New password must be 8+ characters.', 'error'); return; }
+            const fd = new FormData();
+            fd.append('full_name', name);
+            fd.append('email', email);
+            fd.append('username', username);
+            fd.append('subjects', [...etSubjects].join(', '));
+            fd.append('classes', classes.join(', '));
+            fd.append('is_active', document.getElementById('et-active').checked ? '1' : '0');
+            if (password) fd.append('new_password', password);
+            try {
+                const res = await fetch(`/${schoolName}/admin/teachers/${editingTeacherId}`, { method: 'PUT', body: fd });
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Update failed.');
+                showToast('Teacher updated.', 'success');
+                closeEditTeacher();
+                loadTeacherList();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // ==================== CANTEEN ACCOUNTS ====================
+        async function loadCanteenAccounts() {
+            const list = document.getElementById('canteen-list');
+            list.innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-[13px] font-medium" style="color:var(--green)">Loading…</td></tr>';
+            try {
+                const res = await fetch(`/${schoolName}/admin/canteen-admins`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                if (!data.accounts.length) {
+                    list.innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-400 text-[13px]">No canteen accounts yet.</td></tr>';
+                    return;
+                }
+                list.innerHTML = data.accounts.map(a => `
+                    <tr class="table-row">
+                        <td class="px-5 py-3 text-[13.5px] font-semibold" style="color:var(--ink)">${escapeHtml(a.username)}</td>
+                        <td class="px-5 py-3 text-[12px]"><span class="chip ${a.is_active ? 'chip-green' : 'chip-rose'}">${a.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td class="px-5 py-3 text-[12.5px] text-slate-500">${escapeHtml(a.created_at || '—')}</td>
+                        <td class="px-5 py-3 text-right whitespace-nowrap">
+                            <button onclick='toggleCanteenAccount(${a.id}, ${a.is_active ? 0 : 1})' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#eef7f1]" style="color:var(--green-ink)">${a.is_active ? 'Deactivate' : 'Activate'}</button>
+                            <button onclick='resetStaffPassword("canteen-admins", ${a.id}, "${escapeHtml(a.username)}")' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#eef7f1]" style="color:var(--green-ink)">Reset password</button>
+                            <button onclick='deleteCanteenAccount(${a.id}, "${escapeHtml(a.username)}")' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#fdf1ef]" style="color:#b42318">Delete</button>
+                        </td>
+                    </tr>`).join('');
+            } catch {
+                list.innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-[13px]" style="color:#b42318">Could not load canteen accounts.</td></tr>';
+            }
+        }
+
+        async function toggleCanteenAccount(id, target) {
+            const fd = new FormData(); fd.append('is_active', target ? '1' : '0');
+            try {
+                const res = await fetch(`/${schoolName}/admin/canteen-admins/${id}`, { method: 'PUT', body: fd });
+                if (!res.ok) throw new Error()
+                showToast(target ? 'Canteen account activated.' : 'Canteen account deactivated.', 'success');
+                loadCanteenAccounts();
+            } catch { showToast('Update failed.', 'error'); }
+        }
+
+        async function resetStaffPassword(kind, id, label) {
+            const pw = prompt(`New password for ${label} (8+ characters):`);
+            if (pw === null) return;
+            if (pw.length < 8) { showToast('Use 8+ characters.', 'error'); return; }
+            const fd = new FormData(); fd.append('new_password', pw);
+            try {
+                const res = await fetch(`/${schoolName}/admin/${kind}/${id}`, { method: 'PUT', body: fd });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Reset failed.');
+                showToast('Password reset. Share it securely.', 'success');
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        function deleteCanteenAccount(id, username) {
+            showDeleteModal(async () => {
+                try {
+                    const res = await fetch(`/${schoolName}/admin/canteen-admins/${id}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error();
+                    showToast('Canteen account deleted.', 'success');
+                    loadCanteenAccounts();
+                } catch { showToast('Delete failed.', 'error'); }
+            }, `Delete the canteen account “${username}”? Staff sign-in stops immediately.`);
+        }
+
+        // ==================== PARENT ACCOUNTS ====================
+        async function loadParentAccounts() {
+            const list = document.getElementById('parents-list');
+            list.innerHTML = '<tr><td colspan="5" class="px-5 py-6 text-center text-[13px] font-medium" style="color:var(--green)">Loading…</td></tr>';
+            try {
+                const res = await fetch(`/${schoolName}/admin/parents`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                if (!data.accounts.length) {
+                    list.innerHTML = '<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 text-[13px]">No parent accounts yet — parents sign up at the parent portal.</td></tr>';
+                    return;
+                }
+                list.innerHTML = data.accounts.map(a => `
+                    <tr class="table-row">
+                        <td class="px-5 py-3 text-[13.5px] font-semibold" style="color:var(--ink)">${escapeHtml(a.parent_name)}${a.is_active ? '' : ' <span class="chip chip-rose !text-[9px]">inactive</span>'}</td>
+                        <td class="px-5 py-3 text-[13px] text-slate-600 wrap-anywhere">${escapeHtml(a.email)}</td>
+                        <td class="px-5 py-3 text-[12.5px] text-slate-600">${escapeHtml(a.student_name || '—')}${a.student_class ? ` <span class="chip chip-muted">${escapeHtml(a.student_class)}</span>` : ''}</td>
+                        <td class="px-5 py-3 text-[12px]"><span class="chip ${a.is_active ? 'chip-green' : 'chip-muted'}">${a.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td class="px-5 py-3 text-right whitespace-nowrap">
+                            <button onclick='toggleParentAccount(${a.id}, ${a.is_active ? 0 : 1})' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#eef7f1]" style="color:var(--green-ink)">${a.is_active ? 'Deactivate' : 'Activate'}</button>
+                            <button onclick='resetStaffPassword("parents", ${a.id}, "${escapeHtml(a.email)}")' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#eef7f1]" style="color:var(--green-ink)">Reset password</button>
+                            <button onclick='deleteParentAccount(${a.id}, "${escapeHtml(a.email)}")' class="text-[12px] font-semibold px-2.5 py-1.5 rounded-lg transition hover:bg-[#fdf1ef]" style="color:#b42318">Delete</button>
+                        </td>
+                    </tr>`).join('');
+            } catch {
+                list.innerHTML = '<tr><td colspan="5" class="px-5 py-6 text-center text-[13px]" style="color:#b42318">Could not load parent accounts.</td></tr>';
+            }
+        }
+
+        async function toggleParentAccount(id, target) {
+            const fd = new FormData(); fd.append('is_active', target ? '1' : '0');
+            try {
+                const res = await fetch(`/${schoolName}/admin/parents/${id}`, { method: 'PUT', body: fd });
+                if (!res.ok) throw new Error();
+                showToast(target ? 'Parent account activated.' : 'Parent account deactivated.', 'success');
+                loadParentAccounts();
+            } catch { showToast('Update failed.', 'error'); }
+        }
+
+        function deleteParentAccount(id, email) {
+            showDeleteModal(async () => {
+                try {
+                    const res = await fetch(`/${schoolName}/admin/parents/${id}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error();
+                    showToast('Parent account deleted.', 'success');
+                    loadParentAccounts();
+                } catch { showToast('Delete failed.', 'error'); }
+            }, `Delete the parent account ${email}? They will lose portal access immediately.`);
+        }
+
+        // ==================== EDIT MARK (from report) ====================
+        let editingMarkId = null;
+
+        function openEditMark(markId) {
+            for (const r of (reportData?.rows || [])) {
+                for (const s of (reportData?.subjects || [])) {
+                    const sc = r.scores[s];
+                    if (sc && sc.mark_id === markId) {
+                        editingMarkId = markId;
+                        document.getElementById('em-subtitle').innerText = `${r.student_name} · ${s}`;
+                        document.getElementById('em-score').value = sc.score;
+                        document.getElementById('em-max').value = sc.max_score;
+                        document.getElementById('em-published').checked = !!sc.published;
+                        document.getElementById('em-comment').value = sc.comment || '';
+                        document.getElementById('em-delete').classList.remove('hidden');
+                        document.getElementById('edit-mark-modal').classList.remove('hidden');
+                        document.getElementById('main-content').classList.add('blur-bg');
+                        return;
+                    }
+                }
+            }
+            showToast('Mark not found — regenerate the report.', 'error');
+        }
+
+        function closeEditMark() {
+            editingMarkId = null;
+            document.getElementById('edit-mark-modal').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('blur-bg');
+        }
+
+        async function submitMarkEdit() {
+            if (!editingMarkId) return;
+            const score = parseInt(document.getElementById('em-score').value, 10);
+            const maxScore = parseInt(document.getElementById('em-max').value, 10);
+            const published = document.getElementById('em-published').checked ? '1' : '0';
+            if (isNaN(score) || isNaN(maxScore) || maxScore < 1) { showToast('Enter a valid score and max score.', 'error'); return; }
+            if (score < 0 || score > maxScore) { showToast(`Score must be 0–${maxScore}.`, 'error'); return; }
+            const fd = new FormData();
+            fd.append('score', String(score));
+            fd.append('max_score', String(maxScore));
+            fd.append('published', published);
+            const comment = document.getElementById('em-comment').value.trim();
+            if (comment) fd.append('teacher_comment', comment);
+            try {
+                const res = await fetch(`/${schoolName}/admin/marks/${editingMarkId}`, { method: 'PUT', body: fd });
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Save failed.');
+                showToast(`Mark saved (${data.percent}%).`,'success');
+                closeEditMark();
+                generateAdminReport();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        function deleteMarkFromModal() {
+            if (!editingMarkId) return;
+            showDeleteModal(async () => {
+                try {
+                    const res = await fetch(`/${schoolName}/admin/marks/${editingMarkId}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error();
+                    showToast('Mark deleted.', 'success');
+                    closeEditMark();
+                    generateAdminReport();
+                } catch { showToast('Delete failed.', 'error'); }
+            }, 'Delete this mark permanently?');
+        }
+
+        // ==================== EDIT VISIT (car management) ====================
+        let editingVisitId = null;
+
+        function openEditVisit(visitId) {
+            const rec = (carManagementData || []).find(x => String(x.visit_id) === String(visitId));
+            if (!rec) return;
+            editingVisitId = visitId;
+            document.getElementById('ev-subtitle').innerText = `${rec.student_name} · ${rec.class_name}`;
+            document.getElementById('ev-movement').value = rec.movement_method || '';
+            document.getElementById('ev-arrival-plate').value = rec.arrival_plate_number || '';
+            document.getElementById('ev-parent-name').value = rec.parent_name || '';
+            document.getElementById('ev-relationship').value = rec.parent_relationship || '';
+            document.getElementById('ev-phone').value = rec.parent_phone || '';
+            document.getElementById('edit-visit-modal').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('blur-bg');
+        }
+
+        function closeEditVisit() {
+            editingVisitId = null;
+            document.getElementById('edit-visit-modal').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('blur-bg');
+        }
+
+        async function submitVisitEdit() {
+            if (!editingVisitId) return;
+            const fd = new FormData();
+            fd.append('movement_method', document.getElementById('ev-movement').value);
+            fd.append('arrival_plate_number', document.getElementById('ev-arrival-plate').value.trim());
+            fd.append('parent_name', document.getElementById('ev-parent-name').value.trim());
+            fd.append('parent_relationship', document.getElementById('ev-relationship').value);
+            fd.append('parent_phone', document.getElementById('ev-phone').value.trim());
+            try {
+                const res = await fetch(`/${schoolName}/admin/visits/${editingVisitId}`, { method: 'PUT', body: fd });
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Save failed.');
+                showToast('Visit record updated.', 'success');
+                closeEditVisit();
+                loadCarManagementData();
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        // ==================== VAULT ====================
+        function vaultReveal(id, btn) {
+            const el = document.getElementById(id);
+            if (el.dataset.hidden === '0') {
+                el.textContent = '••••••••';
+                el.dataset.hidden = '1';
+                btn.textContent = 'Reveal';
+            } else {
+                el.textContent = el.dataset.value;
+                el.dataset.hidden = '0';
+                btn.textContent = 'Hide';
+            }
+        }
+
+        function vaultCopy(id) {
+            const el = document.getElementById(id);
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(el.dataset.value).then(() => showToast('Copied to clipboard.')).catch(() => showToast('Copy failed.', 'error'));
+            } else {
+                showToast('Copy not supported in this browser.', 'error');
+            }
+        }
+        </script>
+
+        <script>
+        // ==================== TIMETABLE BUILDER (ADMIN) ====================
+        const TT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const TT_PERIODS = 8;
+        let ttSubjectOptions = {};
+        let ttSlots = [];
+        let ttEditing = null; // {day, period, slot|null}
+
+        function openTimetables() {
+            ['choice-step', 'data-step', 'manager-step', 'live-track-step', 'car-management-step', 'teachers-step', 'vault-step'].forEach(id =>
+                document.getElementById(id).classList.add('hidden'));
+            document.getElementById('timetable-step').classList.remove('hidden');
+            document.getElementById('topbar-title').innerText = 'Timetables';
+            setTopbar('Class timetables · one teacher, one class, one subject per slot');
+            const select = document.getElementById('tt-class');
+            if (select.options.length <= 1) {
+                TEACHER_CLASSES.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c; opt.textContent = c;
+                    select.appendChild(opt);
+                });
+            }
+            loadTimetable();
+        }
+
+        async function loadTimetable() {
+            const cls = document.getElementById('tt-class').value;
+            const feedback = document.getElementById('tt-feedback');
+            feedback.textContent = '';
+            try {
+                const res = await fetch(`/${schoolName}/admin/timetable?class_name=${encodeURIComponent(cls)}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Could not load the timetable.');
+                ttSubjectOptions = data.subject_options || {};
+                ttSlots = data.slots || [];
+                renderTT();
+            } catch (err) {
+                feedback.textContent = err.message;
+                feedback.style.color = '#b42318';
+            }
+        }
+
+        function renderTT() {
+            const head = document.getElementById('tt-head');
+            head.innerHTML = '<th class="!pl-5">Period</th>' + TT_DAYS.map(d => `<th class="!text-center">${d}</th>`).join('');
+            const body = document.getElementById('tt-body');
+            body.innerHTML = '';
+            for (let p = 1; p <= TT_PERIODS; p++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="px-5 py-2.5 text-[12px] font-bold text-slate-500 border-t" style="border-color:var(--line-soft)">P${p}</td>`;
+                for (let d = 1; d <= TT_DAYS.length; d++) {
+                    const slot = ttSlots.find(s => s.day === d && s.period === p);
+                    const teacherName = slot && slot.teacher_id ? (lookupTTTeacher(slot) || '') : '';
+                    tr.innerHTML += `
+                        <td class="border-t p-1.5 text-center align-middle" style="border-color:var(--line-soft)">
+                            <button onclick="openTTCell(${d}, ${p})" class="w-full rounded-lg px-2 py-2 text-[12px] font-semibold transition hover:border-[var(--mint-line)] border ${slot ? 'bg-[#eef7f1]' : 'bg-white border-dashed'}" style="border-color:var(--line)">
+                                ${slot ? `<span class="block wrap-anywhere" style="color:var(--green-ink)">${escapeHtml(slot.subject)}</span><span class="block text-[10px] text-slate-400 mt-0.5">${escapeHtml(teacherName || 'No teacher')}</span>` : '<span class="text-slate-300">＋</span>'}
+                            </button>
+                        </td>`;
+                }
+                body.appendChild(tr);
+            }
+        }
+
+        function lookupTTTeacher(slot) {
+            for (const subject in ttSubjectOptions) {
+                const hit = (ttSubjectOptions[subject] || []).find(x => x.teacher_id === slot.teacher_id);
+                if (hit) return hit.teacher_name;
+            }
+            return '';
+        }
+
+        function openTTCell(day, period) {
+            ttEditing = { day, period, slot: ttSlots.find(s => s.day === day && s.period === period) || null };
+            const subjects = Object.keys(ttSubjectOptions).sort();
+            const subjectSel = document.getElementById('ttc-subject');
+            const teacherSel = document.getElementById('ttc-teacher');
+            subjectSel.innerHTML = subjects.length
+                ? subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
+                : '<option value="">No subjects assigned to this class yet</option>';
+            document.getElementById('ttc-sub').innerText = `${TT_DAYS[day - 1]} · Period ${period}`;
+            populateTTTeachers(subjectSel.value);
+            if (ttEditing.slot) {
+                subjectSel.value = ttEditing.slot.subject;
+                populateTTTeachers(subjectSel.value);
+                teacherSel.value = ttEditing.slot.teacher_id || '';
+            }
+            document.getElementById('timetable-cell-modal').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('blur-bg');
+        }
+
+        function populateTTTeachers(subject) {
+            const sel = document.getElementById('ttc-teacher');
+            const teachers = (ttSubjectOptions || {})[subject] || [];
+            sel.innerHTML = '<option value="">No teacher set</option>' + teachers.map(t =>
+                `<option value="${t.teacher_id}">${escapeHtml(t.teacher_name)}</option>`).join('');
+        }
+
+        function closeTTCell() {
+            ttEditing = null;
+            document.getElementById('timetable-cell-modal').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('blur-bg');
+        }
+
+        async function saveTTCell() {
+            if (!ttEditing) return;
+            const subject = document.getElementById('ttc-subject').value;
+            const teacherVal = document.getElementById('ttc-teacher').value;
+            if (!subject) { showToast('No subjects assigned to this class yet — assign teachers first.', 'error'); return; }
+            const fd = JSON.stringify({ class_name: document.getElementById('tt-class').value, day: ttEditing.day, period: ttEditing.period, subject: subject, teacher_id: teacherVal ? parseInt(teacherVal, 10) : null });
+            try {
+                const res = await fetch(`/${schoolName}/admin/timetable`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: fd });
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Could not save the slot.');
+                showToast('Slot saved.', 'success');
+                closeTTCell();
+                loadTimetable();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function clearTTCell() {
+            if (!ttEditing || !ttEditing.slot) { closeTTCell(); return; }
+            try {
+                const res = await fetch(`/${schoolName}/admin/timetable/${ttEditing.slot.id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Could not clear the slot.');
+                showToast('Slot cleared.', 'success');
+                closeTTCell();
+                loadTimetable();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // ==================== VAULT UNLOCK ====================
+        function openVault() {
+            ['choice-step', 'data-step', 'manager-step', 'live-track-step', 'car-management-step', 'teachers-step', 'timetable-step'].forEach(id =>
+                document.getElementById(id).classList.add('hidden'));
+            document.getElementById('vault-step').classList.remove('hidden');
+            document.getElementById('topbar-title').innerText = 'Vault';
+            setTopbar('Default access credentials for the school system');
+            vaultRelock(); // always require the first-auth step on every visit
+        }
+
+        function vaultRelock() {
+            document.getElementById('vault-lock').classList.remove('hidden');
+            document.getElementById('vault-content').classList.add('hidden');
+            document.getElementById('vault-password').value = '';
+            document.getElementById('vault-feedback').textContent = '';
+            document.getElementById('vault-admin-pass').dataset.value = '';
+            document.getElementById('vault-admin-pass').textContent = '••••••••';
+            document.querySelectorAll('[data-vault-reveal]').forEach(b => b.textContent = 'Reveal');
+        }
+
+        function vaultUnlockSubmit(event) {
+            event.preventDefault();
+            const pw = document.getElementById('vault-password').value;
+            const feedback = document.getElementById('vault-feedback');
+            fetch(`/${schoolName}/admin/vault/unlock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ password: pw })
+            }).then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(data.detail || 'Wrong vault password.');
+                return fetch(`/${schoolName}/admin/vault/secrets`);
+            }).then(async r => {
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.detail || 'Vault is still locked.');
+                document.getElementById('vault-admin-pass').dataset.value = data.admin_default_password || '';
+                document.getElementById('vault-lock').classList.add('hidden');
+                document.getElementById('vault-content').classList.remove('hidden');
+                feedback.textContent = '';
+                setTimeout(vaultRelock, 10 * 60 * 1000); // auto relock after 10 minutes
+            }).catch(err => {
+                feedback.textContent = err.message;
+                feedback.style.color = '#b42318';
+            });
+        }
+
+        (function () {
+            document.getElementById('vault-unlock-form').addEventListener('submit', vaultUnlockSubmit);
+        })();
+        </script>
+
+        <script>
         // ==================== SIDEBAR / NAVIGATION SHELL ====================
         (function () {
             function setActiveNav(view) {
@@ -1871,6 +2996,9 @@
             window.goLive = function () { setActiveNav('live'); openLiveTrack(); };
             window.goCar = function () { setActiveNav('car'); openCarManagement(); if (!isSOSSchool) setActiveNav('dashboard'); };
             window.goProducts = function () { setActiveNav('products'); openProductsAdmin(); };
+            window.goTeachers = function () { setActiveNav('teachers'); openTeachers(); };
+            window.goVault = function () { setActiveNav('vault'); openVault(); };
+            window.goTimetables = function () { setActiveNav('timetable'); openTimetables(); };
 
             // Keep original resetSelection but re-activate the home nav item
             const origReset = resetSelection;
@@ -1885,6 +3013,12 @@
             document.querySelectorAll('#admin-nav button.nav-item, #admin-nav a.nav-item').forEach(el => {
                 el.addEventListener('click', () => window.closeSidebar());
             });
+
+            // If the browser loads with a saved location hash for the teachers view, open it
+            if (window.location.hash === '#teachers') {
+                document.getElementById('topbar-title').innerText = 'Teachers & Reports';
+                window.goTeachers();
+            }
 
             // Show today's date in the topbar
             const dateEl = document.getElementById('topbar-date');

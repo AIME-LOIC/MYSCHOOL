@@ -51,6 +51,9 @@ def init_db():
     _ensure_parent_link_code_column()
     _ensure_parent_meeting_columns()
     _ensure_school_last_promoted_at_column()
+    _ensure_marks_teacher_id_column()
+    _ensure_teachers_email_column()
+    _ensure_teachers_is_dos_column()
 
 def _ensure_products_table():
     """Create products table if it doesn't exist"""
@@ -226,6 +229,65 @@ def _ensure_parent_link_code_column():
         if "parent_link_code" not in columns:
             connection.execute(text("ALTER TABLE students ADD COLUMN parent_link_code VARCHAR(32)"))
             connection.commit()
+
+
+
+
+def _ensure_marks_teacher_id_column():
+    """Record which teacher entered or updated each mark."""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if "student_marks" not in inspector.get_table_names():
+            return
+        columns = {col['name'] for col in inspector.get_columns('student_marks')}
+        if 'teacher_id' not in columns:
+            try:
+                connection.execute(text("ALTER TABLE student_marks ADD COLUMN teacher_id INTEGER"))
+                connection.commit()
+                print("✓ Added teacher_id column to student_marks table")
+            except Exception as e:
+                print(f"Warning: Could not add teacher_id column to student_marks: {e}")
+                connection.rollback()
+
+
+def _ensure_teachers_email_column():
+    """Teachers sign up with an email address as part of their school profile."""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if "teachers" not in inspector.get_table_names():
+            return
+        columns = {col['name'] for col in inspector.get_columns('teachers')}
+        if 'email' not in columns:
+            try:
+                connection.execute(text("ALTER TABLE teachers ADD COLUMN email VARCHAR(254)"))
+                connection.commit()
+                print("✓ Added email column to teachers table")
+            except Exception as e:
+                print(f"Warning: Could not add email column to teachers: {e}")
+                connection.rollback()
+
+
+def _ensure_teachers_is_dos_column():
+    """Dean of Studies flag: the teacher allowed to build the school timetables."""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if "teachers" not in inspector.get_table_names():
+            return
+        columns = {col['name'] for col in inspector.get_columns('teachers')}
+        if 'is_dos' not in columns:
+            try:
+                connection.execute(text("ALTER TABLE teachers ADD COLUMN is_dos INTEGER NOT NULL DEFAULT 0"))
+                connection.commit()
+                print("✓ Added is_dos column to teachers table")
+            except Exception as e:
+                print(f"Warning: Could not add is_dos column to teachers: {e}")
+                connection.rollback()
 
 
 def _ensure_parent_meeting_columns():

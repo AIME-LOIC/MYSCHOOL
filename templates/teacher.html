@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Portal · MYSCHOOL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        html, body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+        .hidden { display: none !important; }
+        :root {
+            --green: #1f8a54; --green-dark: #14603b; --green-ink: #17653f;
+            --mint: #eef7f1; --mint-line: #d7e8dc; --line: #e6eae6; --line-soft: #eef1ee;
+            --paper: #f7f9f7; --ink: #17251c; --muted: #66726a;
+        }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in .25s ease-out forwards; }
+        .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; }
+        .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8b978e; }
+        .chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+        .chip-green  { background: var(--mint); color: var(--green-ink); }
+        .chip-muted  { background: #f1f4f1; color: #5a665e; }
+        .chip-rose   { background: #fdf1ef; color: #b42318; }
+        .chip-amber  { background: #fbf4e7; color: #92620a; }
+        .input-ms {
+            width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 9px;
+            padding: 9px 12px; font-size: 13.5px; color: var(--ink); outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .input-ms::placeholder { color: #a3afa7; }
+        .input-ms:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(31,138,84,.10); }
+        .score-input {
+            width: 84px; text-align: center; border: 1px solid var(--line); border-radius: 8px;
+            padding: 6px 8px; font-size: 13px; font-weight: 600; outline: none; color: var(--ink);
+            -moz-appearance: textfield;
+        }
+        .score-input::-webkit-outer-spin-button, .score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .score-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(31,138,84,.10); }
+        .btn-primary {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            background: var(--green); color: #fff; font-weight: 600; font-size: 13.5px;
+            border-radius: 9px; padding: 10px 17px; transition: background .14s;
+        }
+        .btn-primary:hover { background: var(--green-dark); }
+        .btn-primary:disabled { opacity: .55; cursor: wait; }
+        .btn-ghost {
+            display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600;
+            color: #4c584f; background: #fff; border: 1px solid var(--line); border-radius: 9px;
+            padding: 9px 15px; transition: all .14s;
+        }
+        .btn-ghost:hover { background: var(--line-soft); }
+        .table-head th {
+            padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+            text-transform: uppercase; color: #8b978e; background: #fafbfa; white-space: nowrap;
+            border-bottom: 1px solid var(--line-soft);
+        }
+        .marks-row td { padding: 10px 14px; font-size: 13.5px; border-top: 1px solid var(--line-soft); }
+        .marks-row:hover { background: #f7fbf8; }
+        .role-tab { padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: #fff; color: #55615a; cursor: pointer; transition: all .13s; }
+        .role-tab:hover { border-color: var(--mint-line); color: var(--green-ink); }
+        .role-tab-active { background: var(--mint) !important; border-color: var(--mint-line) !important; color: var(--green-ink) !important; }
+        .roster-line { display:flex; justify-content:space-between; gap:10px; padding:10px 14px; border-top:1px solid var(--line-soft); font-size:13.5px }
+        .roster-line:first-child { border-top:0 }
+        .tt-grid { width:100%; border-collapse:collapse; min-width:760px }
+        .tt-grid th { padding:10px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#8b978e; background:#fafbfa; border-bottom:1px solid var(--line-soft); text-align:center }
+        .tt-grid td { border:1px solid var(--line-soft); padding:5px; text-align:center; vertical-align:middle; font-size:12px }
+        .tt-grid .tt-subject { background:var(--mint); color:var(--green-ink); font-weight:600; border-radius:8px; padding:7px 4px; display:block; font-size:11.5px }
+        .tt-cell-btn { width:100%; border:1px dashed var(--line); background:#fff; border-radius:8px; padding:7px 4px; color:#b9c4bb; font-size:12px; cursor:pointer; transition:all .13s }
+        .tt-cell-btn:hover { border-color:var(--mint-line); color:var(--green-ink) }
+        .tt-cell-btn.filled { border-style:solid; background:var(--mint); color:var(--green-ink); font-weight:600 }
+
+        .toast {
+            position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+            padding: 12px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 600;
+            color: #fff; box-shadow: 0 12px 30px rgba(23,37,28,.25); z-index: 100;
+            opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+    </style>
+</head>
+<body class="min-h-screen" style="background: var(--paper); color: var(--ink)">
+
+    {% if logged_in %}
+    <!-- ══════════ TEACHER DASHBOARD ══════════ -->
+    <header class="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur border-b border-slate-200 flex items-center gap-4 px-5 md:px-8">
+        <div class="w-9 h-9 rounded-[10px] grid place-items-center text-white font-bold text-[12px]" style="background: var(--green)">MS</div>
+        <div class="min-w-0">
+            <p class="font-bold text-[14.5px] leading-none truncate">MYSCHOOL · Teachers</p>
+            <p class="text-[11px] text-slate-500 truncate">{{ school.school_name|title }}</p>
+        </div>
+        <div class="ml-auto flex items-center gap-3">
+            <div class="hidden sm:block text-right">
+                <p class="text-[13px] font-bold leading-none">{{ teacher.full_name }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">{{ teacher.email }}</p>
+            </div>
+            <div class="w-8 h-8 rounded-full grid place-items-center text-white font-bold text-[13px]" style="background: var(--green)">{{ teacher.full_name[0]|upper }}</div>
+            <form method="POST" action="/{{ school_name }}/teacher/logout">
+                <button type="submit" class="btn-ghost !text-[12.5px]">Log out</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="p-5 md:p-8 max-w-[1200px] mx-auto space-y-6">
+        <div>
+            <p class="eyebrow">Teacher workspace</p>
+            <h1 class="text-[23px] font-bold tracking-tight mt-1">Welcome, {{ teacher.full_name.split(' ')[0] }}</h1>
+            <p class="text-[13.5px] text-slate-500 mt-1">Give marks, see your students, and follow your own timetable.</p>
+        </div>
+
+        <!-- Workspace tabs -->
+        <div class="flex flex-wrap gap-2">
+            <button id="tabbtn-marks" onclick="setTab('marks')" class="role-tab role-tab-active">Marks Table</button>
+            <button id="tabbtn-students" onclick="setTab('students')" class="role-tab">My Students</button>
+            <button id="tabbtn-mytt" onclick="setTab('mytt')" class="role-tab">My Timetable</button>
+            {% if teacher_is_dos %}<button id="tabbtn-builder" onclick="setTab('builder')" class="role-tab">Timetable Builder (DOS)</button>{% endif %}
+        </div>
+
+        <div id="tab-marks" class="space-y-6">
+
+        <!-- Setup / Auto Table Maker -->
+        <div class="card p-5">
+            <p class="eyebrow mb-4">Auto table maker</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Class</label>
+                    <select id="t-class" class="input-ms mt-1">
+                        {% for c in teacher_classes %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Subject</label>
+                    <select id="t-subject" class="input-ms mt-1">
+                        {% for s in teacher_subjects %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Term</label>
+                    <select id="t-term" class="input-ms mt-1">
+                        <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Academic year</label>
+                    <input id="t-year" class="input-ms mt-1" value="2026" maxlength="20">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500 uppercase">Max score</label>
+                    <input id="t-max" type="number" min="1" value="100" class="input-ms mt-1">
+                </div>
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+                <button onclick="generateTable()" class="btn-primary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    Generate table
+                </button>
+                <p id="t-feedback" class="text-[12px] font-medium" role="status"></p>
+            </div>
+        </div>
+
+        <!-- Class snapshot -->
+        <div id="t-stats" class="hidden grid grid-cols-2 lg:grid-cols-5 gap-3"></div>
+
+        <!-- Generated marks table -->
+        <div id="t-table-card" class="card overflow-hidden hidden">
+            <div class="px-5 py-3.5 border-b border-[color:var(--line-soft)] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h3 id="t-table-title" class="font-bold text-[14px]"></h3>
+                    <p id="t-table-sub" class="text-[12px] text-slate-500"></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="saveMarks()" class="btn-primary">Save marks</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px]">
+                    <thead class="table-head">
+                        <tr>
+                            <th>#</th>
+                            <th>Student</th>
+                            <th>Score</th>
+                            <th>Grade</th>
+                            <th>Teacher comment</th>
+                        </tr>
+                    </thead>
+                    <tbody id="t-rows"></tbody>
+                </table>
+            </div>
+            <div class="px-5 py-3.5 border-t border-[color:var(--line-soft)] bg-[#fafbfa] flex flex-wrap items-center gap-3">
+                <button onclick="saveMarks()" class="btn-primary">Save marks</button>
+                <p class="text-[12px] text-slate-500">Scores are saved for this subject, term and year only. Empty scores are ignored.</p>
+            </div>
+        </div>
+
+        <p id="t-table-note" class="hidden text-center text-[13px] text-slate-400 py-8"></p>
+        </div><!-- /tab-marks -->
+
+        <!-- My Students -->
+        <div id="tab-students" class="hidden space-y-5">
+            <div class="flex flex-wrap gap-2 items-center">
+                <select id="ts-class" class="input-ms !w-auto" onchange="loadRoster()">
+                    <option value="">All my classes</option>
+                    {% for c in teacher_classes %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+                </select>
+                <button onclick="loadRoster()" class="btn-primary">Load students</button>
+            </div>
+            <div id="roster-output"></div>
+        </div>
+
+        <!-- My Timetable -->
+        <div id="tab-mytt" class="hidden space-y-5">
+            <div class="flex gap-2"><button onclick="loadMyTT()" class="btn-primary">Refresh my timetable</button></div>
+            <div id="mytt-output" class="card overflow-hidden"></div>
+        </div>
+
+        {% if teacher_is_dos %}
+        <!-- Timetable Builder (DOS) -->
+        <div id="tab-builder" class="hidden space-y-5">
+            <div class="flex flex-wrap gap-2 items-center">
+                <select id="ttb-class" class="input-ms !w-auto" onchange="loadTTB()">
+                    {% for c in teacher_classes %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+                </select>
+                <button onclick="loadTTB()" class="btn-primary">Load grid</button>
+                <p class="text-[12px] text-slate-500">Subjects come from each class's teachers. A teacher booked in another class for the same period is rejected automatically.</p>
+            </div>
+            <div id="ttb-output" class="card overflow-hidden"></div>
+        </div>
+
+        <!-- Builder slot modal -->
+        <div id="tbb-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/40" onclick="closeTTB()"></div>
+            <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 animate-fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-[16px] font-bold" style="color:var(--ink)">Edit slot</h3>
+                        <p id="tbb-sub" class="text-slate-500 text-[11.5px]"></p>
+                    </div>
+                    <button type="button" onclick="closeTTB()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">✕</button>
+                </div>
+                <div class="space-y-3">
+                    <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Subject</label><select id="tbb-subject" onchange="populateTTBTeachers(this.value)" class="input-ms mt-1"></select></div>
+                    <div><label class="text-[11px] font-semibold text-slate-500 uppercase">Teacher</label><select id="tbb-teacher" class="input-ms mt-1"></select></div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="clearTTB()" class="btn-ghost !text-[#b42318]">Clear</button>
+                    <button onclick="closeTTB()" class="flex-1 px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition text-[13px]">Cancel</button>
+                    <button onclick="saveTTB()" class="flex-1 px-4 py-2 text-white font-semibold rounded-lg transition" style="background:var(--green)">Save slot</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <footer class="text-center text-[11px] text-slate-400 pb-6">MYSCHOOL · Teacher portal · Powered by <b>1percent</b></footer>
+    </main>
+
+    <div id="t-toast" class="toast bg-[#1f8a54]"></div>
+
+    <script>
+        const schoolName = "{{ school_name }}";
+        let tableState = { subject: "", term: "", year: "", maxScore: 100, rows: [] };
+
+        function toast(message, ok = true) {
+            const el = document.getElementById('t-toast');
+            el.textContent = message;
+            el.style.background = ok ? '#1f8a54' : '#b42318';
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3200);
+        }
+
+        // ==================== WORKSPACE TABS ====================
+        const IS_DOS = {{ 1 if teacher_is_dos else 0 }};
+        const TT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+        function setTab(name) {
+            ['marks', 'students', 'mytt', 'builder'].forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                const btn = document.getElementById('tabbtn-' + t);
+                if (!el) return;
+                el.classList.toggle('hidden', t !== name);
+                btn.classList.toggle('role-tab-active', t === name);
+            });
+            if (name === 'students') loadRoster();
+        }
+
+        // ==================== MY STUDENTS ====================
+        async function loadRoster() {
+            const cls = document.getElementById('ts-class').value;
+            const out = document.getElementById('roster-output');
+            out.innerHTML = '<p class="text-center text-slate-400 text-[13px] py-8">Loading students…</p>';
+            try {
+                const url = `/${schoolName}/teacher/api/students${cls ? '?class_name=' + encodeURIComponent(cls) : ''}`;
+                const data = await (await fetch(url)).json();
+                if (!data.roster || !Object.keys(data.roster).length) {
+                    out.innerHTML = '<p class="text-center text-slate-400 text-[13px] py-8">No classes assigned to you yet.</p>';
+                    return;
+                }
+                out.innerHTML = Object.keys(data.roster).sort().map(c => {
+                    const students = data.roster[c];
+                    const lines = students.map((s, i) =>
+                        `<div class="roster-line"><span class="font-semibold">${s.student_name}</span><span class="text-[11.5px] text-slate-400">ID ${s.id}</span></div>`).join('');
+                    return `<div class="card overflow-hidden mb-4">
+                        <div class="px-5 py-3 flex justify-between items-center" style="background:#fafbfa">
+                            <span class="font-bold text-[13.5px]">${c}</span><span class="chip chip-green">${students.length} students</span>
+                        </div>${lines || '<p class="text-center text-slate-400 text-[13px] py-4">No active students.</p>'}
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                out.innerHTML = `<p class="text-center text-[13px] py-8" style="color:#b42318">Could not load students.</p>`;
+            }
+        }
+
+        // ==================== MY TIMETABLE ====================
+        async function loadMyTT() {
+            const out = document.getElementById('mytt-output');
+            out.innerHTML = '<p class="text-center text-slate-400 text-[13px] py-8">Loading timetable…</p>';
+            try {
+                const data = await (await fetch(`/${schoolName}/teacher/api/my-timetable`)).json();
+                const slots = data.slots || [];
+                if (!slots.length) {
+                    out.innerHTML = '<p class="text-center text-slate-400 text-[13px] py-8">Nothing scheduled yet — the Dean of Studies builds timetables.</p>';
+                    return;
+                }
+                let rows = '';
+                for (let p = 1; p <= 8; p++) {
+                    rows += `<tr><td class="bg-[#fafbfa] font-bold text-slate-500">P${p}</td>`;
+                    for (let d = 1; d <= 5; d++) {
+                        const s = slots.find(x => x.day === d && x.period === p);
+                        rows += `<td>${s ? `<span class="tt-subject">${s.class_name} · ${s.subject}</span>` : ''}</td>`;
+                    }
+                    rows += '</tr>';
+                }
+                out.innerHTML = `<div class="overflow-x-auto"><table class="tt-grid">
+                    <thead><tr><th class="!bg-[#fafbfa]"></th>${TT_DAYS.map(d => `<th class="!bg-[#fafbfa]">${d}</th>`).join('')}</tr></thead>
+                    <tbody>${rows}</tbody></table></div>`;
+            } catch (err) {
+                out.innerHTML = '<p class="text-center text-[13px] py-8" style="color:#b42318">Could not load your timetable.</p>';
+            }
+        }
+
+        {% if teacher_is_dos %}
+        // ==================== TIMETABLE BUILDER (DOS) ====================
+        let tbbOptions = {};
+        let tbbSlots = [];
+        let tbbEditing = null;
+
+        async function loadTTB() {
+            const cls = document.getElementById('ttb-class').value;
+            const out = document.getElementById('ttb-output');
+            out.innerHTML = '<p class="text-center text-slate-400 text-[13px] py-8">Building grid…</p>';
+            try {
+                const data = await (await fetch(`/${schoolName}/admin/timetable?class_name=${encodeURIComponent(cls)}`)).json();
+                if (!data.subject_options || !Object.keys(data.subject_options).length) {
+                    out.innerHTML = '<p class="text-center text-slate-400 text-[13px] py-8">No teacher assignments for this class yet.</p>';
+                    return;
+                }
+                tbbOptions = data.subject_options || {};
+                tbbSlots = data.slots || [];
+                const clsName = data.class_name;
+                const cells = [];
+                for (let p = 1; p <= 8; p++) {
+                    cells.push(`<tr><td class="bg-[#fafbfa] font-bold text-slate-500">P${p}</td>`);
+                    for (let d = 1; d <= 5; d++) {
+                        const s = tbbSlots.find(x => x.day === d && x.period === p);
+                        cells.push(`<td><button class="tt-cell-btn ${s ? 'filled' : ''}" onclick="openTTB(${d}, ${p})" title="Edit slot">${s ? `${clsName} · ${s.subject}` : '＋'}</button></td>`);
+                    }
+                    cells.push('</tr>');
+                }
+                out.innerHTML = `<div class="overflow-x-auto"><table class="tt-grid">
+                    <thead><tr><th></th>${TT_DAYS.map(d => `<th>${d}</th>`).join('')}</tr></thead>
+                    <tbody>${cells.join('')}</tbody></table></div>`;
+            } catch (err) {
+                out.innerHTML = '<p class="text-center text-[13px] py-8" style="color:#b42318">Could not load the timetable grid.</p>';
+            }
+        }
+
+        function openTTB(day, period) {
+            tbbEditing = { day, period, slot: tbbSlots.find(s => s.day === day && s.period === period) || null };
+            const subjects = Object.keys(tbbOptions).sort();
+            subjectSel = document.getElementById('tbb-subject');
+            subjectSel.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            document.getElementById('tbb-sub').textContent = `${TT_DAYS[day - 1]} · Period ${period}`;
+            populateTTBTeachers(subjectSel.value);
+            if (tbbEditing.slot) {
+                subjectSel.value = tbbEditing.slot.subject;
+                populateTTBTeachers(subjectSel.value);
+                document.getElementById('tbb-teacher').value = tbbEditing.slot.teacher_id || '';
+            }
+            document.getElementById('tbb-modal').classList.remove('hidden');
+        }
+
+        function populateTTBTeachers(subject) {
+            const sel = document.getElementById('tbb-teacher');
+            const teachers = tbbOptions[subject] || [];
+            sel.innerHTML = '<option value="">No teacher set</option>' + teachers.map(t => `<option value="${t.teacher_id}">${t.teacher_name}</option>`).join('');
+        }
+
+        function closeTTB() {
+            tbbEditing = null;
+            document.getElementById('tbb-modal').classList.add('hidden');
+        }
+
+        async function saveTTB() {
+            if (!tbbEditing) return;
+            const subject = document.getElementById('tbb-subject').value;
+            const teacherVal = document.getElementById('tbb-teacher').value;
+            try {
+                const res = await fetch(`/${schoolName}/admin/timetable`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ class_name: document.getElementById('ttb-class').value, day: tbbEditing.day, period: tbbEditing.period, subject, teacher_id: teacherVal ? parseInt(teacherVal, 10) : null })
+                });
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Could not save the slot.');
+                toast('Slot saved.');
+                closeTTB();
+                loadTTB();
+            } catch (err) { toast(err.message, false); }
+        }
+
+        async function clearTTB() {
+            if (!tbbEditing || !tbbEditing.slot) { closeTTB(); return; }
+            try {
+                const res = await fetch(`/${schoolName}/admin/timetable/${tbbEditing.slot.id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Could not clear the slot.');
+                toast('Slot cleared.');
+                closeTTB();
+                loadTTB();
+            } catch (err) { toast(err.message, false); }
+        }
+        {% endif %}
+
+        function gradeChip(percent) {
+            if (percent === null || percent === undefined) return '<span class="chip chip-muted">Not graded</span>';
+            if (percent >= 85) return '<span class="chip chip-green">Excellent</span>';
+            if (percent >= 70) return '<span class="chip chip-green">Good</span>';
+            if (percent >= 50) return '<span class="chip chip-amber">Pass</span>';
+            return '<span class="chip chip-rose">Fail</span>';
+        }
+
+        async function generateTable() {
+            const cls = document.getElementById('t-class').value;
+            const subject = document.getElementById('t-subject').value;
+            const term = document.getElementById('t-term').value.trim();
+            const year = document.getElementById('t-year').value.trim();
+            const maxScore = parseInt(document.getElementById('t-max').value || '100', 10);
+            const feedback = document.getElementById('t-feedback');
+            feedback.textContent = '';
+            if (!cls || !subject || !term || !year || !maxScore || maxScore < 1) {
+                toast('Select class, subject, term, year and a valid max score.', false);
+                return;
+            }
+            feedback.textContent = 'Building table…';
+            feedback.style.color = '#66726a';
+            try {
+                const url = `/${schoolName}/teacher/api/table?class_name=${encodeURIComponent(cls)}&subject=${encodeURIComponent(subject)}&term=${encodeURIComponent(term)}&academic_year=${encodeURIComponent(year)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Could not build the table.');
+                tableState = { subject, term, year, maxScore, rows: data.rows };
+                renderTable(cls, data.stats);
+                feedback.textContent = '';
+            } catch (err) {
+                feedback.textContent = err.message;
+                feedback.style.color = '#b42318';
+            }
+        }
+
+        function renderTable(cls, stats) {
+            document.getElementById('t-table-title').textContent = `${cls} · ${tableState.subject}`;
+            document.getElementById('t-table-sub').textContent = `${tableState.term} · ${tableState.year} · max ${tableState.maxScore}`;
+            const rowsBody = document.getElementById('t-rows');
+            if (!tableState.rows.length) {
+                rowsBody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-400 text-[13px] py-8">No active students in this class.</td></tr>';
+                document.getElementById('t-table-card').classList.remove('hidden');
+                document.getElementById('t-stats').classList.add('hidden');
+                return;
+            }
+            rowsBody.innerHTML = '';
+            tableState.rows.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                tr.className = 'marks-row';
+                const percent = r.score === null ? null : Math.round((r.score / (r.max_score || tableState.maxScore)) * 100);
+                tr.innerHTML = `
+                    <td class="text-[12px] text-slate-400">${i + 1}</td>
+                    <td class="font-semibold">${r.student_name} <span class="text-[11px] text-slate-400 font-normal">ID ${r.student_id}</span>${r.published ? ' <span class="chip chip-green !text-[9.5px]">published</span>' : ''}</td>
+                    <td>
+                        <input type="number" min="0" max="${tableState.maxScore}" id="score-${r.student_id}" value="${r.score ?? ''}" placeholder="—"
+                            oninput="updateGrade(${r.student_id})" class="score-input">
+                        <span class="text-[11px] text-slate-400">/ ${tableState.maxScore}</span>
+                    </td>
+                    <td id="grade-${r.student_id}">${gradeChip(percent)}</td>
+                    <td><input type="text" id="comment-${r.student_id}" value="${(r.teacher_comment || '').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" placeholder="Optional comment" class="input-ms !py-2 !text-[12.5px]"></td>
+                `;
+                rowsBody.appendChild(tr);
+            });
+            document.getElementById('t-table-card').classList.remove('hidden');
+            renderStats(stats);
+        }
+
+        function renderStats(stats) {
+            const el = document.getElementById('t-stats');
+            const tiles = [
+                ['Students', stats.students],
+                ['Marks entered', `${stats.entered}/${stats.students}`],
+                ['Class average', stats.average_percent !== null ? `${stats.average_percent}%` : '—'],
+                ['Highest', stats.highest_percent !== null ? `${stats.highest_percent}%` : '—'],
+                ['Passing (>=50%)', `${stats.pass_count}/${stats.entered}`],
+            ];
+            el.innerHTML = tiles.map(([label, value]) => `
+                <div class="card px-4 py-3 text-center" style="background:#fafcfb">
+                    <p class="text-[10.5px] font-bold uppercase tracking-[0.07em] text-slate-400">${label}</p>
+                    <p class="mt-1 text-[20px] font-bold">${value}</p>
+                </div>`).join('');
+            el.classList.remove('hidden');
+        }
+
+        function updateGrade(studentId) {
+            const raw = document.getElementById(`score-${studentId}`).value;
+            const cell = document.getElementById(`grade-${studentId}`);
+            if (raw === '') { cell.innerHTML = gradeChip(null); return; }
+            const score = parseInt(raw, 10);
+            if (isNaN(score) || score < 0 || score > tableState.maxScore) {
+                cell.innerHTML = '<span class="chip chip-rose">0–' + tableState.maxScore + '</span>';
+                return;
+            }
+            cell.innerHTML = gradeChip(Math.round((score / tableState.maxScore) * 100));
+        }
+
+        async function saveMarks() {
+            const rows = [];
+            tableState.rows.forEach(r => {
+                const raw = document.getElementById(`score-${r.student_id}`).value.trim();
+                const comment = document.getElementById(`comment-${r.student_id}`).value.trim();
+                const publish = r.published || r.entered_by_me ? false : false; // publishing is a school decision; keep existing flag
+                if (raw === '') return;
+                rows.push({ student_id: r.student_id, score: parseInt(raw, 10), teacher_comment: comment, published: r.published });
+            });
+            if (!rows.length) { toast('Enter at least one score first.', false); return; }
+            const invalid = rows.some(r => isNaN(r.score) || r.score < 0 || r.score > tableState.maxScore);
+            if (invalid) { toast('Scores must be between 0 and the max score.', false); return; }
+            try {
+                const res = await fetch(`/${schoolName}/teacher/api/marks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subject: tableState.subject, term: tableState.term, academic_year: tableState.year, max_score: tableState.maxScore, rows })
+                });
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Save failed.');
+                toast(`Saved ${data.saved} mark${data.saved !== 1 ? 's' : ''}.`);
+                generateTable();
+            } catch (err) {
+                toast(err.message || 'Save failed.', false);
+            }
+        }
+    </script>
+
+    {% else %}
+    <!-- ══════════ TEACHER LOGIN ══════════ -->
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="text-center w-full max-w-sm">
+            <div class="w-11 h-11 mx-auto mb-4 rounded-[12px] grid place-items-center text-white font-bold text-[13px]" style="background: var(--green)">MS</div>
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 text-left">
+                <h1 class="text-xl font-bold mb-0.5">Teacher Login</h1>
+                <p class="text-[12.5px] text-slate-500 mb-6">{{ school.school_name|title }} · MYSCHOOL · Powered by 1percent</p>
+                {% if error %}
+                <div class="mb-4 px-4 py-3 rounded-lg text-[13px] font-medium" style="background:#fdf1ef;border:1px solid #f5d7d3;color:#b42318">{{ error }}</div>
+                {% endif %}
+                <form method="POST" action="/{{ school_name }}/teacher/login" class="space-y-4">
+                    <div>
+                        <label class="block text-[12.5px] font-semibold text-slate-700 mb-1">School email</label>
+                        <input type="email" name="email" required autofocus class="input-ms">
+                    </div>
+                    <div>
+                        <label class="block text-[12.5px] font-semibold text-slate-700 mb-1">Password</label>
+                        <input type="password" name="password" required class="input-ms">
+                    </div>
+                    <button type="submit" class="btn-primary w-full !py-2.5">Login</button>
+                </form>                    <p class="text-[11px] text-slate-400 mt-5 text-center">Accounts are created by the school administrator. Log in with your school email.</p>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-4">MYSCHOOL · Teacher &amp; canteen portals · Powered by <b>1percent</b></p>
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+</html>

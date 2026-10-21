@@ -119,11 +119,12 @@ class ParentAccount(Base):
 
 
 class StudentMark(Base):
-    """Published student marks visible to the student's authenticated parent."""
+    """Student marks; entered by teachers and visible to the student's authenticated parent."""
     __tablename__ = "student_marks"
     id = Column(Integer, primary_key=True, index=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
     student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
+    teacher_id = Column(Integer, index=True, nullable=True)  # Teacher who entered/updated the mark
     subject = Column(String(100), nullable=False)
     term = Column(String(40), nullable=False)
     academic_year = Column(String(20), nullable=False)
@@ -142,5 +143,40 @@ class CanteenAdmin(Base):
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
     username = Column(String(80), nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
+    is_active = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class TimetableSlot(Base):
+    """One cell of a class timetable: which subject (and teacher) at a day/period.
+    Each (school, class, day, period) is unique; L3-L5 combos differ per class,
+    S1-S3 share the same subjects but each class keeps its own grid."""
+    __tablename__ = "timetable_slots"
+    __table_args__ = (UniqueConstraint("school_id", "class_name", "day", "period", name="uq_slot_class_day_period"),)
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    class_name = Column(String(50), nullable=False, index=True)
+    day = Column(Integer, nullable=False)      # 1 = Monday ... 5 = Friday
+    period = Column(Integer, nullable=False)   # 1..8
+    subject = Column(String(100), nullable=False)
+    teacher_id = Column(Integer, index=True, nullable=True)
+
+
+class Teacher(Base):
+    """School teacher login; teaches one or more subjects in one or more classes."""
+    __tablename__ = "teachers"
+    __table_args__ = (
+        UniqueConstraint("school_id", "username", name="uq_teacher_school_username"),
+        UniqueConstraint("school_id", "email", name="uq_teacher_school_email"),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    full_name = Column(String(120), nullable=False)
+    email = Column(String(254), nullable=False, index=True)
+    username = Column(String(80), nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    subjects = Column(String(300), nullable=False, default="")  # comma-separated, e.g. "Mathematics,Biology"
+    classes = Column(String(200), nullable=False, default="")   # comma-separated class names, e.g. "S1,L3SOD"
+    is_dos = Column(Integer, nullable=False, default=0)         # Dean of Studies: builds the timetables
     is_active = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
