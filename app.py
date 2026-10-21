@@ -1546,13 +1546,23 @@ def eats_link_card(school_name: str, payload: EatsCardLink, request: Request, db
     student = db.query(Student).filter(Student.id == payload.student_id, (Student.school_id == school.id) | (Student.school_id.is_(None))).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in this school")
-    card = EatsCard(school_id=school.id, student_id=student.id, uid_hash=_eats_uid_hash(payload.card_uid), balance_cents=0, active=1)
-    db.add(card)
+    uid_hash = _eats_uid_hash(payload.card_uid)
+    linked_uid = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.uid_hash == uid_hash).first()
+    if linked_uid and linked_uid.student_id != student.id:
+        raise HTTPException(status_code=409, detail="This NFC card is already linked to another student in this school")
+    # Reuse the student's existing account so manual-ID and NFC purchases share one balance.
+    card = db.query(EatsCard).filter(EatsCard.school_id == school.id, EatsCard.student_id == student.id).first()
+    if card:
+        card.uid_hash = uid_hash
+        card.active = 1
+    else:
+        card = EatsCard(school_id=school.id, student_id=student.id, uid_hash=uid_hash, balance_cents=0, active=1)
+        db.add(card)
     try:
         db.commit()
     except _IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This card is already linked in this school")
+        raise HTTPException(status_code=409, detail="This NFC card is already linked in this school")
     return {"status": "linked", "student_id": student.id, "card_last4": payload.card_uid.strip()[-4:]}
 
 @app.post("/{school_name}/eats/api/pay")
