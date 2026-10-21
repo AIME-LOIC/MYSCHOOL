@@ -49,6 +49,7 @@ def init_db():
     _ensure_student_is_active_column()
     _ensure_student_password_columns()
     _ensure_parent_link_code_column()
+    _ensure_parent_meeting_columns()
     _ensure_school_last_promoted_at_column()
 
 def _ensure_products_table():
@@ -225,3 +226,24 @@ def _ensure_parent_link_code_column():
         if "parent_link_code" not in columns:
             connection.execute(text("ALTER TABLE students ADD COLUMN parent_link_code VARCHAR(32)"))
             connection.commit()
+
+
+def _ensure_parent_meeting_columns():
+    """Safely migrate existing visits tables for parent meeting submissions."""
+    from sqlalchemy import text, inspect
+
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if "visits" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("visits")}
+        required = {
+            "parent_name": "VARCHAR(120)",
+            "parent_relationship": "VARCHAR(20)",
+            "parent_phone": "VARCHAR(30)",
+        }
+        for column_name, column_type in required.items():
+            if column_name not in columns:
+                connection.execute(text(f"ALTER TABLE visits ADD COLUMN {column_name} {column_type}"))
+                print(f"✓ Added {column_name} column to visits table")
+        connection.commit()
