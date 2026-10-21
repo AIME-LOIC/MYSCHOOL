@@ -141,7 +141,26 @@
 
         /* Layout & overflow guards */
         body { overflow-x: hidden; }
-        main { min-width: 0; }
+        #main-content { box-sizing: border-box; width: 100%; min-width: 0; }
+        main {
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 1400px;
+            min-width: 0;
+            margin-inline: auto;
+        }
+        main > section { min-width: 0; max-width: 100%; }
+        #timetable-step { width: 100%; min-width: 0; max-width: 100%; }
+        #timetable-step .card { min-width: 0; max-width: 100%; }
+        #timetable-step .overflow-x-auto {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        #timetable-step table { min-width: 760px; }
         .card { min-width: 0; }
         .wrap-anywhere { overflow-wrap: anywhere; }
         .chip button { color: inherit; font-size: 10px; }
