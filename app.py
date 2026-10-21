@@ -624,7 +624,7 @@ def parent_choice(school_name: str, request: Request, db: Session = Depends(get_
     if blocked:
         return blocked
 
-    return templates.TemplateResponse("parentportal_landing.html", {
+    return templates.TemplateResponse("index.html", {
         "request": request,
         "school_name": school_name,
         "school_code": school.school_code
