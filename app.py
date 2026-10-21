@@ -11,6 +11,7 @@ import pandas as pd
 import threading, time, requests, os, signal, hashlib, hmac
 from datetime import datetime
 import re
+import json
 import logging
 from difflib import SequenceMatcher
 from openpyxl.styles import Font, PatternFill
@@ -26,12 +27,20 @@ init_db()
 logger = logging.getLogger("myschool.visits")
 
 app = FastAPI(title="School Visit Management System")
+# Cross-origin access is opt-in. Same-origin browser requests do not require CORS.
+# Set CORS_ALLOWED_ORIGINS to a comma-separated list only when a separate trusted
+# frontend must call this API. Never combine credentialed requests with a wildcard.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 # Templates & static files
@@ -123,14 +132,61 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 # ==================== AUTH HELPERS ====================
 
 SESSION_COOKIE = "admin_session"
+_ADMIN_SESSION_SECONDS = 86400 * 7
+
+def _signing_secret() -> str:
+    """Return the required signing key; never silently sign sessions with a public default."""
+    secret = os.getenv("SECRET_KEY", "").strip()
+    if len(secret) < 32:
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication is not configured. Set SECRET_KEY to a random value of at least 32 characters.",
+        )
+    return secret
+
+def _admin_secret_configured() -> bool:
+    """Require a deployment-provided signing secret; never use a known fallback."""
+    return len(os.getenv("SECRET_KEY", "").strip()) >= 32
+
+def _admin_password_for_school(school_name: str) -> str | None:
+    """Read a unique administrator password for this school from deployment config."""
+    try:
+        configured = json.loads(os.getenv("MYSCHOOL_ADMIN_PASSWORDS", "{}"))
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(configured, dict):
+        return None
+    password = configured.get(school_name)
+    return password if isinstance(password, str) and len(password) >= 12 else None
 
 def _make_token(school_name: str) -> str:
-    secret = os.getenv("SECRET_KEY", "myschool_secret_key")
-    return hmac.new(secret.encode(), school_name.encode(), hashlib.sha256).hexdigest()
+    secret = os.getenv("SECRET_KEY", "").strip()
+    if len(secret) < 32:
+        raise HTTPException(
+            status_code=503,
+            detail="Admin authentication is not configured. Set SECRET_KEY to a random value of at least 32 characters.",
+        )
+    expires = int(time.time()) + _ADMIN_SESSION_SECONDS
+    message = f"{school_name}:{expires}"
+    signature = hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+    return f"{expires}.{signature}"
 
 def _check_admin(request: Request, school_name: str) -> bool:
-    token = request.cookies.get(SESSION_COOKIE)
-    return token == _make_token(school_name)
+    token = request.cookies.get(SESSION_COOKIE, "")
+    if not token or not _admin_secret_configured():
+        return False
+    try:
+        expiry_text, supplied_signature = token.split(".", 1)
+        expires = int(expiry_text)
+    except (ValueError, TypeError):
+        return False
+    if expires <= int(time.time()) or expires > int(time.time()) + _ADMIN_SESSION_SECONDS + 60:
+        return False
+    message = f"{school_name}:{expires}"
+    expected_signature = hmac.new(
+        os.getenv("SECRET_KEY", "").strip().encode(), message.encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(supplied_signature, expected_signature)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -670,12 +726,25 @@ def admin_login(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+    expected_pass = _admin_password_for_school(school_name)
+    if not _admin_secret_configured() or expected_pass is None:
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "school_name": school_name,
+                "error": "Administrator authentication is not configured for this school. Please contact the system administrator.",
+            },
+            status_code=503,
+        )
     expected_user = school_name
-    expected_pass = f"{school_name}001"
-    if username == expected_user and password == expected_pass:
+    if username == expected_user and hmac.compare_digest(password, expected_pass):
         token = _make_token(school_name)
         response = RedirectResponse(f"/{school_name}/admin", status_code=302)
-        response.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax", max_age=86400 * 7)
+        response.set_cookie(
+            SESSION_COOKIE, token, httponly=True, secure=request.url.scheme == "https",
+            samesite="lax", max_age=_ADMIN_SESSION_SECONDS, path="/",
+        )
         return response
     return templates.TemplateResponse("login.html", {"request": request, "school_name": school_name, "error": "Invalid username or password"})
 
@@ -1667,7 +1736,7 @@ def _student_password_matches(password: str, encoded: str) -> bool:
 
 def _student_session_token(student_id: int, school_id: int, expires: int) -> str:
     payload = f"{student_id}:{school_id}:{expires}"
-    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{signature}"
 
 def _read_student_session(request: Request, school_id: int):
@@ -1675,7 +1744,7 @@ def _read_student_session(request: Request, school_id: int):
     try:
         student_id, token_school_id, expires, signature = token.split(":", 3)
         payload = f"{student_id}:{token_school_id}:{expires}"
-        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        expected = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(signature, expected) or int(token_school_id) != school_id or int(expires) < int(time.time()):
             return None
         return int(student_id)
@@ -1766,7 +1835,7 @@ _CANTEEN_COOKIE = "myschool_canteen_session"
 
 def _signed_role_token(role: str, user_id: int, school_id: int, expires: int) -> str:
     payload = f"{role}:{user_id}:{school_id}:{expires}"
-    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{signature}"
 
 def _read_signed_role_token(request: Request, cookie_name: str, role: str, school_id: int):
@@ -1774,7 +1843,7 @@ def _read_signed_role_token(request: Request, cookie_name: str, role: str, schoo
     try:
         token_role, user_id, token_school_id, expires, signature = token.split(":", 4)
         payload = f"{token_role}:{user_id}:{token_school_id}:{expires}"
-        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        expected = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
         if token_role != role or not hmac.compare_digest(signature, expected) or int(token_school_id) != school_id or int(expires) < int(time.time()):
             return None
         return int(user_id)
@@ -1789,7 +1858,7 @@ def _read_canteen_session(request: Request, school_name: str):
     try:
         role, school, expires, signature = token.split(":", 3)
         payload = f"{role}:{school}:{expires}"
-        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        expected = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
         if role != "canteen" or school != school_name or not hmac.compare_digest(signature, expected) or int(expires) < int(time.time()):
             return False
         return True
@@ -1798,7 +1867,7 @@ def _read_canteen_session(request: Request, school_name: str):
 
 def _make_canteen_token(school_name: str, expires: int) -> str:
     payload = f"canteen:{school_name}:{expires}"
-    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{signature}"
 
 @app.get("/{school_name}/parent")
@@ -2673,7 +2742,7 @@ _VAULT_SESSION_SECONDS = 600  # vault stays open for 10 minutes after unlocking
 
 def _make_vault_token(school_name: str, expires: int) -> str:
     payload = f"vault:{school_name}:{expires}"
-    signature = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{signature}"
 
 
@@ -2682,7 +2751,7 @@ def _read_vault_session(request: Request, school_name: str) -> bool:
     try:
         role, school, expires, signature = token.split(":", 3)
         payload = f"{role}:{school}:{expires}"
-        expected = hmac.new(os.getenv("SECRET_KEY", "myschool_secret_key").encode(), payload.encode(), hashlib.sha256).hexdigest()
+        expected = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
         return role == "vault" and school == school_name and hmac.compare_digest(signature, expected) and int(expires) >= int(time.time())
     except (ValueError, TypeError):
         return False
