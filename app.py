@@ -823,6 +823,7 @@ def admin_data(school_name: str, visit_type: str, visit_date: str | None = Query
     query = db.query(
         Visit.id, Visit.visit_date, Visit.created_at,
         Visit.movement_method, Visit.arrival_plate_number, Visit.assigned_plate_number,
+        Visit.parent_name, Visit.parent_relationship, Visit.parent_phone,
         Student.student_name, Student.class_name
     ).join(Student).filter(
         Visit.visit_type == visit_type,
@@ -851,6 +852,10 @@ def admin_data(school_name: str, visit_type: str, visit_date: str | None = Query
             "movement_method": r.movement_method,
             "arrival_plate_number": r.arrival_plate_number,
             "assigned_plate_number": r.assigned_plate_number,
+            "parent_name": r.parent_name,
+            "parent_relationship": r.parent_relationship,
+            "parent_phone": r.parent_phone,
+            "class_name": r.class_name,
         })
 
     stats = {cls: len(students) for cls, students in result.items()}
