@@ -11,6 +11,7 @@ import pandas as pd
 import threading, time, requests, os, signal, hashlib, hmac
 from datetime import datetime
 import re
+import json
 import logging
 from difflib import SequenceMatcher
 from openpyxl.styles import Font, PatternFill
@@ -131,10 +132,22 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 # ==================== AUTH HELPERS ====================
 
 SESSION_COOKIE = "admin_session"
+_ADMIN_SESSION_SECONDS = 86400 * 7
 
 def _admin_secret_configured() -> bool:
     """Require a deployment-provided signing secret; never use a known fallback."""
     return len(os.getenv("SECRET_KEY", "").strip()) >= 32
+
+def _admin_password_for_school(school_name: str) -> str | None:
+    """Read a unique administrator password for this school from deployment config."""
+    try:
+        configured = json.loads(os.getenv("MYSCHOOL_ADMIN_PASSWORDS", "{}"))
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(configured, dict):
+        return None
+    password = configured.get(school_name)
+    return password if isinstance(password, str) and len(password) >= 12 else None
 
 def _make_token(school_name: str) -> str:
     secret = os.getenv("SECRET_KEY", "").strip()
@@ -143,13 +156,27 @@ def _make_token(school_name: str) -> str:
             status_code=503,
             detail="Admin authentication is not configured. Set SECRET_KEY to a random value of at least 32 characters.",
         )
-    return hmac.new(secret.encode(), school_name.encode(), hashlib.sha256).hexdigest()
+    expires = int(time.time()) + _ADMIN_SESSION_SECONDS
+    message = f"{school_name}:{expires}"
+    signature = hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+    return f"{expires}.{signature}"
 
 def _check_admin(request: Request, school_name: str) -> bool:
-    token = request.cookies.get(SESSION_COOKIE)
+    token = request.cookies.get(SESSION_COOKIE, "")
     if not token or not _admin_secret_configured():
         return False
-    return hmac.compare_digest(token, _make_token(school_name))
+    try:
+        expiry_text, supplied_signature = token.split(".", 1)
+        expires = int(expiry_text)
+    except (ValueError, TypeError):
+        return False
+    if expires <= int(time.time()) or expires > int(time.time()) + _ADMIN_SESSION_SECONDS + 60:
+        return False
+    message = f"{school_name}:{expires}"
+    expected_signature = hmac.new(
+        os.getenv("SECRET_KEY", "").strip().encode(), message.encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(supplied_signature, expected_signature)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -689,24 +716,24 @@ def admin_login(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    if not _admin_secret_configured():
+    expected_pass = _admin_password_for_school(school_name)
+    if not _admin_secret_configured() or expected_pass is None:
         return templates.TemplateResponse(
             "login.html",
             {
                 "request": request,
                 "school_name": school_name,
-                "error": "Administrator authentication is not configured. Please contact the system administrator.",
+                "error": "Administrator authentication is not configured for this school. Please contact the system administrator.",
             },
             status_code=503,
         )
     expected_user = school_name
-    expected_pass = f"{school_name}001"
-    if username == expected_user and password == expected_pass:
+    if username == expected_user and hmac.compare_digest(password, expected_pass):
         token = _make_token(school_name)
         response = RedirectResponse(f"/{school_name}/admin", status_code=302)
         response.set_cookie(
             SESSION_COOKIE, token, httponly=True, secure=request.url.scheme == "https",
-            samesite="lax", max_age=86400 * 7, path="/",
+            samesite="lax", max_age=_ADMIN_SESSION_SECONDS, path="/",
         )
         return response
     return templates.TemplateResponse("login.html", {"request": request, "school_name": school_name, "error": "Invalid username or password"})
