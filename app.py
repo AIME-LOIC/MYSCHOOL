@@ -1820,6 +1820,28 @@ def parent_signup(school_name: str, request: Request, student_id: int = Form(...
     response.set_cookie(_PARENT_COOKIE, token, max_age=_PARENT_SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/")
     return response
 
+@app.get("/{school_name}/parent/login")
+def parent_login_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    """Render the parent authentication page for direct browser visits."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    parent_id = _read_parent_session(request, school.id)
+    account = db.query(ParentAccount).filter(
+        ParentAccount.id == parent_id,
+        ParentAccount.school_id == school.id,
+        ParentAccount.is_active == 1,
+    ).first() if parent_id else None
+    student = db.query(Student).filter(
+        Student.id == account.student_id,
+        ((Student.school_id == school.id) | (Student.school_id.is_(None))),
+    ).first() if account else None
+    return templates.TemplateResponse(
+        "parent_reports.html",
+        {"request": request, "school": school, "parent": account, "student": student, "marks": []},
+    )
+
+
 @app.post("/{school_name}/parent/login")
 def parent_login(school_name: str, request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     school = db.query(School).filter(School.school_name == school_name).first()
