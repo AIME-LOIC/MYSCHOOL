@@ -717,6 +717,9 @@ def add_visit(
     visit_type: str = Form(...),
     movement_method: str | None = Form(None),
     plate_number: str | None = Form(None),
+    parent_name: str | None = Form(None),
+    parent_relationship: str | None = Form(None),
+    parent_phone: str | None = Form(None),
     db: Session = Depends(get_db)
 ):
     """Add a visit for a student in a specific school"""
@@ -772,9 +775,23 @@ def add_visit(
         if existing:
             return {"status": "error", "message": "Already recorded today"}
 
+        parent_name_clean = (parent_name or "").strip()[:120] or None
+        relationship_clean = (parent_relationship or "").strip().lower() or None
+        parent_phone_clean = (parent_phone or "").strip()[:30] or None
+        if visit_type == "parent_meeting":
+            if not parent_name_clean:
+                return {"status": "error", "message": "Parent name is required for a parent meeting"}
+            if relationship_clean not in {"father", "mother", "other"}:
+                return {"status": "error", "message": "Select father, mother, or other"}
+        else:
+            parent_name_clean = relationship_clean = parent_phone_clean = None
+
         visit = Visit(
             student_id=student.id,
             visit_type=visit_type,
+            parent_name=parent_name_clean,
+            parent_relationship=relationship_clean,
+            parent_phone=parent_phone_clean,
             visit_date=today,
             status="done",
             movement_method=movement_method_clean,
