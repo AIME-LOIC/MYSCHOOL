@@ -168,6 +168,14 @@
                 <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">KANDA KU  AMAZINA Y'UMWANA</p>
             </div>
 
+            <div id="parent-meeting-section" class="hidden border border-green-100 bg-green-50 rounded-lg p-4 mb-4 space-y-3">
+                <p class="font-semibold text-gray-700">Parent / Guardian details</p>
+                <input id="parent-name" type="text" maxlength="120" autocomplete="name" placeholder="Parent full name" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <select id="parent-relationship" class="w-full border rounded-lg px-3 py-2 bg-white">
+                    <option value="">Select relationship</option><option value="father">Father</option><option value="mother">Mother</option><option value="other">Other</option>
+                </select>
+                <input id="parent-phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Phone number (optional)" class="w-full border rounded-lg px-3 py-2 bg-white">
+            </div>
             <div id="movement-section" class="hidden border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
                 <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">UFITE IKINYABIZIGA</label>
                 <select id="movement-method" onchange="onMovementMethodChange()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
@@ -666,6 +674,10 @@
             document.getElementById('movement-method').value = '';
             document.getElementById('plate-number').value = '';
             document.getElementById('plate-number-wrap').classList.add('hidden');
+            document.getElementById('parent-name').value = '';
+            document.getElementById('parent-relationship').value = '';
+            document.getElementById('parent-phone').value = '';
+            document.getElementById('parent-meeting-section').classList.toggle('hidden', type !== 'parent_meeting');
             if (isSOSSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
             } else {
@@ -801,6 +813,16 @@
     feedbackEl.innerText = '';
 
     const payload = { student_id: selectedStudentId, visit_type: selectedType };
+    if (selectedType === 'parent_meeting') {
+        payload.parent_name = document.getElementById('parent-name').value.trim();
+        payload.parent_relationship = document.getElementById('parent-relationship').value;
+        payload.parent_phone = document.getElementById('parent-phone').value.trim();
+        if (!payload.parent_name || !payload.parent_relationship) {
+            feedbackEl.innerText = 'Enter the parent name and select their relationship.';
+            feedbackEl.classList.remove('text-green-600'); feedbackEl.classList.add('text-red-500');
+            submitBtn.innerText = originalText; submitBtn.disabled = false; submitBtn.classList.remove('animate-pulse'); return;
+        }
+    }
     if (isSOSSchool) {
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
@@ -856,6 +878,10 @@
         document.getElementById('movement-method').value = '';
         document.getElementById('plate-number').value = '';
         document.getElementById('plate-number-wrap').classList.add('hidden');
+        document.getElementById('parent-name').value = '';
+        document.getElementById('parent-relationship').value = '';
+        document.getElementById('parent-phone').value = '';
+        document.getElementById('parent-meeting-section').classList.add('hidden');
         document.getElementById('student-results').innerHTML =
             '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
         validateSubmitState();
