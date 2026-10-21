@@ -49,6 +49,7 @@ def init_db():
     _ensure_student_is_active_column()
     _ensure_student_password_columns()
     _ensure_parent_link_code_column()
+    _ensure_student_canteen_card_id_column()
     _ensure_parent_meeting_columns()
     _ensure_school_last_promoted_at_column()
     _ensure_marks_teacher_id_column()
@@ -309,3 +310,22 @@ def _ensure_parent_meeting_columns():
                 connection.execute(text(f"ALTER TABLE visits ADD COLUMN {column_name} {column_type}"))
                 print(f"✓ Added {column_name} column to visits table")
         connection.commit()
+
+
+def _ensure_student_canteen_card_id_column():
+    """Add school-issued five-digit canteen IDs to existing student tables."""
+    from sqlalchemy import text, inspect
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        if "students" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("students")}
+        if "canteen_card_id" not in columns:
+            connection.execute(text("ALTER TABLE students ADD COLUMN canteen_card_id VARCHAR(5)"))
+            connection.commit()
+        # A code must be unique within a school. NULL values for unissued cards remain allowed.
+        try:
+            connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_students_school_canteen_card_id ON students (school_id, canteen_card_id)"))
+            connection.commit()
+        except Exception:
+            connection.rollback()
