@@ -842,6 +842,7 @@
 
     let shouldShowDonationModal = false;
     let wentOffline = false;
+    let submissionFailed = false;
 
     try {
         const fd = new FormData();
@@ -886,9 +887,14 @@
             // Preserve entered parent details and selected student so the user can retry.
             submitBtn.innerText = originalText;
             submitBtn.classList.remove('animate-pulse');
-            return;
+            submissionFailed = true;
         }
     } finally {
+        if (submissionFailed) {
+            // Keep the student and parent details available for a manual retry.
+            submitBtn.disabled = false;
+            return;
+        }
         if (!wentOffline) {
             submitBtn.innerText = originalText;
             submitBtn.classList.remove('animate-pulse');
