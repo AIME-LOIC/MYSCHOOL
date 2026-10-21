@@ -1,0 +1,14 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Local databases and runtime artifacts
+*.db
+*.sqlite
+*.sqlite3
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
