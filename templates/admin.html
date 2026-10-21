@@ -362,6 +362,18 @@
                     </button>
                 </div>
             </div>
+            <div id="parent-meeting-filters" class="hidden mb-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <input id="parent-meeting-search" type="search" oninput="applyParentMeetingFilters()" placeholder="Search student, parent, or phone..." class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-red-300">
+                    <select id="parent-meeting-class-filter" onchange="applyParentMeetingFilters()" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-red-300"><option value="all">All classes</option></select>
+                    <div class="flex items-center text-sm text-gray-500"><span id="parent-meeting-match-count">0 matching records</span></div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="button" onclick="exportParentMeetings('class')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">Download Selected Class Excel</button>
+                    <button type="button" onclick="exportParentMeetings('all')" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700">Download Full School Excel</button>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">Exports include all matching meeting records with student, class, parent/guardian, relationship, phone, date, time, and record ID. The date filter above applies if selected.</p>
+            </div>
             <div id="stats-area" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 space-y-8">
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
@@ -908,7 +920,47 @@
             document.getElementById('choice-step').classList.add('hidden');
             document.getElementById('data-step').classList.remove('hidden');
             document.getElementById('data-title').innerText = type === 'visit_day' ? "Visit Day Data" : "Parent Meeting Data";
+            document.getElementById('parent-meeting-filters').classList.toggle('hidden', type !== 'parent_meeting');
             fetchData();
+        }
+
+        let parentMeetingRawData = {};
+
+        function applyParentMeetingFilters() {
+            if (selectedType === 'parent_meeting') renderVisitData(parentMeetingRawData, true);
+        }
+
+        function renderVisitData(sourceData, applyFilters) {
+            const statsDiv = document.getElementById('stats');
+            const container = document.getElementById('classes-container');
+            const search = applyFilters ? (document.getElementById('parent-meeting-search').value || '').trim().toLowerCase() : '';
+            const classFilter = applyFilters ? document.getElementById('parent-meeting-class-filter').value : 'all';
+            const filtered = {};
+            for (const [cls, records] of Object.entries(sourceData || {})) {
+                if (classFilter !== 'all' && cls !== classFilter) continue;
+                const matches = records.filter(s => !search || [s.student_name, s.parent_name, s.parent_relationship, s.parent_phone].some(v => String(v || '').toLowerCase().includes(search)));
+                if (matches.length) filtered[cls] = matches;
+            }
+            const total = Object.values(filtered).reduce((sum, records) => sum + records.length, 0);
+            if (applyFilters) document.getElementById('parent-meeting-match-count').textContent = total + (total === 1 ? ' matching record' : ' matching records');
+            statsDiv.innerHTML = `<div class="p-3 bg-gray-50 border rounded text-center"><p class="text-xs uppercase font-bold text-gray-400">${applyFilters ? 'Matching Records' : 'Total'}</p><p class="text-2xl font-black">${total}</p></div>`;
+            container.innerHTML = '<h4 class="text-xl font-bold mb-4">Class Detail (Newest First)</h4>';
+            Object.keys(parentMeetingRecords).forEach(key => delete parentMeetingRecords[key]);
+            for (const cls of Object.keys(filtered).sort()) {
+                const div = document.createElement('div');
+                div.className = "mb-4 p-4 bg-white border rounded shadow-sm";
+                div.innerHTML = `<h5 class="font-bold border-b mb-2">${escapeHtml(cls || 'Unassigned class')}</h5>`;
+                filtered[cls].slice().sort((a,b) => new Date(b.date)-new Date(a.date)).forEach(s => {
+                    if (selectedType === 'parent_meeting') parentMeetingRecords[String(s.id)] = s;
+                    const label = selectedType === 'parent_meeting'
+                        ? `<button type="button" onclick="showParentMeetingDetails(${Number(s.id)})" class="flex-1 text-left font-semibold text-red-700 hover:text-red-900 hover:underline">${escapeHtml(s.student_name)} <span class="ml-1 text-[10px] font-normal text-gray-400">View details</span></button>`
+                        : `<span class="flex-1">${escapeHtml(s.student_name)}</span>`;
+                    div.innerHTML += `<div class="flex justify-between items-center text-xs py-2 gap-2 border-b border-gray-50 last:border-0">${label}<span class="text-gray-400 whitespace-nowrap">${escapeHtml(s.date)}</span><button onclick="deleteVisit(${Number(s.id)})" class="text-red-400 hover:text-red-600 font-bold px-1" aria-label="Delete visit record">✕</button></div>`;
+                });
+                container.appendChild(div);
+            }
+            if (!total) container.innerHTML += '<p class="py-6 text-center text-sm text-gray-400">No matching records found.</p>';
+            drawChart(Object.fromEntries(Object.entries(filtered).map(([cls, records]) => [cls, records.length])));
         }
 
         async function fetchData() {
@@ -918,36 +970,24 @@
             try {
                 const dateInput = document.getElementById('data-visit-date').value;
                 let url = `/${schoolName}/admin/data/${selectedType}`;
-                if (dateInput) {
-                    url += `?visit_date=${dateInput}`;
-                }
+                if (dateInput) url += `?visit_date=${encodeURIComponent(dateInput)}`;
                 const res = await fetch(url);
+                if (!res.ok) throw new Error('Unable to load attendance data');
                 const result = await res.json();
-                Object.keys(parentMeetingRecords).forEach(key => delete parentMeetingRecords[key]);
-                statsDiv.innerHTML = `<div class="p-3 bg-gray-50 border rounded text-center"><p class="text-xs uppercase font-bold text-gray-400">Total</p><p class="text-2xl font-black">${result.total}</p></div>`;
-                container.innerHTML = '<h4 class="text-xl font-bold mb-4">Class Detail (Newest First)</h4>';
-                for (const cls in result.data) {
-                    const div = document.createElement('div');
-                    div.className = "mb-4 p-4 bg-white border rounded shadow-sm";
-                    div.innerHTML = `<h5 class="font-bold border-b mb-2">${cls}</h5>`;
-                    // Sort by date - newest first
-                    const sorted = result.data[cls].sort((a, b) => new Date(b.date) - new Date(a.date));
-                    sorted.forEach(s => {
-                        if (selectedType === 'parent_meeting') parentMeetingRecords[String(s.id)] = s;
-                        const studentLabel = selectedType === 'parent_meeting'
-                            ? `<button type="button" onclick="showParentMeetingDetails(${Number(s.id)})" class="flex-1 text-left font-semibold text-red-700 hover:text-red-900 hover:underline focus:outline-none focus:ring-2 focus:ring-red-300 rounded">${escapeHtml(s.student_name)} <span class="ml-1 text-[10px] font-normal text-gray-400">View details</span></button>`
-                            : `<span class="flex-1">${escapeHtml(s.student_name)}</span>`;
-                        div.innerHTML += `
-                        <div class="flex justify-between items-center text-xs py-2 gap-2 border-b border-gray-50 last:border-0">
-                            ${studentLabel}
-                            <span class="text-gray-400 whitespace-nowrap">${escapeHtml(s.date)}</span>
-                            <button onclick="deleteVisit(${Number(s.id)})" class="text-red-400 hover:text-red-600 font-bold px-1" aria-label="Delete visit record">✕</button>
-                        </div>`;
-                    });
-                    container.appendChild(div);
-                }
-                drawChart(result.stats);
-            } catch(err) { statsDiv.innerHTML = "Error."; }
+                parentMeetingRawData = result.data || {};
+                if (selectedType === 'parent_meeting') {
+                    const select = document.getElementById('parent-meeting-class-filter');
+                    const previous = select.value || 'all';
+                    const classes = Object.keys(parentMeetingRawData).sort();
+                    select.innerHTML = '<option value="all">All classes</option>' + classes.map(cls => `<option value="${escapeHtml(cls)}">${escapeHtml(cls || 'Unassigned class')}</option>`).join('');
+                    select.value = classes.includes(previous) ? previous : 'all';
+                    renderVisitData(parentMeetingRawData, true);
+                } else renderVisitData(parentMeetingRawData, false);
+            } catch(err) {
+                statsDiv.innerHTML = '<p class="col-span-2 text-red-600">Could not load attendance data. Please refresh and try again.</p>';
+                container.innerHTML = '';
+                console.error('Attendance load failed:', err);
+            }
         }
 
         function drawChart(stats) {
@@ -1279,32 +1319,48 @@
         }
 
         async function exportVisitData() {
+            const currentType = selectedType || 'visit_day';
+            let url = `/${schoolName}/export/visits?visit_type=${encodeURIComponent(currentType)}`;
+            const dateInput = document.getElementById('data-visit-date').value;
+            if (dateInput) url += `&visit_date=${encodeURIComponent(dateInput)}`;
+            await downloadExcelFromUrl(url, `${currentType}_${schoolName}`);
+        }
+
+        async function exportParentMeetings(scope) {
+            if (selectedType !== 'parent_meeting') return;
+            const className = document.getElementById('parent-meeting-class-filter').value || 'all';
+            if (scope === 'class' && className === 'all') {
+                showToast('Select a class first to download class attendance.', 'error');
+                return;
+            }
+            let url = `/${schoolName}/export/visits?visit_type=parent_meeting`;
+            if (scope === 'class') url += `&class_name=${encodeURIComponent(className)}`;
+            const dateInput = document.getElementById('data-visit-date').value;
+            if (dateInput) url += `&visit_date=${encodeURIComponent(dateInput)}`;
+            await downloadExcelFromUrl(url, scope === 'class' ? `parent_meetings_${className}` : 'parent_meetings_full_school');
+        }
+
+        async function downloadExcelFromUrl(url, fileLabel) {
             try {
-                const currentType = selectedType || 'visit_day';
-                let url = `/${schoolName}/export/visits?visit_type=${currentType}`;
-                const dateInput = document.getElementById('data-visit-date').value;
-                if (dateInput) {
-                    url += `&visit_date=${dateInput}`;
-                }
                 const response = await fetch(url);
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const urlObj = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = urlObj;
-                    const typeLabel = currentType === 'visit_day' ? 'visit_day' : 'parent_meeting';
-                    a.download = `${typeLabel}_${schoolName}_${new Date().toISOString().split('T')[0]}.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(urlObj);
-                    a.remove();
-                    showToast('Visit data downloaded successfully.', 'success');
-                } else {
-                    showToast('Failed to export visit data.', 'error');
+                if (!response.ok) {
+                    let message = 'Failed to export attendance.';
+                    try { const body = await response.json(); message = body.error || body.detail || message; } catch {}
+                    throw new Error(message);
                 }
+                const blob = await response.blob();
+                const urlObj = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = urlObj;
+                a.download = `${fileLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(urlObj);
+                showToast('Excel file downloaded.', 'success');
             } catch (err) {
-                console.error(err);
-                showToast('Error exporting visit data.', 'error');
+                console.error('Excel export failed:', err);
+                showToast(err.message || 'Error exporting attendance.', 'error');
             }
         }
 
