@@ -1417,72 +1417,53 @@ def export_students_to_excel(
 
 
 @app.get("/{school_name}/export/visits")
-def export_visits_to_excel(
-    school_name: str,
-    visit_type: str = Query(..., pattern="^(visit_day|parent_meeting)$"),
-    visit_date: str | None = Query(None),
-    db: Session = Depends(get_db)
-):
+def export_visits_to_excel(school_name: str, visit_type: str = Query(..., pattern="^(visit_day|parent_meeting)$"), visit_date: str | None = Query(None), class_name: str | None = Query(None), db: Session = Depends(get_db)):
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-
     try:
-        query = db.query(Visit).join(Student).filter(
-            Visit.visit_type == visit_type,
-            (Student.school_id == school.id) | (Student.school_id.is_(None))
-        )
+        query = db.query(Visit).join(Student).filter(Visit.visit_type == visit_type, (Student.school_id == school.id) | (Student.school_id.is_(None)))
         if visit_date:
             try:
-                target = datetime.strptime(visit_date, "%Y-%m-%d").date()
-                query = query.filter(Visit.visit_date == target)
+                query = query.filter(Visit.visit_date == datetime.strptime(visit_date, "%Y-%m-%d").date())
             except ValueError:
-                pass
-        visits = query.all()
-
-        data = []
-        for visit in visits:
-            data.append({
-                "Student Name": visit.student.student_name,
-                "Class": visit.student.class_name,
-                "Visit Type": visit.visit_type.replace('_', ' ').title(),
-                "Visit Date": visit.visit_date.strftime("%Y-%m-%d"),
-                "Status": visit.status,
-                "Movement Method": visit.movement_method if visit.movement_method else "-",
-                "Arrival Plate": visit.arrival_plate_number if visit.arrival_plate_number else "-",
-                "Assigned Plate": visit.assigned_plate_number if visit.assigned_plate_number else "-",
-            })
-
-        df = pd.DataFrame(data)
-        visit_type_label = "visit_day" if visit_type == "visit_day" else "parent_meeting"
-        filename = f"{visit_type_label}_{school_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                raise HTTPException(status_code=400, detail="Invalid visit date. Use YYYY-MM-DD.")
+        if class_name and class_name.strip() and class_name.strip().lower() != "all":
+            query = query.filter(Student.class_name == class_name.strip())
+        visits = query.order_by(Visit.visit_date.desc(), Visit.id.desc()).all()
+        columns = ["Student Name", "Class", "Visit Type", "Visit Date", "Recorded At", "Parent / Guardian Name", "Relationship", "Parent Phone", "Status", "Movement Method", "Arrival Plate", "Assigned Plate", "Record ID"]
+        data = [{
+            "Student Name": v.student.student_name, "Class": v.student.class_name,
+            "Visit Type": v.visit_type.replace("_", " ").title(),
+            "Visit Date": v.visit_date.strftime("%Y-%m-%d") if v.visit_date else "",
+            "Recorded At": v.created_at.strftime("%Y-%m-%d %H:%M:%S") if v.created_at else "",
+            "Parent / Guardian Name": v.parent_name or "", "Relationship": (v.parent_relationship or "").title(),
+            "Parent Phone": v.parent_phone or "", "Status": v.status or "",
+            "Movement Method": v.movement_method or "", "Arrival Plate": v.arrival_plate_number or "",
+            "Assigned Plate": v.assigned_plate_number or "", "Record ID": v.id
+        } for v in visits]
+        df = pd.DataFrame(data, columns=columns)
+        kind = "visit_day" if visit_type == "visit_day" else "parent_meeting"
+        scope = class_name.strip().replace(" ", "_") if class_name and class_name.strip().lower() != "all" else "full_school"
+        filename = f"{kind}_{scope}_{school_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         filepath = f"/tmp/{filename}"
-
-        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
-            df.to_excel(writer, sheet_name='Visit Data', index=False)
-            workbook = writer.book
-            worksheet = writer.sheets['Visit Data']
-            for column in worksheet.columns:
-                max_length = 0
-                column_letter = column[0].column_letter
-                for cell in column:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(cell.value)
-                    except:
-                        pass
-                adjusted_width = min(max_length + 2, 50)
-                worksheet.column_dimensions[column_letter].width = adjusted_width
-            header_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
-            header_font = Font(bold=True, color="FFFFFF")
-            for cell in worksheet[1]:
-                cell.fill = header_fill
-                cell.font = header_font
-
-        return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        with pd.ExcelWriter(filepath, engine="openpyxl") as writer:
+            df.to_excel(writer, sheet_name="Attendance", index=False)
+            ws = writer.sheets["Attendance"]
+            ws.freeze_panes = "A2"
+            ws.auto_filter.ref = ws.dimensions
+            for column in ws.columns:
+                max_length = max((len(str(cell.value or "")) for cell in column), default=0)
+                ws.column_dimensions[column[0].column_letter].width = min(max_length + 2, 42)
+            for cell in ws[1]:
+                cell.fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+                cell.font = Font(bold=True, color="FFFFFF")
+        return FileResponse(filepath, filename=filename, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Visit Excel export failed for school=%s type=%s class=%s", school_name, visit_type, class_name)
+        return JSONResponse({"error": "Could not export attendance. Please try again."}, status_code=500)
 
 
 # ==================== KEEP ALIVE ====================
