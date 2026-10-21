@@ -1206,6 +1206,8 @@ def add_student(
     student = Student(student_name=student_name, class_name=class_name, school_id=school.id)
     student.canteen_card_id = _new_student_canteen_card_id(db, school.id)
     db.add(student)
+    db.flush()
+    _ensure_student_eats_card(db, school.id, student.id, student.canteen_card_id)
     db.commit()
     return {"status": "success", "student_id": student.id, "message": "Student added successfully"}
 
@@ -2872,6 +2874,18 @@ def canteen_admin_logout(school_name: str):
 
 
 # ==================== FIVE-DIGIT STUDENT CANTEEN IDS ====================
+def _ensure_student_eats_card(db: Session, school_id: int, student_id: int, card_code: str):
+    """Create a zero-balance canteen account for manual-ID checkout; NFC can be linked later."""
+    existing = db.query(EatsCard).filter(EatsCard.school_id == school_id, EatsCard.student_id == student_id, EatsCard.active == 1).first()
+    if existing:
+        return existing
+    internal_hash = _hashlib.sha256(f"myschool-student-card:{school_id}:{student_id}:{card_code}".encode("utf-8")).hexdigest()
+    card = EatsCard(school_id=school_id, student_id=student_id, uid_hash=internal_hash, balance_cents=0, active=1)
+    db.add(card)
+    db.flush()
+    return card
+
+
 def _new_student_canteen_card_id(db: Session, school_id: int) -> str:
     """Issue a unique five-digit code for a school; this is a lookup ID, not a secret."""
     for _ in range(1000):
@@ -2896,6 +2910,9 @@ def generate_student_canteen_card_ids(school_name: str, request: Request, db: Se
         for student in students:
             student.canteen_card_id = _new_student_canteen_card_id(db, school.id)
             created += 1
+        db.flush()
+        for student in db.query(Student).filter(Student.school_id == school.id, Student.is_active == 1, Student.canteen_card_id.is_not(None)).all():
+            _ensure_student_eats_card(db, school.id, student.id, student.canteen_card_id)
         db.commit()
     except Exception:
         db.rollback()
