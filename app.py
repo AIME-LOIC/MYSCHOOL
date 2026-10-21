@@ -2919,8 +2919,8 @@ def generate_student_canteen_card_ids(school_name: str, request: Request, db: Se
     try:
         for student in students:
             student.canteen_card_id = _new_student_canteen_card_id(db, school.id)
+            db.flush()  # Session autoflush is disabled; flush so the next uniqueness check sees this ID.
             created += 1
-        db.flush()
         for student in db.query(Student).filter(Student.school_id == school.id, Student.is_active == 1, Student.canteen_card_id.is_not(None)).all():
             _ensure_student_eats_card(db, school.id, student.id, student.canteen_card_id)
         db.commit()
