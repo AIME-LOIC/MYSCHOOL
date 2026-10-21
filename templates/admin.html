@@ -363,6 +363,20 @@
 
             <!-- ─────────── STUDENT MANAGER ─────────── -->
             <section id="manager-step" class="hidden animate-fade-in space-y-5">
+                <section class="card p-5 space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div><h3 class="font-bold text-[14.5px]" style="color:var(--ink)">Student canteen card IDs</h3>
+                        <p class="text-[12px] mt-1" style="color:var(--muted)">Issue a unique five-digit ID to every active student. IDs can be printed now; NFC can be linked later.</p></div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" class="btn-ghost" onclick="loadCanteenCardIds()">Refresh IDs</button>
+                            <button type="button" class="btn-primary" id="generate-canteen-card-ids" onclick="generateCanteenCardIds()">Generate missing IDs</button>
+                            <button type="button" class="btn-ghost" onclick="downloadCanteenCardIds()">Download CSV</button>
+                        </div>
+                    </div>
+                    <p id="canteen-card-id-feedback" class="text-xs" role="status" style="color:var(--muted)">IDs load when you open this section.</p>
+                    <div class="flex flex-col sm:flex-row gap-2"><input id="canteen-card-class-filter" class="input-admin" placeholder="Filter by class (optional)" aria-label="Filter card IDs by class" style="max-width:260px" oninput="renderCanteenCardIds()"><input id="canteen-card-search" class="input-admin" placeholder="Search student or card ID" aria-label="Search card IDs" oninput="renderCanteenCardIds()"></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="table-head"><tr><th>Student</th><th>Class</th><th>Student ID</th><th>Canteen card ID</th></tr></thead><tbody id="canteen-card-id-rows"><tr><td colspan="4" class="p-3 text-slate-500">Not loaded yet.</td></tr></tbody></table></div>
+                </section>
                 <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <button onclick="resetSelection()" class="btn-ghost mb-3"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg> Back</button>
@@ -1147,6 +1161,60 @@
             });
             subjectInput.addEventListener('blur', addSubjectTyped);
         })();
+
+        let canteenCardIdRows = [];
+        async function loadCanteenCardIds() {
+            const body = document.getElementById('canteen-card-id-rows');
+            const feedback = document.getElementById('canteen-card-id-feedback');
+            if (!body) return;
+            body.innerHTML = '<tr><td colspan="4" class="p-3">Loading student card IDs…</td></tr>';
+            try {
+                const response = await fetch('/{{ school_name }}/admin/canteen-cards', {credentials:'same-origin'});
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not load card IDs.');
+                canteenCardIdRows = data.students || [];
+                feedback.textContent = canteenCardIdRows.length + ' active students · ' + (data.without_card_id || 0) + ' without an ID.';
+                renderCanteenCardIds();
+            } catch (error) {
+                feedback.textContent = error.message || 'Could not load student card IDs.';
+            }
+        }
+        function renderCanteenCardIds() {
+            const body = document.getElementById('canteen-card-id-rows');
+            if (!body) return;
+            const cls = (document.getElementById('canteen-card-class-filter')?.value || '').trim().toLowerCase();
+            const term = (document.getElementById('canteen-card-search')?.value || '').trim().toLowerCase();
+            const rows = canteenCardIdRows.filter(s => (!cls || String(s.class_name || '').toLowerCase().includes(cls)) && (!term || [s.student_name,s.card_id,s.student_id].some(v => String(v ?? '').toLowerCase().includes(term))));
+            body.replaceChildren();
+            if (!rows.length) { body.innerHTML = '<tr><td colspan="4" class="p-3 text-slate-500">No matching students.</td></tr>'; return; }
+            rows.forEach(s => {
+                const tr = document.createElement('tr');
+                [s.student_name, s.class_name, s.student_id, s.card_id || 'Not issued'].forEach(value => { const td = document.createElement('td'); td.className='p-3 border-b'; td.textContent=String(value); tr.appendChild(td); });
+                body.appendChild(tr);
+            });
+        }
+        async function generateCanteenCardIds() {
+            const button = document.getElementById('generate-canteen-card-ids');
+            const feedback = document.getElementById('canteen-card-id-feedback');
+            if (!confirm('Generate five-digit IDs for active students who do not have one? Existing IDs will not change.')) return;
+            button.disabled = true;
+            try {
+                const response = await fetch('/{{ school_name }}/admin/canteen-cards/generate', {method:'POST',credentials:'same-origin'});
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not generate IDs.');
+                feedback.textContent = data.message || ('Generated ' + data.generated + ' ID(s).');
+                await loadCanteenCardIds();
+            } catch (error) { feedback.textContent = error.message || 'Could not generate IDs.'; }
+            finally { button.disabled = false; }
+        }
+        function downloadCanteenCardIds() {
+            const rows = canteenCardIdRows;
+            if (!rows.length) { alert('Load the student card IDs first.'); return; }
+            const quote = value => '"' + String(value ?? '').replace(/"/g, '""') + '"';
+            const csv = [['Student Name','Class','Student Database ID','Five-digit Canteen Card ID'], ...rows.map(s => [s.student_name,s.class_name,s.student_id,s.card_id || ''])].map(row => row.map(quote).join(',')).join('\r\n');
+            const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+            const link = document.createElement('a'); link.href=url; link.download='myschool-student-canteen-card-ids.csv'; link.click(); URL.revokeObjectURL(url);
+        }
         </script>
 
         <script>
