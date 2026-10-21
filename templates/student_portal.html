@@ -10,7 +10,7 @@
 {% else %}
 <div class="mark">S</div><div class="eyebrow">Student access</div><h1>Sign in to your school.</h1><p class="intro">Enter your Student ID. We’ll show your student record before asking for your password.</p><form id="lookup-form"><label for="student-id">Student ID</label><input id="student-id" name="student_id" inputmode="numeric" pattern="[0-9]+" maxlength="10" autocomplete="username" placeholder="Enter your Student ID" required><button class="primary" id="lookup-button" type="submit">Find student</button></form>
 <div id="student-panel" class="hidden"><div class="student"><div id="avatar" class="avatar">S</div><div><strong id="student-name"></strong><small id="student-class"></small><small>Student ID: <span id="shown-id" class="id"></span></small></div></div><form id="login-form"><input type="hidden" id="login-id" name="student_id"><label for="student-password">Password</label><input id="student-password" type="password" name="password" autocomplete="current-password" placeholder="Enter your password" required><button class="primary" id="login-button" type="submit">Sign in</button></form></div><p id="message" class="message" role="status" aria-live="polite"></p>
-{% endif %}</section><div class="foot">MYSCHOOL · Student services</div><a class="back" href="/{{ school.school_name }}/parentportal">← Back to school portal</a></main>
+{% endif %}</section><div class="foot">MYSCHOOL · Student services</div><a class="back" href="/{{ school.school_name }}/portals">← All school roles</a></main>
 <script>
 const basePath='/' + encodeURIComponent({{ school.school_name|tojson }});
 {% if not student %}
