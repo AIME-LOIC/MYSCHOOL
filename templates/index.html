@@ -195,6 +195,22 @@
         </div>
     </div>
 
+    <div id="parent-meeting-code-modal" class="hidden fixed inset-0 z-[140] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="parent-code-title">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeParentMeetingCodeModal()"></div>
+        <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700"><i class="fas fa-lock text-xl"></i></div>
+            <h3 id="parent-code-title" class="text-center text-xl font-bold text-gray-900">INAMA Y'ABABYEYI</h3>
+            <p class="mt-2 text-center text-sm text-gray-600">Enter the 4-digit project access code to continue.</p>
+            <form id="parent-meeting-code-form" class="mt-5" onsubmit="unlockParentMeeting(event)">
+                <label for="parent-meeting-code" class="mb-2 block text-sm font-semibold text-gray-700">4-digit access code</label>
+                <input id="parent-meeting-code" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required aria-describedby="parent-meeting-code-error" placeholder="••••" class="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-2xl tracking-[0.6em] focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100">
+                <p id="parent-meeting-code-error" class="mt-2 min-h-5 text-sm text-red-600" role="alert"></p>
+                <button id="parent-meeting-code-submit" type="submit" class="mt-3 w-full rounded-xl bg-green-600 px-4 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-wait disabled:opacity-60">Continue</button>
+                <button type="button" onclick="closeParentMeetingCodeModal()" class="mt-2 w-full rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200">Cancel</button>
+            </form>
+        </div>
+    </div>
+
     <div id="tour-overlay" class="hidden"></div>
     <div id="tour-popup" class="hidden">
         <p id="tour-text" class="text-gray-700 mb-4 font-medium"></p>
@@ -690,7 +706,71 @@
             tourGuideStep.classList.remove('hidden');
         }
 
+        let parentMeetingUnlocked = false;
+
+        function openParentMeetingCodeModal() {
+            const modal = document.getElementById('parent-meeting-code-modal');
+            const input = document.getElementById('parent-meeting-code');
+            document.getElementById('parent-meeting-code-error').textContent = '';
+            input.value = '';
+            modal.classList.remove('hidden');
+            setTimeout(() => input.focus(), 30);
+        }
+
+        function closeParentMeetingCodeModal() {
+            document.getElementById('parent-meeting-code-modal').classList.add('hidden');
+        }
+
+        async function unlockParentMeeting(event) {
+            event.preventDefault();
+            const input = document.getElementById('parent-meeting-code');
+            const error = document.getElementById('parent-meeting-code-error');
+            const button = document.getElementById('parent-meeting-code-submit');
+            const code = input.value.trim();
+            if (!/^[0-9]{4}$/.test(code)) {
+                error.textContent = 'Enter exactly four digits.';
+                input.focus();
+                return;
+            }
+            button.disabled = true;
+            button.textContent = 'Checking…';
+            error.textContent = '';
+            try {
+                const response = await fetch('/' + encodeURIComponent(schoolname) + '/parent-meeting/unlock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: new URLSearchParams({ code }),
+                    credentials: 'same-origin'
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || result.status !== 'success') {
+                    error.textContent = result.detail || 'Incorrect code. Please try again.';
+                    input.value = '';
+                    input.focus();
+                    return;
+                }
+                parentMeetingUnlocked = true;
+                closeParentMeetingCodeModal();
+                selectType('parent_meeting');
+            } catch (err) {
+                error.textContent = 'Could not verify the code. Check your connection and retry.';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Continue';
+            }
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !document.getElementById('parent-meeting-code-modal').classList.contains('hidden')) {
+                closeParentMeetingCodeModal();
+            }
+        });
+
         function selectType(type) {
+            if (type === 'parent_meeting' && !parentMeetingUnlocked) {
+                openParentMeetingCodeModal();
+                return;
+            }
             // If tour is running and this is not step 4, stop the tour
             if (tourStep > 0 && tourStep !== 4) endTour();
             
