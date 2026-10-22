@@ -796,9 +796,49 @@ def search_students(school_name: str, q: str = Query(..., min_length=1), db: Ses
     return [{"id": s.id, "student_name": s.student_name, "class_name": s.class_name} for s in query]
 
 
+@app.post("/{school_name}/parent-meeting/unlock")
+def unlock_parent_meeting(school_name: str, request: Request, code: str = Form(...), db: Session = Depends(get_db)):
+    """Validate the SOS parent-meeting code and issue a short-lived, signed HttpOnly cookie."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    if not re.fullmatch(r"[0-9]{4}", (code or "").strip()):
+        raise HTTPException(status_code=403, detail="Enter a valid four-digit code.")
+    # Override this default with PARENT_MEETING_ACCESS_CODE in the production environment.
+    expected_code = os.getenv("PARENT_MEETING_ACCESS_CODE", "1324").strip()
+    if not hmac.compare_digest(code.strip(), expected_code):
+        raise HTTPException(status_code=403, detail="Incorrect code. Please try again.")
+    expires = int(time.time()) + 60 * 60
+    payload = f"parent-meeting:{school_name}:{expires}"
+    signature = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
+    token = f"{payload}:{signature}"
+    response = JSONResponse({"status": "success", "valid_for_minutes": 60})
+    response.set_cookie(
+        "myschool_parent_meeting_access", token, max_age=60 * 60,
+        httponly=True, secure=request.url.scheme == "https", samesite="lax", path="/"
+    )
+    return response
+
+
+def _has_parent_meeting_access(request: Request, school_name: str) -> bool:
+    token = request.cookies.get("myschool_parent_meeting_access", "")
+    try:
+        role, school, expires, signature = token.split(":", 3)
+        payload = f"{role}:{school}:{expires}"
+        expected = hmac.new(_signing_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
+        return (
+            role == "parent-meeting" and school == school_name
+            and hmac.compare_digest(signature, expected)
+            and int(expires) >= int(time.time())
+        )
+    except (ValueError, TypeError, HTTPException):
+        return False
+
+
 @app.post("/{school_name}/visits/add")
 def add_visit(
     school_name: str,
+    request: Request,
     student_id: int = Form(...),
     visit_type: str = Form(...),
     movement_method: str | None = Form(None),
@@ -827,6 +867,9 @@ def add_visit(
 
         if visit_type not in {"visit_day", "parent_meeting"}:
             return {"status": "error", "message": "Invalid visit type"}
+
+        if visit_type == "parent_meeting" and not _has_parent_meeting_access(request, school_name):
+            raise HTTPException(status_code=403, detail="Enter the parent-meeting access code before submitting this meeting.")
 
         is_sos_school = (
             (school.school_code or "").strip().lower() == "sos"
