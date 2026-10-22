@@ -929,6 +929,9 @@ def add_visit(
         db.add(visit)
         db.commit()
         return {"status": "success", "visit_id": visit.id}
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         error_id = hashlib.sha256(f"{school_name}:{student_id}:{visit_type}:{time.time_ns()}".encode()).hexdigest()[:12]
