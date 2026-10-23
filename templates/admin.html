@@ -1292,7 +1292,7 @@
         // Extract school name from URL path
         const schoolName = window.location.pathname.split('/')[1];
         const schoolCode = "{{ school_code }}";
-        const isSOSSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolName || '').trim().toLowerCase().includes('sos');
+        const isImpactfulSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolName || '').trim().toLowerCase().includes('impactful technical high school');
 
         // --- TOAST NOTIFICATION LOGIC ---
         function showToast(message, type = 'success') {
@@ -1335,7 +1335,7 @@
             setTimeout(() => {
                 document.getElementById('loading-page').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
-                if (!isSOSSchool) {
+                if (!isImpactfulSchool) {
                     document.getElementById('btn-car-management')?.classList.add('hidden');
                     document.getElementById('nav-car-wrap')?.classList.add('hidden');
                 }
@@ -2065,8 +2065,8 @@
         }
 
         function openCarManagement() {
-            if (!isSOSSchool) {
-                showToast('Car management is only available for SOS school.', 'error');
+            if (!isImpactfulSchool) {
+                showToast('Car management is only available for Impactful Technical High School Kigali.', 'error');
                 return;
             }
             document.getElementById('choice-step').classList.add('hidden');
@@ -3126,7 +3126,7 @@
             window.goData = function (type) { setActiveNav(type); selectType(type); };
             window.goManager = function () { setActiveNav('manager'); openManager(); };
             window.goLive = function () { setActiveNav('live'); openLiveTrack(); };
-            window.goCar = function () { setActiveNav('car'); openCarManagement(); if (!isSOSSchool) setActiveNav('dashboard'); };
+            window.goCar = function () { setActiveNav('car'); openCarManagement(); if (!isImpactfulSchool) setActiveNav('dashboard'); };
             window.goProducts = function () { setActiveNav('products'); openProductsAdmin(); };
             window.goTeachers = function () { setActiveNav('teachers'); openTeachers(); };
             window.goVault = function () { setActiveNav('vault'); openVault(); };
