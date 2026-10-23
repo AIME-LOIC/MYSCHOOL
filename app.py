@@ -539,6 +539,13 @@ def portal_status(school_name: str, db: Session = Depends(get_db)):
 # In-memory school cache to avoid repeated DB lookups
 _school_cache: dict = {}
 
+def _is_impactful_school(school: School) -> bool:
+    """Identify Impactful Technical High School Kigali, retaining its legacy SOS code."""
+    school_name = (getattr(school, "school_name", "") or "").strip().lower()
+    school_code = (getattr(school, "school_code", "") or "").strip().lower()
+    return "impactful technical high school" in school_name or school_code == "sos"
+
+
 def _get_school(school_name: str, db: Session):
     if school_name not in _school_cache:
         school = db.query(School).filter(School.school_name == school_name).first()
@@ -798,7 +805,7 @@ def search_students(school_name: str, q: str = Query(..., min_length=1), db: Ses
 
 @app.post("/{school_name}/parent-meeting/unlock")
 def unlock_parent_meeting(school_name: str, request: Request, code: str = Form(...), db: Session = Depends(get_db)):
-    """Validate the SOS parent-meeting code and issue a short-lived, signed HttpOnly cookie."""
+    """Validate the parent-meeting code and issue a short-lived, signed HttpOnly cookie."""
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
@@ -871,14 +878,11 @@ def add_visit(
         if visit_type == "parent_meeting" and not _has_parent_meeting_access(request, school_name):
             raise HTTPException(status_code=403, detail="Enter the parent-meeting access code before submitting this meeting.")
 
-        is_sos_school = (
-            (school.school_code or "").strip().lower() == "sos"
-            or "sos" in (school.school_name or "").strip().lower()
-        )
+        is_impactful_school = _is_impactful_school(school)
 
         movement_method_clean = None
         plate_number_clean = None
-        if is_sos_school:
+        if is_impactful_school:
             movement_method_clean = (movement_method or "").strip().lower()
             if movement_method_clean not in {"with_car", "without_car"}:
                 return {"status": "error", "message": "Please select movement method"}
@@ -1350,12 +1354,9 @@ def get_car_management_data(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    is_sos_school = (
-        (school.school_code or "").strip().lower() == "sos"
-        or "sos" in (school.school_name or "").strip().lower()
-    )
-    if not is_sos_school:
-        return {"status": "error", "message": "Car management is available only for SOS school"}
+    is_impactful_school = _is_impactful_school(school)
+    if not is_impactful_school:
+        return {"status": "error", "message": "Car management is available only for Impactful Technical High School Kigali"}
 
     target_date = datetime.now().date()
     if visit_date:
@@ -1399,12 +1400,9 @@ def assign_car_plate(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    is_sos_school = (
-        (school.school_code or "").strip().lower() == "sos"
-        or "sos" in (school.school_name or "").strip().lower()
-    )
-    if not is_sos_school:
-        return {"status": "error", "message": "Car management is available only for SOS school"}
+    is_impactful_school = _is_impactful_school(school)
+    if not is_impactful_school:
+        return {"status": "error", "message": "Car management is available only for Impactful Technical High School Kigali"}
 
     visit = db.query(Visit).join(Student).filter(
         Visit.id == visit_id,
