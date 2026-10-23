@@ -67,7 +67,7 @@
             window.location.href = parentPortalUrl;
           }
         });
-        const icon = document.createElement('div'); icon.className='school-icon'; const schoolName=String(s.school_name || '').trim(); const schoolCode=String(s.school_code || '').trim(); const isSos=/\bsos\b/i.test(schoolName) || /^sos$/i.test(schoolCode); if(isSos){icon.classList.add('sos-logo');const logo=document.createElement('img');logo.src='/static/sos.webp';logo.alt='SOS school logo';logo.loading='lazy';icon.appendChild(logo);}else{icon.textContent=schoolName.charAt(0).toUpperCase() || 'S';}
+        const icon = document.createElement('div'); icon.className='school-icon'; const schoolName=String(s.school_name || '').trim(); const schoolCode=String(s.school_code || '').trim(); const isSos=/\bsos\b/i.test(schoolName) && !/impactful technical high school/i.test(schoolName); if(isSos){icon.classList.add('sos-logo');const logo=document.createElement('img');logo.src='/static/sos.webp';logo.alt='SOS school logo';logo.loading='lazy';icon.appendChild(logo);}else{icon.textContent=schoolName.charAt(0).toUpperCase() || 'S';}
         const title = document.createElement('h2'); title.textContent=s.school_name || 'School';
         const meta = document.createElement('div'); meta.className='meta'; meta.textContent='School code: ' + (s.school_code || '—');
         const open = document.createElement('div'); open.className='open';
