@@ -608,22 +608,33 @@ def robots_txt():
 
 @app.get("/sitemap.xml", include_in_schema=False)
 def sitemap_xml(db: Session = Depends(get_db)):
-    """List canonical public discovery pages; exclude account and operational pages."""
+    """Generate a standards-compliant XML sitemap for public discovery pages."""
+    import xml.etree.ElementTree as ET
     from urllib.parse import quote
-    urls = ["https://myschool.1percent.rw/"]
-    schools = db.query(School).filter(School.is_active == 1).order_by(School.school_name).all()
+
+    namespace = "http://www.sitemaps.org/schemas/sitemap/0.9"
+    ET.register_namespace("", namespace)
+    root = ET.Element(f"{{{namespace}}}urlset")
+
+    def add_url(path: str) -> None:
+        url_element = ET.SubElement(root, f"{{{namespace}}}url")
+        location = ET.SubElement(url_element, f"{{{namespace}}}loc")
+        location.text = f"https://myschool.1percent.rw{path}"
+
+    add_url("/")
+    schools = (
+        db.query(School)
+        .filter(School.is_active == 1)
+        .order_by(School.school_name)
+        .all()
+    )
     for school in schools:
-        urls.append(f"https://myschool.1percent.rw/{quote(school.school_name, safe='')}/portals")
-    entries = "\n".join(
-        f"  <url><loc>{url}</loc></url>" for url in urls
-    )
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"{entries}\n"
-        '</urlset>'
-    )
-    return Response(content=xml, media_type="application/xml; charset=utf-8")
+        # URL-encode the school name as one path segment; ElementTree XML-escapes it.
+        school_segment = quote(school.school_name, safe="")
+        add_url(f"/{school_segment}/portals")
+
+    xml_bytes = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+    return Response(content=xml_bytes, media_type="application/xml")
 
 
 @app.get("/", response_class=HTMLResponse)
