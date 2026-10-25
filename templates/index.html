@@ -173,10 +173,7 @@
             <input type="text" id="search-input" placeholder="ANDIKA AMAZINA Y'UMWANA..." oninput="searchStudents()"
                     class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4 transition duration-150 ease-in-out">
 
-            <div id="student-results" class="student-list max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4">
-                <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">KANDA KU  AMAZINA Y'UMWANA</p>
-            </div>
-
+            <div id="student-results" class="student-list hidden max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4"></div>
             <div id="parent-meeting-section" class="hidden border border-green-100 bg-green-50 rounded-lg p-4 mb-4 space-y-3">
                 <p class="font-semibold text-gray-700">Parent / Guardian details</p>
                 <input id="parent-name" type="text" maxlength="120" autocomplete="name" required oninput="validateSubmitState()" placeholder="Parent full name" class="w-full border rounded-lg px-3 py-2 bg-white">
@@ -705,7 +702,7 @@
             selectedType = '';
             selectedStudentId = null;
             document.getElementById('search-input').value = '';
-            document.getElementById('student-results').innerHTML = '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
+            document.getElementById('student-results').innerHTML = '';
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('feedback').innerText = '';
             document.getElementById('movement-method').value = '';
@@ -842,69 +839,60 @@
         async function searchStudents() {
     const query = document.getElementById('search-input').value.trim();
     const resultsDiv = document.getElementById('student-results');
-
     resultsDiv.innerHTML = '';
+    resultsDiv.classList.add('hidden');
     selectedStudentId = null;
+    selectedStudentName = '';
     validateSubmitState();
+    if (query.length < 2) return;
 
-    if (query.length < 2) {
-        resultsDiv.innerHTML = '<p class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
-        return;
-    }
-
-    resultsDiv.innerHTML = '<p class="p-3 text-center text-blue-500 animate-pulse">Searching...</p>';
-
+    resultsDiv.classList.remove('hidden');
     let data = [];
+    let isOffline = false;
     try {
         const res = await fetch(`/${schoolname}/students/search?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error('Student search failed');
         data = await res.json();
-        // Update local DB with fresh results
         if (data.length) await saveStudentsToDB(data);
     } catch {
-        // Offline: search IndexedDB
+        isOffline = true;
         data = await searchStudentsFromDB(query);
-        if (data.length) {
-            resultsDiv.innerHTML = '<p class="px-3 pt-2 text-xs text-amber-500">Offline — showing cached results</p>';
-        }
     }
-
-    if (!data.length) {
-        resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">No students found matching your query.</p>';
-        return;
+    if (document.getElementById('search-input').value.trim() !== query || selectedStudentId) return;
+    if (!data.length) { resultsDiv.classList.add('hidden'); return; }
+    if (isOffline) {
+        const offlineLabel = document.createElement('p');
+        offlineLabel.className = 'px-3 pt-2 text-xs text-amber-500';
+        offlineLabel.textContent = 'Offline — showing cached results';
+        resultsDiv.appendChild(offlineLabel);
     }
-
-    const existing = resultsDiv.querySelector('p.text-amber-500');
-    if (!existing) resultsDiv.innerHTML = '';
     data.forEach(student => {
         const div = document.createElement('div');
         div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
         div.setAttribute('data-student-id', student.id);
-        div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span> <span class="ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800">Student ID: ${student.id}</span>`;
+        const name = document.createElement('span');
+        name.className = 'font-medium';
+        name.textContent = student.student_name || '';
+        const className = document.createElement('span');
+        className.className = 'text-sm text-gray-500';
+        className.textContent = ` (${student.class_name || ''})`;
+        const studentId = document.createElement('span');
+        studentId.className = 'ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800';
+        studentId.textContent = `Student ID: ${student.id}`;
+        div.append(name, className, studentId);
         div.onclick = () => selectStudent(student.id, div);
         resultsDiv.appendChild(div);
     });
 }
 
-
         function selectStudent(id, element) {
             selectedStudentId = id;
             selectedStudentName = element.querySelector('.font-medium')?.textContent?.trim() || '';
-            
-            document.querySelectorAll('.student-item').forEach(el => {
-                el.classList.remove('bg-blue-200', 'border-blue-400', 'font-semibold');
-                el.classList.add('hover:bg-blue-50', 'bg-white');
-            });
-            element.classList.remove('hover:bg-blue-50', 'bg-white');
-            element.classList.add('bg-blue-200', 'border-blue-400', 'font-semibold');
-
+            const resultsDiv = document.getElementById('student-results');
+            resultsDiv.innerHTML = '';
+            resultsDiv.classList.add('hidden');
             validateSubmitState();
-            
-            // If tour is active and we are on the search step, advance the tour
-            if (tourStep === 5) {
-                // If user correctly clicked a student after searching, advance
-                tourStep++; 
-                nextTourStep(); 
-            }
+            if (tourStep === 5) { tourStep++; nextTourStep(); }
         }
 
         async function submitVisit() {
@@ -1020,8 +1008,8 @@
         document.getElementById('parent-relationship').value = '';
         document.getElementById('parent-phone').value = '';
         document.getElementById('parent-meeting-section').classList.add('hidden');
-        document.getElementById('student-results').innerHTML =
-            '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
+        document.getElementById('student-results').innerHTML = '';
+        document.getElementById('student-results').classList.add('hidden');
         validateSubmitState();
         if (shouldShowTicketPopup && !wentOffline) {
             document.getElementById('student-ticket-name').textContent = ticketStudentName || 'Student';
