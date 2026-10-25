@@ -13,12 +13,17 @@ if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set. Please add it to your .env file.")
 
 # Configure Supabase PostgreSQL connection
+# Vercel runs many short-lived serverless instances. Keep each instance's
+# connection footprint small: Supabase session-mode poolers commonly cap the
+# total number of client connections, and a large per-instance pool exhausts it.
 engine = create_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=1,
+    max_overflow=0,
+    pool_timeout=5,
+    pool_recycle=300,
     connect_args={
         "sslmode": "require",
     }
