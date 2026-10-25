@@ -840,13 +840,17 @@
     const query = document.getElementById('search-input').value.trim();
     const resultsDiv = document.getElementById('student-results');
     resultsDiv.innerHTML = '';
-    resultsDiv.classList.add('hidden');
     selectedStudentId = null;
     selectedStudentName = '';
     validateSubmitState();
-    if (query.length < 2) return;
 
+    // Hide the results card only when the search input is empty.
+    if (!query) {
+        resultsDiv.classList.add('hidden');
+        return;
+    }
     resultsDiv.classList.remove('hidden');
+
     let data = [];
     let isOffline = false;
     try {
@@ -858,14 +862,25 @@
         isOffline = true;
         data = await searchStudentsFromDB(query);
     }
+
+    // Ignore stale results if the user has changed the query while this request was running.
     if (document.getElementById('search-input').value.trim() !== query || selectedStudentId) return;
-    if (!data.length) { resultsDiv.classList.add('hidden'); return; }
+
     if (isOffline) {
         const offlineLabel = document.createElement('p');
         offlineLabel.className = 'px-3 pt-2 text-xs text-amber-500';
         offlineLabel.textContent = 'Offline — showing cached results';
         resultsDiv.appendChild(offlineLabel);
     }
+
+    if (!data.length) {
+        const noResults = document.createElement('p');
+        noResults.className = 'p-3 text-sm text-gray-500';
+        noResults.textContent = 'No students found. Keep typing or check the spelling.';
+        resultsDiv.appendChild(noResults);
+        return;
+    }
+
     data.forEach(student => {
         const div = document.createElement('div');
         div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
