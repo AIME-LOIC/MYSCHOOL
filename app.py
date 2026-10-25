@@ -914,8 +914,8 @@ def add_visit(
         if visit_type == "parent_meeting":
             if not parent_name_clean:
                 return {"status": "error", "message": "Parent name is required for a parent meeting"}
-            if relationship_clean not in {"father", "mother", "other"}:
-                return {"status": "error", "message": "Select father, mother, or other"}
+            if relationship_clean not in {"father", "mother", "brother", "sister", "other"}:
+                return {"status": "error", "message": "Select father, mother, brother, sister, or other"}
         else:
             parent_name_clean = relationship_clean = parent_phone_clean = None
 
@@ -2733,8 +2733,8 @@ def update_visit(
         visit.parent_name = parent_name.strip()[:120] or None
     if parent_relationship is not None:
         relation = parent_relationship.strip().lower()
-        if relation and relation not in ("father", "mother", "other"):
-            raise HTTPException(status_code=400, detail="Relationship must be father, mother or other (or empty).")
+        if relation and relation not in ("father", "mother", "brother", "sister", "other"):
+            raise HTTPException(status_code=400, detail="Relationship must be father, mother, brother, sister or other (or empty).")
         visit.parent_relationship = relation or None
     if parent_phone is not None:
         visit.parent_phone = parent_phone.strip()[:30] or None
