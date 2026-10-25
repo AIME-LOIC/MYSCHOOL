@@ -792,8 +792,9 @@ def admin_login(
             },
             status_code=503,
         )
-    expected_user = school_name
-    if username == expected_user and hmac.compare_digest(password, expected_pass):
+    normalized_school = " ".join(school_name.split()).casefold()
+    expected_user = "sos" if normalized_school == "impactful technical high school kigali" else school_name
+    if username.strip() == expected_user and hmac.compare_digest(password, expected_pass):
         token = _make_token(school_name)
         response = RedirectResponse(f"/{school_name}/admin", status_code=302)
         response.set_cookie(
