@@ -916,6 +916,8 @@ def add_visit(
                 return {"status": "error", "message": "Parent name is required for a parent meeting"}
             if relationship_clean not in {"father", "mother", "brother", "sister", "other"}:
                 return {"status": "error", "message": "Select father, mother, brother, sister, or other"}
+            if not parent_phone_clean:
+                return {"status": "error", "message": "Phone number is required for a parent meeting"}
         else:
             parent_name_clean = relationship_clean = parent_phone_clean = None
 
