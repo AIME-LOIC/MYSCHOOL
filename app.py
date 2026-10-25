@@ -589,6 +589,43 @@ def create_support_request(
 
 
 
+@app.get("/robots.txt", include_in_schema=False)
+def robots_txt():
+    """Publish crawl guidance for public pages while keeping operational endpoints out of search."""
+    content = (
+        "User-agent: *\\n"
+        "Allow: /\\n"
+        "Disallow: /myadmin\\n"
+        "Disallow: /docs\\n"
+        "Disallow: /redoc\\n"
+        "Disallow: /openapi.json\\n"
+        "Disallow: /support/requests\\n"
+        "Disallow: /export/\\n"
+        "Sitemap: https://myschool.1percent.rw/sitemap.xml\\n"
+    )
+    return Response(content=content, media_type="text/plain; charset=utf-8")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+def sitemap_xml(db: Session = Depends(get_db)):
+    """List canonical public discovery pages; exclude account and operational pages."""
+    from urllib.parse import quote
+    urls = ["https://myschool.1percent.rw/"]
+    schools = db.query(School).filter(School.is_active == 1).order_by(School.school_name).all()
+    for school in schools:
+        urls.append(f"https://myschool.1percent.rw/{quote(school.school_name, safe='')}/portals")
+    entries = "\\n".join(
+        f"  <url><loc>{url}</loc></url>" for url in urls
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n'
+        f"{entries}\\n"
+        '</urlset>'
+    )
+    return Response(content=xml, media_type="application/xml; charset=utf-8")
+
+
 @app.get("/", response_class=HTMLResponse)
 def school_selector(request: Request):
     """Public home page: show the school selector instead of a blank or missing route."""
