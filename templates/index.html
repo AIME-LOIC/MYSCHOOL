@@ -896,9 +896,17 @@
         function selectStudent(id, element) {
             selectedStudentId = id;
             selectedStudentName = element.querySelector('.font-medium')?.textContent?.trim() || '';
+
+            // Replace the search query with the chosen student's full name.
+            const searchInput = document.getElementById('search-input');
+            searchInput.value = selectedStudentName;
+            searchInput.setAttribute('aria-label', 'Selected student: ' + selectedStudentName);
+
+            // Close the results list so only the selected student remains shown in the input.
             const resultsDiv = document.getElementById('student-results');
             resultsDiv.innerHTML = '';
             resultsDiv.classList.add('hidden');
+
             validateSubmitState();
             if (tourStep === 5) { tourStep++; nextTourStep(); }
         }
