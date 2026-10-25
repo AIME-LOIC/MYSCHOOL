@@ -178,7 +178,8 @@
                 <select id="parent-relationship" class="w-full border rounded-lg px-3 py-2 bg-white">
                     <option value="">Select relationship</option><option value="father">Father</option><option value="mother">Mother</option><option value="brother">Brother</option><option value="sister">Sister</option><option value="other">Other</option>
                 </select>
-                <input id="parent-phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Phone number (optional)" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <label for="parent-phone" class="block text-sm font-medium text-gray-700">Phone number <span class="text-red-600" aria-hidden="true">*</span></label>
+                <input id="parent-phone" type="tel" maxlength="30" autocomplete="tel" required aria-required="true" oninput="validateSubmitState()" placeholder="Enter phone number (required)" class="w-full border rounded-lg px-3 py-2 bg-white">
             </div>
             <div id="movement-section" class="hidden border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
                 <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">UFITE IKINYABIZIGA</label>
@@ -691,6 +692,7 @@
             document.getElementById('parent-name').value = '';
             document.getElementById('parent-relationship').value = '';
             document.getElementById('parent-phone').value = '';
+            document.getElementById('parent-phone').setCustomValidity('');
             document.getElementById('parent-meeting-section').classList.add('hidden');
             if (isImpactfulSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
@@ -899,8 +901,8 @@
         payload.parent_name = document.getElementById('parent-name').value.trim();
         payload.parent_relationship = document.getElementById('parent-relationship').value;
         payload.parent_phone = document.getElementById('parent-phone').value.trim();
-        if (!payload.parent_name || !payload.parent_relationship) {
-            feedbackEl.innerText = 'Enter the parent name and select their relationship.';
+        if (!payload.parent_name || !payload.parent_relationship || !payload.parent_phone) {
+            feedbackEl.innerText = 'Enter the parent name, select their relationship, and provide a phone number.';
             feedbackEl.classList.remove('text-green-600'); feedbackEl.classList.add('text-red-500');
             submitBtn.innerText = originalText; submitBtn.disabled = false; submitBtn.classList.remove('animate-pulse'); return;
         }
@@ -1076,6 +1078,13 @@ function validateSubmitState() {
     const submitBtn = document.getElementById('submit-btn');
     let canSubmit = !!selectedStudentId && !!selectedType;
     const plateErrorEl = document.getElementById('plate-error');
+    if (canSubmit && selectedType === 'parent_meeting') {
+        const parentName = document.getElementById('parent-name').value.trim();
+        const parentRelationship = document.getElementById('parent-relationship').value;
+        const parentPhone = document.getElementById('parent-phone').value.trim();
+        if (!parentName || !parentRelationship || !parentPhone) canSubmit = false;
+    }
+
     if (canSubmit && isImpactfulSchool) {
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
