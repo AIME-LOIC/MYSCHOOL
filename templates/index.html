@@ -84,6 +84,11 @@
         }
         .toast-enter { animation: slideUp 0.35s ease-out forwards; }
         .toast-exit { animation: slideDown 0.35s ease-out forwards; }
+        @keyframes ticket-ring-spin { to { transform: rotate(360deg); } }
+        @keyframes ticket-pop-in { 0% { opacity: 0; transform: scale(.72); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
+        .ticket-ring { animation: ticket-ring-spin 1.15s linear infinite; }
+        .ticket-icon-pop { animation: ticket-pop-in .45s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .ticket-ring { animation-duration: 4s; } .ticket-icon-pop { animation: none; } }
                 /* Logo image sizing */
                 .logo-img { height: 4rem; width: auto; }
                 @media (min-width: 768px) { .logo-img { height: 6rem; } }
@@ -229,6 +234,21 @@
             <button id="tour-next-btn" onclick="nextTourStep()" class="py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg text-sm transition duration-150 ease-in-out">
                 Next
             </button>
+        </div>
+    </div>
+
+    <div id="student-ticket-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center p-4" role="status" aria-live="polite" aria-labelledby="student-ticket-name">
+        <div class="absolute inset-0 bg-slate-950/65 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-sm rounded-3xl bg-white px-7 py-8 text-center shadow-2xl">
+            <div class="relative mx-auto mb-6 flex h-32 w-32 items-center justify-center">
+                <div class="ticket-ring absolute inset-0 rounded-full border-[5px] border-emerald-100 border-t-emerald-600 border-r-emerald-400"></div>
+                <div class="ticket-icon-pop flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <i class="fas fa-ticket-alt text-4xl" aria-hidden="true"></i>
+                </div>
+            </div>
+            <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">MYSCHOOL · Ticket</p>
+            <h2 id="student-ticket-name" class="mt-3 break-words text-2xl font-extrabold text-slate-900"></h2>
+            <p class="mt-2 text-sm text-slate-500">Your request has been recorded.</p>
         </div>
     </div>
 
@@ -471,6 +491,8 @@
         let schoolname = "{{ school_name }}";
         let schoolCode = "{{ school_code }}";
         const isImpactfulSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('impactful technical high school');
+        const isTargetImpactfulSchool = (schoolname || '').trim().replace(/\\s+/g, ' ').toLowerCase() === 'impactful technical high school kigali';
+        let selectedStudentName = '';
         const donationUSSDTemplates = {
             airtel: "*182*8*1*0795802380*{amount}#",
             mtn: "*182*8*1*0795802380*{amount}#"
@@ -866,6 +888,7 @@
 
         function selectStudent(id, element) {
             selectedStudentId = id;
+            selectedStudentName = element.querySelector('.font-medium')?.textContent?.trim() || '';
             
             document.querySelectorAll('.student-item').forEach(el => {
                 el.classList.remove('bg-blue-200', 'border-blue-400', 'font-semibold');
@@ -924,6 +947,8 @@
     }
 
     let shouldShowDonationModal = false;
+    let shouldShowTicketPopup = false;
+    const ticketStudentName = selectedStudentName || document.querySelector('[data-student-id="' + selectedStudentId + '"] .font-medium')?.textContent?.trim() || '';
     let wentOffline = false;
     let submissionFailed = false;
 
@@ -947,6 +972,7 @@
             feedbackEl.classList.remove('text-red-500');
             feedbackEl.classList.add('text-green-600');
             shouldShowDonationModal = isImpactfulSchool;
+            shouldShowTicketPopup = isTargetImpactfulSchool;
         } else {
             feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
             feedbackEl.classList.remove('text-green-600');
@@ -985,6 +1011,7 @@
             submitBtn.classList.remove('animate-pulse');
         }
         selectedStudentId = null;
+        selectedStudentName = '';
         document.getElementById('search-input').value = '';
         document.getElementById('movement-method').value = '';
         document.getElementById('plate-number').value = '';
@@ -996,7 +1023,15 @@
         document.getElementById('student-results').innerHTML =
             '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
         validateSubmitState();
-        if (shouldShowDonationModal) {
+        if (shouldShowTicketPopup && !wentOffline) {
+            document.getElementById('student-ticket-name').textContent = ticketStudentName || 'Student';
+            document.getElementById('student-ticket-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('student-ticket-modal').classList.add('hidden');
+                if (shouldShowDonationModal) openDonationModal();
+                else goBackToChoice();
+            }, 2200);
+        } else if (shouldShowDonationModal) {
             setTimeout(openDonationModal, 500);
         } else {
             setTimeout(goBackToChoice, wentOffline ? 2000 : 1500);
