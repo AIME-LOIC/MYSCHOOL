@@ -593,15 +593,15 @@ def create_support_request(
 def robots_txt():
     """Publish crawl guidance for public pages while keeping operational endpoints out of search."""
     content = (
-        "User-agent: *\\n"
-        "Allow: /\\n"
-        "Disallow: /myadmin\\n"
-        "Disallow: /docs\\n"
-        "Disallow: /redoc\\n"
-        "Disallow: /openapi.json\\n"
-        "Disallow: /support/requests\\n"
-        "Disallow: /export/\\n"
-        "Sitemap: https://myschool.1percent.rw/sitemap.xml\\n"
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /myadmin\n"
+        "Disallow: /docs\n"
+        "Disallow: /redoc\n"
+        "Disallow: /openapi.json\n"
+        "Disallow: /support/requests\n"
+        "Disallow: /export/\n"
+        "Sitemap: https://myschool.1percent.rw/sitemap.xml\n"
     )
     return Response(content=content, media_type="text/plain; charset=utf-8")
 
@@ -614,13 +614,13 @@ def sitemap_xml(db: Session = Depends(get_db)):
     schools = db.query(School).filter(School.is_active == 1).order_by(School.school_name).all()
     for school in schools:
         urls.append(f"https://myschool.1percent.rw/{quote(school.school_name, safe='')}/portals")
-    entries = "\\n".join(
+    entries = "\n".join(
         f"  <url><loc>{url}</loc></url>" for url in urls
     )
     xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n'
-        f"{entries}\\n"
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{entries}\n"
         '</urlset>'
     )
     return Response(content=xml, media_type="application/xml; charset=utf-8")
