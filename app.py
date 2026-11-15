@@ -547,9 +547,10 @@ def _is_impactful_school(school: School) -> bool:
 
 
 def _is_gs_gisozi1(school: School) -> bool:
-    """Identify GS Gisozi 1 for its dedicated school-specific experience."""
+    """Identify GS Gisozi 1, including the Roman-numeral spelling used in System Admin."""
     school_name = " ".join((getattr(school, "school_name", "") or "").split()).casefold()
-    return school_name in {"gs gisozi 1", "g.s. gisozi 1", "g.s gisozi 1"}
+    normalized = re.sub(r"[^a-z0-9]+", " ", school_name).strip()
+    return normalized in {"gs gisozi 1", "gs gisozi i", "g s gisozi 1", "g s gisozi i"}
 
 
 def _get_school(school_name: str, db: Session):
