@@ -546,6 +546,12 @@ def _is_impactful_school(school: School) -> bool:
     return "impactful technical high school" in school_name or school_code == "sos"
 
 
+def _is_gs_gisozi1(school: School) -> bool:
+    """Identify GS Gisozi 1 for its dedicated school-specific experience."""
+    school_name = " ".join((getattr(school, "school_name", "") or "").split()).casefold()
+    return school_name in {"gs gisozi 1", "g.s. gisozi 1", "g.s gisozi 1"}
+
+
 def _get_school(school_name: str, db: Session):
     if school_name not in _school_cache:
         school = db.query(School).filter(School.school_name == school_name).first()
@@ -732,7 +738,8 @@ def school_portal_hub(school_name: str, request: Request, db: Session = Depends(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    return templates.TemplateResponse("role_hub.html", {
+    hub_template = "gs_gisozi1_portal_hub.html" if _is_gs_gisozi1(school) else "role_hub.html"
+    return templates.TemplateResponse(hub_template, {
         "request": request,
         "school": school,
         "school_name": school_name,
