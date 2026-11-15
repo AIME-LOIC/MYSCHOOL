@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#14532d">
-  <title>GS Gisozi 1 | MYSCHOOL</title>
-  <meta name="description" content="The official MYSCHOOL portal for GS Gisozi 1 parents, teachers, and school administrators.">
+  <title>MYSCHOOL Rwanda | School Portals and Student Services</title>
+  <meta name="description" content="MYSCHOOL is a school portal platform for families, students, teachers, and school administrators in Rwanda. Find your school and access its online services.">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="https://myschool.1percent.rw/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MYSCHOOL">
   <meta property="og:title" content="MYSCHOOL Rwanda | School Portals and Student Services">
-  <meta property="og:description" content="Access parent, teacher, and school administration services for GS Gisozi 1.">
+  <meta property="og:description" content="Find your school on MYSCHOOL to access parent, student, teacher, and school services online.">
   <meta property="og:url" content="https://myschool.1percent.rw/">
   <script type="application/ld+json">
   {
@@ -45,14 +45,14 @@
   </header>
   <main>
     <div class="eyebrow">Welcome to MYSCHOOL</div>
-    <h1>One school. One connected community.</h1>
-    <p class="intro">Welcome to GS Gisozi 1. Parents, teachers, and school administrators can access their dedicated school workspace from here.</p>
+    <h1>First, select your child's school.</h1>
+    <p class="intro">Choose the school your student attends. You'll then enter that school's portal and search for your student by name. Each student has a unique Student ID used to identify their record.</p>
     <div class="toolbar">
       <input id="school-search" class="search" type="search" placeholder="Search schools by name or code…" autocomplete="off" aria-label="Search schools">
       <div id="school-count" class="count" aria-live="polite">Loading schools…</div>
     </div>
     <section id="school-grid" class="grid" aria-live="polite"><div class="state">Loading registered schools…</div></section>
-    <div class="footer"><div>Powered by <strong>1percent</strong></div><div>GS Gisozi 1 · Powered by 1percent</div></div>
+    <div class="footer"><div>Powered by <strong>1percent</strong></div><div>Choose a school to continue</div></div>
   </main>
   <script>
     const grid = document.getElementById('school-grid');
@@ -100,11 +100,11 @@
     fetch('/myadmin/schools')
       .then(r => { if(!r.ok) throw new Error('Could not load schools'); return r.json(); })
       .then(data => {
-        schools = (data.schools || []).filter(s => Number(s.is_active) === 1 && /gisozi/i.test(String(s.school_name || '')));
+        schools = (data.schools || []).filter(s => Number(s.is_active) === 1);
         renderSchools();
-        if (!schools.length) { grid.innerHTML='<div class="state">GS Gisozi 1 is not yet registered as an active school. Please contact the system administrator.</div>'; count.textContent='0 schools'; }
+        if (!schools.length) { grid.innerHTML='<div class="state">No active schools are registered yet. Please contact the school administrator.</div>'; count.textContent='0 schools'; }
       })
-      .catch(() => { grid.innerHTML='<div class="state">GS Gisozi 1 could not be loaded. Please refresh in a moment or contact the administrator.</div>'; count.textContent='Unable to load schools'; });
+      .catch(() => { grid.innerHTML='<div class="state">Schools could not be loaded. Please refresh in a moment or contact the administrator.</div>'; count.textContent='Unable to load schools'; });
   </script>
 </body>
 </html>
