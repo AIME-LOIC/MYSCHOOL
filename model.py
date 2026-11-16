@@ -163,6 +163,38 @@ class TimetableSlot(Base):
     teacher_id = Column(Integer, index=True, nullable=True)
 
 
+class AttendanceRecord(Base):
+    """Daily student attendance recorded by a teacher or gatekeeper (GS Gisozi 1).
+    One row per student per school day; a second scan updates the same row."""
+    __tablename__ = "attendance_records"
+    __table_args__ = (
+        UniqueConstraint("school_id", "student_id", "attendance_date", name="uq_attendance_school_student_date"),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
+    attendance_date = Column(Date, nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="present")   # present | late | absent
+    method = Column(String(20), nullable=False, default="manual")    # qr | manual
+    recorded_by = Column(String(160), nullable=True)                 # staff member who validated it
+    recorded_role = Column(String(20), nullable=True)                # teacher | gatekeeper
+    note = Column(String(300), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Gatekeeper(Base):
+    """Gate staff login used by the GS Gisozi 1 attendance station."""
+    __tablename__ = "gatekeepers"
+    __table_args__ = (UniqueConstraint("school_id", "username", name="uq_gatekeeper_school_username"),)
+    id = Column(Integer, primary_key=True, index=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=False, index=True)
+    full_name = Column(String(120), nullable=False)
+    username = Column(String(80), nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    is_active = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class Teacher(Base):
     """School teacher login; teaches one or more subjects in one or more classes."""
     __tablename__ = "teachers"

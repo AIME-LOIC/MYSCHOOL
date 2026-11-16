@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#14532d">
-  <title>MYSCHOOL Rwanda | School Portals and Student Services</title>
+  <meta name="theme-color" content="#123a2b">
+  <title>MYSCHOOL Rwanda · School portals and student services</title>
   <meta name="description" content="MYSCHOOL is a school portal platform for families, students, teachers, and school administrators in Rwanda. Find your school and access its online services.">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="https://myschool.1percent.rw/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MYSCHOOL">
-  <meta property="og:title" content="MYSCHOOL Rwanda | School Portals and Student Services">
+  <meta property="og:title" content="MYSCHOOL Rwanda · School portals and student services">
   <meta property="og:description" content="Find your school on MYSCHOOL to access parent, student, teacher, and school services online.">
   <meta property="og:url" content="https://myschool.1percent.rw/">
+  <link rel="stylesheet" href="/static/myschool-ui.css">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -24,87 +25,244 @@
   }
   </script>
   <style>
-    :root{color-scheme:light;--green:#166534;--green-dark:#14532d;--lime:#a3e635;--ink:#17251c;--muted:#647067;--line:#e4ebe5;--surface:#f6f9f6}
-    *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--surface);color:var(--ink)}
-    .topbar{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,6vw,88px)}
-    .brand{display:flex;align-items:center;font-weight:800;letter-spacing:-.04em;font-size:22px}.brand-logo{height:34px;width:auto;max-width:160px;object-fit:contain}.school-icon img{width:100%;height:100%;object-fit:contain;border-radius:inherit;background:#fff;padding:3px}.school-icon.sos-logo{background:#fff;border:1px solid var(--line);overflow:hidden;padding:0}
-    .top-note{font-size:13px;color:var(--muted)}
-    main{max-width:1080px;margin:0 auto;padding:58px 24px 76px}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--green);background:#e9f7e9;border:1px solid #d7eed8;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}
-    h1{font-size:clamp(34px,5vw,54px);line-height:1.05;letter-spacing:-.055em;margin:20px 0 14px;max-width:700px}.intro{font-size:16px;line-height:1.7;color:var(--muted);max-width:640px;margin:0}
-    .toolbar{display:flex;gap:12px;align-items:center;margin:32px 0 18px}.search{width:100%;max-width:430px;border:1px solid #d7e1d8;background:white;border-radius:12px;padding:13px 15px;font-size:14px;outline:none}.search:focus{border-color:var(--green);box-shadow:0 0 0 3px #16653418}
-    .count{font-size:13px;color:var(--muted);white-space:nowrap}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.school{background:#fff;border:1px solid var(--line);border-radius:17px;padding:21px;text-decoration:none;color:inherit;min-height:174px;display:flex;flex-direction:column;transition:transform .16s,border-color .16s,box-shadow .16s}.school:hover{transform:translateY(-3px);border-color:#9ac89e;box-shadow:0 12px 30px #163c2010}.school-icon{width:43px;height:43px;display:grid;place-items:center;border-radius:13px;background:#eaf6eb;color:var(--green);font-weight:800;font-size:18px}.school h2{font-size:17px;letter-spacing:-.02em;margin:17px 0 5px;overflow-wrap:anywhere}.school .meta{font-size:12px;color:var(--muted)}.open{margin-top:auto;padding-top:17px;display:flex;justify-content:space-between;align-items:center;color:var(--green);font-size:13px;font-weight:750}
-    .state{grid-column:1/-1;background:white;border:1px dashed #cad8cc;border-radius:14px;padding:28px;color:var(--muted);text-align:center}.footer{display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line);margin-top:46px;padding-top:20px;color:var(--muted);font-size:12px}.footer strong{color:var(--green)}
-    @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}main{padding-top:42px}.top-note{display:none}}
-    @media(max-width:520px){.grid{grid-template-columns:1fr}.school{min-height:150px}.toolbar{align-items:stretch;flex-direction:column}.count{white-space:normal}.topbar{height:64px}}
+    .home-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
+      gap: 48px;
+      align-items: end;
+      padding: 48px 0 40px;
+      border-bottom: 1px solid var(--line);
+    }
+    .home-hero .ms-lead { margin-top: 2px; }
+    .home-search {
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--line-strong);
+      padding-bottom: 8px;
+      max-width: 480px;
+    }
+    .home-search input {
+      flex: 1; border: 0; background: transparent; outline: none;
+      font-size: 15px; padding: 8px 0;
+    }
+    .home-search input::placeholder { color: #9aa59d; }
+    .home-search svg { color: var(--muted); flex: 0 0 auto; }
+    .home-count { font-size: 12px; color: var(--muted); margin-top: 12px; }
+    .how { border-left: 1px solid var(--line); padding-left: 30px; }
+    .how h2 { font: 600 15px/1.3 'Fraunces', serif; margin: 0 0 14px; }
+    .how ol { margin: 0; padding: 0; list-style: none; counter-reset: how; }
+    .how li {
+      position: relative; padding: 11px 0 11px 30px;
+      border-top: 1px dotted var(--line); font-size: 12.5px; color: var(--muted);
+      line-height: 1.55;
+    }
+    .how li:first-child { border-top: 0; }
+    .how li::before {
+      counter-increment: how; content: counter(how, decimal-leading-zero);
+      position: absolute; left: 0; top: 11px;
+      font: 500 11px 'Fraunces', serif; color: var(--ochre);
+    }
+    .how li b { display: block; color: var(--ink); font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+    .school-list { margin-top: 0; }
+    .school-card {
+      display: flex; flex-direction: column;
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 20px 20px 16px;
+      cursor: pointer; min-height: 190px;
+      transition: border-color .15s, box-shadow .15s, transform .15s;
+      outline-offset: 3px;
+    }
+    .school-card:hover, .school-card:focus-visible {
+      border-color: var(--line-strong); box-shadow: var(--shadow); transform: translateY(-2px);
+    }
+    .school-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .school-mark {
+      width: 38px; height: 38px; display: grid; place-items: center;
+      background: var(--paper-2); border: 1px solid var(--line);
+      color: var(--forest); font: 600 15px 'Fraunces', serif; border-radius: 4px 4px 8px 8px;
+      overflow: hidden;
+    }
+    .school-mark img { width: 100%; height: 100%; object-fit: contain; padding: 4px; background: #fff; }
+    .school-card h2 {
+      font: 600 18px/1.25 'Fraunces', serif; letter-spacing: -.015em;
+      margin: 18px 0 4px; overflow-wrap: anywhere;
+    }
+    .school-card__code {
+      font-size: 10.5px; color: var(--faint); letter-spacing: .1em; text-transform: uppercase; font-weight: 600;
+    }
+    .school-card__links {
+      margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line);
+      display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
+      font-size: 12px;
+    }
+    .school-card__links a { color: var(--forest); font-weight: 600; }
+    .school-card__links a:hover { text-decoration: underline; }
+    .school-card__links .secondary { color: var(--muted); font-weight: 500; }
+    .school-card__links .primary { margin-left: auto; }
+    .state-card {
+      grid-column: 1 / -1; border: 1px dashed var(--line-strong);
+      border-radius: var(--radius); padding: 34px 24px; text-align: center;
+      color: var(--muted); font-size: 13px; background: #fbfaf6;
+    }
+    @media (max-width: 860px) {
+      .home-hero { grid-template-columns: 1fr; gap: 30px; padding-top: 34px; }
+      .how { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
+      .how ol { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+    }
+    @media (max-width: 540px) {
+      .how ol { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><span>MYSCHOOL</span></div>
-    <div class="top-note">School and student services</div>
-  </header>
-  <main>
-    <div class="eyebrow">Welcome to MYSCHOOL</div>
-    <h1>First, select your child's school.</h1>
-    <p class="intro">Choose the school your student attends. You'll then enter that school's portal and search for your student by name. Each student has a unique Student ID used to identify their record.</p>
-    <div class="toolbar">
-      <input id="school-search" class="search" type="search" placeholder="Search schools by name or code…" autocomplete="off" aria-label="Search schools">
-      <div id="school-count" class="count" aria-live="polite">Loading schools…</div>
+  <header class="ms-top">
+    <div class="ms-shell ms-top__inner">
+      <a class="ms-brand" href="/">
+        <span class="ms-crest">MS</span>
+        <span>
+          <span class="ms-brand__name">MYSCHOOL</span>
+          <span class="ms-brand__sub">Rwanda · School services</span>
+        </span>
+      </a>
+      <nav class="ms-top__nav" aria-label="Main">
+        <a class="ms-top__link" href="/myadmin">System administration</a>
+      </nav>
     </div>
-    <section id="school-grid" class="grid" aria-live="polite"><div class="state">Loading registered schools…</div></section>
-    <div class="footer"><div>Powered by <strong>1percent</strong></div><div>Choose a school to continue</div></div>
+  </header>
+
+  <main class="ms-shell ms-main" style="padding-top:0">
+    <section class="home-hero">
+      <div>
+        <div class="ms-eyebrow">One account per family</div>
+        <h1 class="ms-display">Start with your <em>child's school.</em></h1>
+        <p class="ms-lead">Every school on MYSCHOOL runs its own portal for families, students and staff. Choose a school below, then sign in to the workspace that matches your role.</p>
+        <div class="home-search">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4" stroke-linecap="round"/></svg>
+          <input id="school-search" type="search" placeholder="Search by school name or code" autocomplete="off" aria-label="Search schools">
+        </div>
+        <div id="school-count" class="home-count" aria-live="polite">Loading schools…</div>
+      </div>
+      <aside class="how">
+        <h2>How access works</h2>
+        <ol>
+          <li><b>Select the school</b>Choose the school your student attends.</li>
+          <li><b>Choose your role</b>Parent, student, teacher or administrator.</li>
+          <li><b>Sign in securely</b>Each portal only shows what your role is allowed to see.</li>
+        </ol>
+      </aside>
+    </section>
+
+    <section class="ms-section" aria-labelledby="schools-title">
+      <div class="ms-section__head">
+        <h2 id="schools-title" class="ms-h2">Registered schools</h2>
+        <p>Parent and student services are available on each school portal.</p>
+      </div>
+      <div id="school-grid" class="ms-grid ms-grid--3" aria-live="polite">
+        <div class="state-card">Loading registered schools…</div>
+      </div>
+    </section>
+
+    <footer class="ms-foot">
+      <span>MYSCHOOL · School portals and student services · Powered by <b>1percent</b></span>
+      <span>Access depends on the account issued by your school.</span>
+    </footer>
   </main>
+
   <script>
     const grid = document.getElementById('school-grid');
     const search = document.getElementById('school-search');
     const count = document.getElementById('school-count');
     let schools = [];
-    function renderSchools(){
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function renderSchools() {
       const term = search.value.trim().toLowerCase();
-      const shown = schools.filter(s => String(s.school_name || '').toLowerCase().includes(term) || String(s.school_code || '').toLowerCase().includes(term));
-      count.textContent = shown.length + (shown.length === 1 ? ' school' : ' schools');
+      const shown = schools.filter(s =>
+        String(s.school_name || '').toLowerCase().includes(term) ||
+        String(s.school_code || '').toLowerCase().includes(term));
+      count.textContent = shown.length
+        ? shown.length + (shown.length === 1 ? ' school available' : ' schools available')
+        : 'No schools match that search';
       grid.replaceChildren();
       if (!shown.length) {
-        const empty = document.createElement('div'); empty.className='state'; empty.textContent='No schools match that search. Try another name or code.'; grid.appendChild(empty); return;
+        grid.appendChild(el('div', 'state-card', schools.length
+          ? 'No school matches that name or code. Try a shorter search.'
+          : 'No active schools are registered yet. Please contact the school administrator.'));
+        return;
       }
       shown.forEach(s => {
-        const a = document.createElement('article');
-        a.className='school';
-        a.setAttribute('role', 'link');
-        a.setAttribute('tabindex', '0');
-        a.setAttribute('aria-label', 'Open parent portal for ' + (s.school_name || 'this school'));
-        a.style.cursor = 'pointer';
-        const parentPortalUrl = '/' + encodeURIComponent(s.school_name) + '/parentportal';
-        a.addEventListener('click', event => {
+        const name = String(s.school_name || 'School');
+        const portalUrl = '/' + encodeURIComponent(name) + '/portals';
+        const parentUrl = '/' + encodeURIComponent(name) + '/parentportal';
+        const studentUrl = '/' + encodeURIComponent(name) + '/student-login';
+
+        const card = el('article', 'school-card');
+        card.setAttribute('role', 'link');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', 'Open ' + name);
+        card.addEventListener('click', event => {
           if (event.target.closest('a')) return;
-          window.location.href = parentPortalUrl;
+          window.location.href = portalUrl;
         });
-        a.addEventListener('keydown', event => {
-          if ((event.key === 'Enter' || event.key === ' ') && event.target === a) {
+        card.addEventListener('keydown', event => {
+          if ((event.key === 'Enter' || event.key === ' ') && event.target === card) {
             event.preventDefault();
-            window.location.href = parentPortalUrl;
+            window.location.href = portalUrl;
           }
         });
-        const icon = document.createElement('div'); icon.className='school-icon'; const schoolName=String(s.school_name || '').trim(); const schoolCode=String(s.school_code || '').trim(); const isSos=/\bsos\b/i.test(schoolName) && !/impactful technical high school/i.test(schoolName); if(isSos){icon.classList.add('sos-logo');const logo=document.createElement('img');logo.src='/static/sos.webp';logo.alt='SOS school logo';logo.loading='lazy';icon.appendChild(logo);}else{icon.textContent=schoolName.charAt(0).toUpperCase() || 'S';}
-        const title = document.createElement('h2'); title.textContent=s.school_name || 'School';
-        const meta = document.createElement('div'); meta.className='meta'; meta.textContent='School code: ' + (s.school_code || '—');
-        const open = document.createElement('div'); open.className='open';
-        const parentLink = document.createElement('a'); parentLink.href=parentPortalUrl; parentLink.textContent='Parent portal →'; parentLink.style.color='var(--green)'; parentLink.style.textDecoration='none';
-        const studentLink = document.createElement('a'); studentLink.href='/' + encodeURIComponent(s.school_name) + '/student-login'; studentLink.textContent='Student sign in'; studentLink.style.color='var(--muted)'; studentLink.style.textDecoration='none'; studentLink.style.fontSize='12px';
-        const portalsLink = document.createElement('a'); portalsLink.href='/' + encodeURIComponent(s.school_name) + '/portals'; portalsLink.textContent='All school roles →'; portalsLink.style.color='var(--green)'; portalsLink.style.textDecoration='none'; portalsLink.style.fontWeight='700'; portalsLink.style.fontSize='12px';
-        open.style.flexWrap='wrap'; open.style.gap='12px'; open.append(portalsLink,parentLink,studentLink);
-        a.append(icon,title,meta,open); grid.appendChild(a);
+
+        const top = el('div', 'school-card__top');
+        const mark = el('div', 'school-mark');
+        const isSos = /\bsos\b/i.test(name) && !/impactful technical high school/i.test(name);
+        if (isSos) {
+          const logo = el('img');
+          logo.src = '/static/sos.webp';
+          logo.alt = 'SOS school logo';
+          logo.loading = 'lazy';
+          mark.appendChild(logo);
+        } else {
+          mark.textContent = name.trim().charAt(0).toUpperCase() || 'S';
+        }
+        top.appendChild(mark);
+        const badge = el('span', 'ms-badge ms-badge--quiet', 'Open');
+        top.appendChild(badge);
+
+        const title = el('h2', null, name);
+        const code = el('div', 'school-card__code', 'School code ' + (s.school_code || '—'));
+
+        const links = el('div', 'school-card__links');
+        const portals = el('a', 'primary', 'School portals →');
+        portals.href = portalUrl;
+        const parent = el('a', 'secondary', 'Parent');
+        parent.href = parentUrl;
+        const student = el('a', 'secondary', 'Student');
+        student.href = studentUrl;
+        links.append(parent, student, portals);
+
+        card.append(top, title, code, links);
+        grid.appendChild(card);
       });
     }
-    search.addEventListener('input',renderSchools);
+
+    search.addEventListener('input', renderSchools);
     fetch('/myadmin/schools')
-      .then(r => { if(!r.ok) throw new Error('Could not load schools'); return r.json(); })
+      .then(r => { if (!r.ok) throw new Error('Could not load schools'); return r.json(); })
       .then(data => {
         schools = (data.schools || []).filter(s => Number(s.is_active) === 1);
         renderSchools();
-        if (!schools.length) { grid.innerHTML='<div class="state">No active schools are registered yet. Please contact the school administrator.</div>'; count.textContent='0 schools'; }
       })
-      .catch(() => { grid.innerHTML='<div class="state">Schools could not be loaded. Please refresh in a moment or contact the administrator.</div>'; count.textContent='Unable to load schools'; });
+      .catch(() => {
+        grid.innerHTML = '<div class="state-card">Schools could not be loaded right now. Refresh in a moment or contact the administrator.</div>';
+        count.textContent = 'Unable to load schools';
+      });
   </script>
 </body>
 </html>

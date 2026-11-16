@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123a2b">
+  <title>Attendance station · GS Gisozi 1</title>
+  <link rel="stylesheet" href="/static/myschool-ui.css">
+  <style>
+    body { background: #f4f3ec; }
+    .st-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
+    .st-head { padding: 26px 0 22px; display: flex; justify-content: space-between; align-items: end; gap: 20px; border-bottom: 1px solid var(--line); }
+    .st-head h1 { font: 500 clamp(26px, 3.4vw, 38px)/1.08 'Fraunces', serif; letter-spacing: -.03em; margin: 9px 0 0; }
+    .st-head .when { text-align: right; font-size: 12px; color: var(--muted); }
+    .st-head .when b { display: block; font: 500 17px 'Fraunces', serif; color: var(--forest-ink); margin-bottom: 2px; }
+    .st-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+    .st-stats .ms-stat { padding: 13px 15px; }
+    .st-stats .ms-stat__value { font-size: 26px; }
+    .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 348px; gap: 18px; align-items: start; padding-bottom: 40px; }
+    .st-desk { display: grid; gap: 16px; }
+    .st-finder { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
+    .st-finder .ms-input { font-size: 16px; letter-spacing: .02em; }
+    .st-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .st-tools .ms-input, .st-tools .ms-select { padding: 8px 10px; font-size: 12.5px; }
+    .st-tools .ms-input { width: 210px; }
+    .st-tools .ms-select { width: auto; padding-right: 32px; }
+    .st-table { min-width: 620px; }
+    .st-table tbody tr { cursor: pointer; }
+    .st-table tbody tr.is-selected { background: var(--sage); }
+    .st-name { font-weight: 600; }
+    .st-id { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+    .st-station { position: sticky; top: 92px; display: grid; gap: 14px; }
+    .st-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+    .st-card__head { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .st-card__head h2 { font: 600 13px 'Inter', sans-serif; letter-spacing: .06em; text-transform: uppercase; margin: 0; color: #5c6760; }
+    .st-card__body { padding: 16px; }
+    .st-who__name { font: 600 22px/1.2 'Fraunces', serif; letter-spacing: -.02em; margin: 0 0 2px; }
+    .st-who__meta { font-size: 12px; color: var(--muted); }
+    .st-who__status { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+    .st-actions { display: grid; gap: 8px; margin-top: 14px; }
+    .st-mark { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 7px; border: 1px solid var(--line-strong); background: #fff; cursor: pointer; transition: .14s; }
+    .st-mark:hover { border-color: var(--forest); background: var(--sage); }
+    .st-mark b { display: block; font-size: 13px; }
+    .st-mark small { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .st-mark kbd { font: 600 10px 'Inter', sans-serif; color: var(--faint); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px; }
+    .st-mark--present:hover { background: var(--green-soft); border-color: #a9c9b6; }
+    .st-mark--late:hover { background: var(--amber-soft); border-color: #dfc79c; }
+    .st-mark--absent:hover { background: var(--red-soft); border-color: #dcb5ae; }
+    .st-note { margin-top: 10px; }
+    .st-note textarea { min-height: 54px; font-size: 12.5px; }
+    .st-empty { text-align: center; padding: 26px 16px; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+    .st-log { font-size: 11.5px; color: var(--muted); }
+    .st-log b { color: var(--ink); font-weight: 600; }
+    .st-scan { margin-top: 10px; display: none; }
+    .st-scan.is-on { display: block; }
+    .scan-frame { aspect-ratio: 4 / 3; position: relative; }
+    .scan-flash { position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 8px 10px; border-radius: 6px; font: 600 12px 'Inter', sans-serif; text-align: center; opacity: 0; transform: translateY(4px); transition: opacity .16s, transform .16s; pointer-events: none; }
+    .scan-flash.is-ok, .scan-flash.is-bad { opacity: 1; transform: none; }
+    .scan-flash.is-ok { background: rgba(21, 84, 58, .94); color: #f3faf4; }
+    .scan-flash.is-bad { background: rgba(140, 51, 39, .95); color: #fff5f2; }
+    .scan-status { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+    .scan-status .st-live i { background: var(--ochre); }
+    #scan-torch { margin-left: auto; }
+    .st-saved { margin-top: 12px; padding: 9px 11px; border: 1px solid #b9d4c3; border-left: 3px solid #1f6b48; background: #eef6ef; border-radius: 6px; font-size: 12px; color: #1d5138; }
+    .st-live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+    .st-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: block; animation: pulse 2.4s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+    @media (max-width: 1040px) {
+      .st-grid { grid-template-columns: 1fr; }
+      .st-station { position: static; }
+      .st-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 620px) {
+      .st-wrap { width: calc(100% - 24px); }
+      .st-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .st-finder { grid-template-columns: 1fr auto; }
+      .st-finder .ms-btn:last-child { grid-column: 1 / -1; }
+      .st-head { flex-direction: column; align-items: flex-start; }
+      .st-head .when { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header class="ms-top">
+    <div class="st-wrap ms-top__inner">
+      <a class="ms-brand" href="/{{ school_name }}/portals">
+        <span class="ms-crest">GS1</span>
+        <span>
+          <span class="ms-brand__name">Attendance desk</span>
+          <span class="ms-brand__sub">GS Gisozi 1 · {{ actor.role|capitalize }} station</span>
+        </span>
+      </a>
+      <div class="ms-top__nav">
+        <span class="st-live" style="padding-right:4px"><i></i> Live register</span>
+        <span class="ms-badge ms-badge--quiet">{{ actor.name }}</span>
+        <form method="POST" action="/{{ school_name }}/attendance/logout" style="margin:0">
+          <button class="ms-btn ms-btn--quiet ms-btn--sm" type="submit">Close station</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main class="st-wrap">
+    <section class="st-head">
+      <div>
+        <div class="ms-eyebrow">Arrivals · {{ today.strftime('%A') }}</div>
+        <h1>Validate student attendance</h1>
+      </div>
+      <div class="when">
+        <b id="live-clock">—</b>
+        {{ today.strftime('%d %B %Y') }} · {{ school.school_name }}
+      </div>
+    </section>
+
+    <section class="st-stats" aria-label="Today's attendance summary">
+      <div class="ms-stat">
+        <div class="ms-stat__label">Present</div>
+        <div class="ms-stat__value" id="stat-present">{{ summary.present }}</div>
+      </div>
+      <div class="ms-stat">
+        <div class="ms-stat__label">Late</div>
+        <div class="ms-stat__value" id="stat-late">{{ summary.late }}</div>
+      </div>
+      <div class="ms-stat">
+        <div class="ms-stat__label">Absent</div>
+        <div class="ms-stat__value" id="stat-absent">{{ summary.absent }}</div>
+      </div>
+      <div class="ms-stat">
+        <div class="ms-stat__label">Not yet marked</div>
+        <div class="ms-stat__value" id="stat-unmarked">{{ summary.unmarked }}</div>
+      </div>
+      <div class="ms-stat">
+        <div class="ms-stat__label">Attendance rate</div>
+        <div class="ms-stat__value"><span id="stat-rate">{{ summary.rate if summary.rate is not none else '—' }}</span><small id="stat-rate-unit">{{ '%' if summary.rate is not none else '' }}</small></div>
+      </div>
+    </section>
+
+    <div class="st-grid">
+      <div class="st-desk">
+        <section class="ms-panel">
+          <div class="ms-panel__head">
+            <h2 class="ms-h3">Student check-in</h2>
+            <span class="ms-small ms-muted" id="finder-state">Enter a student number or scan an ID card</span>
+          </div>
+          <div class="ms-panel__body">
+            <div class="st-finder">
+              <input class="ms-input" id="student-id" type="text" autocomplete="off" autofocus
+                     spellcheck="false" placeholder="Student number, e.g. 1042" aria-label="Student number or card code">
+              <button class="ms-btn" type="button" id="find-btn">Find student</button>
+              <button class="ms-btn ms-btn--ghost" type="button" id="scan-btn">Scan QR card</button>
+            </div>
+            <div class="st-scan" id="scan-panel">
+              <div class="scan-frame">
+                <video id="scan-video" playsinline muted></video>
+                <div class="scan-frame__reticle"></div>
+                <div class="scan-off" id="scan-off">Starting camera…</div>
+                <div class="scan-flash" id="scan-flash" role="status" aria-live="polite"></div>
+                <canvas id="scan-canvas" class="is-hidden" aria-hidden="true"></canvas>
+              </div>
+              <div class="scan-status">
+                <span class="st-live"><i></i> <span id="scan-mode">Camera ready</span></span>
+                <button class="ms-btn ms-btn--quiet ms-btn--sm is-hidden" type="button" id="scan-torch">Torch</button>
+                <button class="ms-btn ms-btn--quiet ms-btn--sm" type="button" id="scan-stop">Stop camera</button>
+              </div>
+              <p class="ms-hint" id="scan-status" style="margin:7px 0 0">Hold the student card QR code inside the frame. The camera keeps scanning until you stop it, so the queue keeps moving.</p>
+            </div>
+            <p class="ms-hint" id="find-hint" style="margin-top:9px">Type the student number, or let a USB/Bluetooth card scanner fill this box and press Enter. Manual entry is always available when a card is missing.</p>
+          </div>
+        </section>
+
+        <section class="ms-panel">
+          <div class="ms-panel__head">
+            <h2 class="ms-h3">Today's register</h2>
+            <div class="st-tools">
+              <input class="ms-input" id="table-filter" type="search" placeholder="Filter by name" aria-label="Filter students by name">
+              <select class="ms-select" id="class-filter" aria-label="Filter by class">
+                <option value="">All classes</option>
+                {% for cls in classes %}<option value="{{ cls }}">{{ cls }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="ms-table-wrap">
+            <table class="ms-table st-table">
+              <thead>
+                <tr><th>Student</th><th>Class</th><th>Status</th><th>Recorded by</th><th class="num">Time</th></tr>
+              </thead>
+              <tbody id="register-body">
+                <tr><td colspan="5"><div class="ms-empty">Loading today's register…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="ms-panel__foot ms-between">
+            <span id="register-count">—</span>
+            <span>Updates automatically after each validation.</span>
+          </div>
+        </section>
+      </div>
+
+      <aside class="st-station">
+        <section class="st-card">
+          <div class="st-card__head">
+            <h2>Selected student</h2>
+            <button class="ms-btn ms-btn--quiet ms-btn--sm is-hidden" type="button" id="clear-student">Clear</button>
+          </div>
+          <div class="st-card__body" id="detail">
+            <div class="st-empty">
+              No student selected.<br>
+              Find a student by number, scan a card, or choose a row from today's register.
+            </div>
+          </div>
+        </section>
+
+        <section class="st-card">
+          <div class="st-card__head"><h2>Station notes</h2></div>
+          <div class="st-card__body">
+            <p class="ms-hint" style="margin-top:0">Each validation is signed with your name and the exact time. If a record is wrong, mark the student again — the latest entry replaces the earlier status for today.</p>
+            <p class="ms-hint">Late arrivals should be marked <b>Late</b> so the office can follow up on repeated lateness.</p>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <!-- selection template -->
+  <template id="detail-template">
+    <p class="st-who__name" data-name></p>
+    <div class="st-who__meta"><span data-class></span> · Student no. <b data-id></b></div>
+    <div class="st-who__status">
+      <span>Current status</span>
+      <span data-status></span>
+    </div>
+    <div class="st-actions">
+      <button class="st-mark st-mark--present" type="button" data-mark="present">
+        <span><b>Present</b><small>Arrived on time</small></span><kbd>1</kbd>
+      </button>
+      <button class="st-mark st-mark--late" type="button" data-mark="late">
+        <span><b>Late</b><small>Arrived after the bell</small></span><kbd>2</kbd>
+      </button>
+      <button class="st-mark st-mark--absent" type="button" data-mark="absent">
+        <span><b>Absent</b><small>Not present today</small></span><kbd>3</kbd>
+      </button>
+    </div>
+    <label class="ms-field st-note" for="mark-note">
+      <span>Note (optional)</span>
+      <textarea class="ms-textarea" id="mark-note" maxlength="300" placeholder="Reason, guardian call, or follow-up needed"></textarea>
+    </label>
+    <p class="st-log" data-log></p>
+  </template>
+
+  <script src="/static/vendor/jsQR.js"></script>
+  <script>
+    const schoolName = {{ school_name|tojson }};
+    const base = '/' + encodeURIComponent(schoolName);
+    const state = { students: [], selected: null, lastMethod: 'manual', loading: false };
+
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+    const statusLabel = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Not marked';
+    const statusClass = s => 'ms-badge ms-badge--' + (s || 'unmarked');
+
+    function clock() {
+      const now = new Date();
+      $('live-clock').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    clock(); setInterval(clock, 20000);
+
+    function applySummary(summary) {
+      $('stat-present').textContent = summary.present;
+      $('stat-late').textContent = summary.late;
+      $('stat-absent').textContent = summary.absent;
+      $('stat-unmarked').textContent = summary.unmarked;
+      $('stat-rate').textContent = summary.rate == null ? '—' : summary.rate;
+      $('stat-rate-unit').textContent = summary.rate == null ? '' : '%';
+    }
+
+    async function api(url, options) {
+      const response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      if (response.status === 401) { window.location.href = base + '/attendance/login'; throw new Error('Session ended'); }
+      let data = null;
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok) throw new Error((data && (data.detail || data.message)) || 'Request failed');
+      return data;
+    }
+
+    function renderRows() {
+      const body = $('register-body');
+      const term = $('table-filter').value.trim().toLowerCase();
+      const rows = state.students.filter(s => !term || s.student_name.toLowerCase().includes(term) || String(s.id).includes(term));
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="5"><div class="ms-empty">No students match this view.</div></td></tr>';
+        $('register-count').textContent = '0 students';
+        return;
+      }
+      body.innerHTML = rows.map(s => {
+        const a = s.attendance;
+        return '<tr data-student="' + s.id + '" class="' + (state.selected && state.selected.id === s.id ? 'is-selected' : '') + '">' +
+          '<td><div class="st-name">' + esc(s.student_name) + '</div><div class="st-id">#' + s.id + '</div></td>' +
+          '<td>' + esc(s.class_name || '—') + '</td>' +
+          '<td><span class="' + statusClass(a && a.status) + '">' + statusLabel(a && a.status) + '</span></td>' +
+          '<td class="ms-small ms-muted">' + esc(a && a.recorded_by || '—') + '</td>' +
+          '<td class="num ms-small ms-muted">' + esc(a && a.recorded_at || '—') + '</td>' +
+        '</tr>';
+      }).join('');
+      $('register-count').textContent = rows.length + (rows.length === 1 ? ' student' : ' students') +
+        (rows.length !== state.students.length ? ' of ' + state.students.length : '');
+    }
+
+    async function loadToday() {
+      if (state.loading) return;
+      state.loading = true;
+      try {
+        const cls = $('class-filter').value;
+        const data = await api(base + '/attendance/api/today' + (cls ? '?class_name=' + encodeURIComponent(cls) : ''));
+        state.students = data.students || [];
+        applySummary(data.summary);
+        renderRows();
+      } catch (error) {
+        $('register-body').innerHTML = '<tr><td colspan="5"><div class="ms-empty">' + esc(error.message) + '</div></td></tr>';
+      } finally {
+        state.loading = false;
+      }
+    }
+
+    function showDetail(student) {
+      state.selected = student;
+      const node = $('detail-template').content.cloneNode(true);
+      node.querySelector('[data-name]').textContent = student.student_name;
+      node.querySelector('[data-class]').textContent = student.class_name || 'No class';
+      node.querySelector('[data-id]').textContent = student.id;
+      const status = student.attendance ? student.attendance.status : null;
+      const badge = node.querySelector('[data-status]');
+      badge.className = statusClass(status);
+      badge.textContent = statusLabel(status);
+      node.querySelector('[data-log]').innerHTML = student.attendance
+        ? 'Recorded by <b>' + esc(student.attendance.recorded_by || 'staff') + '</b>' +
+          (student.attendance.recorded_at ? ' at <b>' + esc(student.attendance.recorded_at) + '</b>' : '') + '.'
+        : 'No record for today yet.';
+      $('detail').replaceChildren(node);
+      $('clear-student').classList.remove('is-hidden');
+      $('detail').querySelectorAll('[data-mark]').forEach(button => {
+        button.addEventListener('click', () => markStudent(button.dataset.mark));
+      });
+      $('mark-note').value = '';
+      renderRows();
+    }
+
+    function clearDetail() {
+      state.selected = null;
+      $('detail').innerHTML = '<div class="st-empty">No student selected.<br>Find a student by number, scan a card, or choose a row from today\'s register.</div>';
+      $('clear-student').classList.add('is-hidden');
+      renderRows();
+    }
+
+    async function findStudent(code, options) {
+      const opts = options || {};
+      const clean = String(code || '').trim();
+      if (!clean) return false;
+      $('finder-state').textContent = clean.length > 20 ? 'Reading card…' : 'Looking up #' + clean + '…';
+      try {
+        const data = await api(base + '/attendance/api/student?code=' + encodeURIComponent(clean));
+        state.lastMethod = opts.fromScan ? 'qr' : 'manual';
+        showDetail({ id: data.student.id, student_name: data.student.student_name, class_name: data.student.class_name, attendance: data.record });
+        $('student-id').value = '';
+        $('finder-state').textContent = (data.matched_by === 'card' ? 'Card verified · ' : '') +
+          (data.parent_linked ? 'parent account linked' : 'no parent account linked yet');
+        $('find-hint').textContent = data.parent_linked
+          ? 'This student\'s guardian can see the record in the parent attendance view.'
+          : 'This student has no active parent account. The office can create one from the administration workspace.';
+        return true;
+      } catch (error) {
+        $('finder-state').textContent = error.message;
+        if (!opts.fromScan) $('student-id').select();
+        return false;
+      }
+    }
+
+    async function markStudent(status) {
+      if (!state.selected) return;
+      const buttons = $('detail').querySelectorAll('[data-mark]');
+      buttons.forEach(b => b.disabled = true);
+      const body = new URLSearchParams();
+      body.set('student_id', state.selected.id);
+      body.set('status', status);
+      body.set('method', state.lastMethod);
+      body.set('note', $('mark-note') ? $('mark-note').value : '');
+      try {
+        const data = await api(base + '/attendance/mark', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+        const scanned = state.lastMethod === 'qr';
+        state.lastMethod = 'manual';
+        showDetail({
+          id: data.student.id,
+          student_name: data.student.student_name,
+          class_name: data.student.class_name,
+          attendance: data.record
+        });
+        $('finder-state').textContent = 'Saved · ' + statusLabel(status) + ' at ' + data.record.recorded_at;
+        $('student-id').value = '';
+        if (scanned) flash('ok', statusLabel(status) + ' · ' + data.student.student_name);
+        await loadToday();
+        if (stream) {
+          setTimeout(() => {
+            if (!stream) return;
+            clearDetail();
+            $('finder-state').textContent = 'Ready for the next card';
+            $('student-id').focus();
+          }, 1200);
+        }
+      } catch (error) {
+        $('finder-state').textContent = error.message;
+        buttons.forEach(b => b.disabled = false);
+      }
+    }
+
+    $('find-btn').addEventListener('click', () => findStudent($('student-id').value));
+    $('student-id').addEventListener('keydown', event => {
+      if (event.key === 'Enter') { event.preventDefault(); findStudent(event.target.value); }
+    });
+    $('clear-student').addEventListener('click', clearDetail);
+    $('class-filter').addEventListener('change', loadToday);
+    $('table-filter').addEventListener('input', renderRows);
+    $('register-body').addEventListener('click', event => {
+      const row = event.target.closest('tr[data-student]');
+      if (row) { state.lastMethod = 'manual'; findStudent(row.dataset.student); }
+    });
+
+    document.addEventListener('keydown', event => {
+      if (!state.selected) return;
+      const tag = (event.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      if (event.key === '1') markStudent('present');
+      if (event.key === '2') markStudent('late');
+      if (event.key === '3') markStudent('absent');
+    });
+
+    /* ---------------- QR card scanner ---------------- */
+    // Chrome/Edge expose BarcodeDetector; everywhere else the bundled jsQR decoder
+    // reads frames off a canvas. Both paths keep the camera live between students.
+    let stream = null, detector = null, scanTimer = null, scanLock = false;
+    let torchOn = false, lastScan = '', lastScanAt = 0, audioCtx = null;
+
+    function beep(ok) {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const now = audioCtx.currentTime;
+        osc.type = 'sine';
+        osc.frequency.value = ok ? 880 : 220;
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(ok ? 0.10 : 0.14, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + (ok ? 0.16 : 0.30));
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + (ok ? 0.18 : 0.32));
+      } catch (_) {}
+    }
+
+    function flash(kind, message) {
+      const node = $('scan-flash');
+      node.className = 'scan-flash is-' + kind;
+      node.textContent = message || '';
+      clearTimeout(flash.timer);
+      flash.timer = setTimeout(() => { node.className = 'scan-flash'; node.textContent = ''; }, 1400);
+    }
+
+    async function decodeFrame(video) {
+      if (detector) {
+        const codes = await detector.detect(video);
+        return codes && codes.length ? String(codes[0].rawValue || '') : '';
+      }
+      if (!window.jsQR || !video.videoWidth) return '';
+      const canvas = $('scan-canvas');
+      const scale = Math.min(1, 900 / video.videoWidth);
+      canvas.width = Math.round(video.videoWidth * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+      const result = window.jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'dontInvert' });
+      return result ? String(result.data || '') : '';
+    }
+
+    async function handleScan(raw) {
+      const value = String(raw || '').trim();
+      if (!value || scanLock) return;
+      if (value === lastScan && Date.now() - lastScanAt < 5000) return;
+      lastScan = value; lastScanAt = Date.now();
+      scanLock = true;
+      $('scan-status').textContent = 'Card detected · checking the student record…';
+      try {
+        const found = await findStudent(value, { fromScan: true });
+        if (found) {
+          beep(true);
+          $('scan-status').textContent = 'Card read. Choose Present, Late or Absent — the camera stays on for the next student.';
+        } else {
+          beep(false);
+          flash('bad', $('finder-state').textContent);
+          $('scan-status').textContent = 'Card not recognised. Check the card or type the student number.';
+        }
+      } catch (error) {
+        beep(false);
+        flash('bad', error.message || 'Card not recognised');
+      } finally {
+        scanLock = false;
+      }
+    }
+
+    async function scanLoop() {
+      if (!stream) return;
+      const video = $('scan-video');
+      try {
+        if (video.readyState >= 2) {
+          const raw = await decodeFrame(video);
+          if (raw) await handleScan(raw);
+        }
+      } catch (_) {}
+      if (stream) scanTimer = setTimeout(scanLoop, 320);
+    }
+
+    async function startScan() {
+      if (stream) { $('scan-status').textContent = 'The camera is already scanning cards.'; return; }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        $('find-hint').textContent = 'This browser cannot open a camera. Use a USB card scanner in the box above, or type the student number.';
+        return;
+      }
+      $('scan-panel').classList.add('is-on');
+      $('scan-off').classList.remove('is-hidden');
+      $('scan-off').textContent = 'Starting camera…';
+      $('scan-status').textContent = 'Waiting for camera permission…';
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        const video = $('scan-video');
+        video.srcObject = stream;
+        await video.play();
+        $('scan-off').classList.add('is-hidden');
+        $('scan-off').textContent = '';
+
+        detector = null;
+        if ('BarcodeDetector' in window) {
+          try {
+            const formats = await window.BarcodeDetector.getSupportedFormats();
+            if (formats.includes('qr_code')) detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          } catch (_) { detector = null; }
+        }
+        $('scan-mode').textContent = detector ? 'Camera · native QR decoder' : 'Camera · built-in QR decoder';
+        $('scan-status').textContent = 'Hold a student card QR code inside the frame. Keep the camera steady.';
+        $('scan-btn').textContent = 'Restart camera';
+
+        const track = stream.getVideoTracks()[0];
+        const caps = track && track.getCapabilities ? track.getCapabilities() : {};
+        $('scan-torch').classList.toggle('is-hidden', !caps.torch);
+        torchOn = false; $('scan-torch').textContent = 'Torch';
+
+        scanTimer = setTimeout(scanLoop, 250);
+      } catch (error) {
+        stopScan();
+        $('find-hint').textContent = error && error.name === 'NotAllowedError'
+          ? 'Camera access was blocked. Allow the camera in the browser, use a USB scanner, or type the student number.'
+          : 'No camera was found. Use a USB card scanner in the box above, or type the student number.';
+      }
+    }
+
+    function stopScan() {
+      if (scanTimer) clearTimeout(scanTimer);
+      scanTimer = null;
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      detector = null;
+      scanLock = false;
+      torchOn = false;
+      $('scan-panel').classList.remove('is-on');
+      $('scan-off').classList.remove('is-hidden');
+      $('scan-off').textContent = 'Starting camera…';
+      $('scan-btn').textContent = 'Scan QR card';
+      $('scan-torch').classList.add('is-hidden');
+      $('scan-mode').textContent = 'Camera stopped';
+      $('scan-status').textContent = 'Camera stopped. Type a number or start the camera again.';
+    }
+
+    $('scan-btn').addEventListener('click', startScan);
+    $('scan-stop').addEventListener('click', stopScan);
+    $('scan-torch').addEventListener('click', async () => {
+      const track = stream && stream.getVideoTracks()[0];
+      if (!track) return;
+      try {
+        await track.applyConstraints({ advanced: [{ torch: !torchOn }] });
+        torchOn = !torchOn;
+        $('scan-torch').textContent = torchOn ? 'Torch off' : 'Torch';
+      } catch (_) {}
+    });
+
+    loadToday();
+  </script>
+</body>
+</html>

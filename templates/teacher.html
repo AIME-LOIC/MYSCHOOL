@@ -6,7 +6,7 @@
     <title>Teacher Portal · MYSCHOOL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         html, body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
         .hidden { display: none !important; }
@@ -90,6 +90,9 @@
             <p class="font-bold text-[14.5px] leading-none truncate">MYSCHOOL · Teachers</p>
             <p class="text-[11px] text-slate-500 truncate">{{ school.school_name|title }}</p>
                 <a href="/{{ school_name }}/portals" class="ml-3 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">All roles</a>
+                {% if is_sch003 %}
+                <a href="/{{ school_name }}/attendance/login" class="ml-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Attendance station</a>
+                {% endif %}
         </div>
         <div class="ml-auto flex items-center gap-3">
             <div class="hidden sm:block text-right">
@@ -557,13 +560,49 @@
 
     {% else %}
     <!-- ══════════ TEACHER LOGIN ══════════ -->
-    <main class="auth-shell">
-      <aside class="auth-story"><div><div class="story-label">Teach with clarity</div><h1>Your classes.<br>Your tools.<br>One workspace.</h1><p class="story-copy">MYSCHOOL keeps your teaching responsibilities organized, from class assignments to academic records.</p><ul><li><span class="story-check">✓</span><span><b>Assigned classes</b>Focus on the classes and subjects linked to your account.</span></li><li><span class="story-check">✓</span><span><b>Timetable access</b>See your schedule and available academic tools.</span></li><li><span class="story-check">✓</span><span><b>Mark management</b>Use authorized tools to record student results.</span></li><li><span class="story-check">✓</span><span><b>Role-based permissions</b>DOS features appear only for staff with the right authorization.</span></li></ul></div><div class="story-foot">Teacher workspace · Use your school-issued email and password.</div></aside>
-      <section class="auth-form"><div class="form-mark">MS</div><h2>Teacher sign in</h2><p class="form-sub">{{ school.school_name|title }} · MYSCHOOL</p>
-        {% if error %}<div class="auth-error" role="alert">{{ error }}</div>{% endif %}
-        <form method="POST" action="/{{ school_name }}/teacher/login"><label for="teacher-email">School email</label><input id="teacher-email" type="email" name="email" required autofocus autocomplete="username" placeholder="name@school.rw"><label for="teacher-password">Password</label><input id="teacher-password" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password"><button type="submit" class="btn-primary auth-submit">Sign in to MYSCHOOL →</button></form>
-        <p class="form-help">Accounts are created by your school administrator. If you cannot sign in, ask them to check your account.</p>
-        <p class="form-help"><a href="/{{ school_name }}/portals" style="color:var(--green);font-weight:700;text-decoration:none">← All school roles</a></p>
+    <main class="t-auth">
+      <aside class="t-auth__story">
+        <div>
+          <div class="t-auth__eyebrow">Teaching workspace</div>
+          <h1>Your classes.<br>Your marks.<br><em>One desk.</em></h1>
+          <p>MYSCHOOL gives every teacher at {{ school.school_name|title }} a single place to work through the academic day.</p>
+          <ul class="t-auth__list">
+            <li><b>Assigned classes and subjects</b>Only the classes linked to your account appear in your workspace.</li>
+            <li><b>Marks and student records</b>Enter and review marks for the subjects you teach.</li>
+            <li><b>Personal timetable</b>Follow your own weekly schedule across all assigned classes.</li>
+            <li><b>Role-based access</b>DOS planning tools appear only for staff authorised by the school.</li>
+          </ul>
+        </div>
+        <div class="t-auth__foot">Teacher workspace · Sign in with the school email and password issued by your administrator.</div>
+      </aside>
+
+      <section class="t-auth__form">
+        <a class="t-auth__back" href="/{{ school_name }}/portals">← All school roles</a>
+        <div class="t-auth__mark">TE</div>
+        <h2>Teacher sign in</h2>
+        <p class="t-auth__sub">{{ school.school_name|title }} · Staff account</p>
+
+        {% if error %}<div class="t-auth__alert" role="alert">{{ error }}</div>{% endif %}
+
+        <form method="POST" action="/{{ school_name }}/teacher/login">
+          <label class="t-auth__field" for="teacher-email">
+            <span>School email</span>
+            <input id="teacher-email" type="email" name="email" required autofocus autocomplete="username" placeholder="name@school.rw">
+          </label>
+          <label class="t-auth__field" for="teacher-password">
+            <span>Password</span>
+            <input id="teacher-password" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
+          </label>
+          <button type="submit" class="t-auth__submit">Sign in to the teaching workspace</button>
+        </form>
+
+        {% if is_sch003 %}
+        <a class="t-auth__station" href="/{{ school_name }}/attendance/login">
+          <span>Attendance station · sign in with the same email</span><span>→</span>
+        </a>
+        {% endif %}
+
+        <p class="t-auth__help">Accounts are created by your school administrator. If you cannot sign in, ask them to check your account and class assignments.</p>
       </section>
     </main>
     {% endif %}

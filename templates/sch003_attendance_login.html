@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123a2b">
+  <title>Attendance station sign in · GS Gisozi 1</title>
+  <link rel="stylesheet" href="/static/myschool-ui.css">
+</head>
+<body>
+<div class="ms-auth">
+  <header class="ms-top">
+    <div class="ms-shell ms-top__inner">
+      <a class="ms-brand" href="/{{ school_name }}/portals">
+        <span class="ms-crest">GS1</span>
+        <span>
+          <span class="ms-brand__name">GS Gisozi 1</span>
+          <span class="ms-brand__sub">Attendance station</span>
+        </span>
+      </a>
+      <nav class="ms-top__nav">
+        <a class="ms-top__link" href="/{{ school_name }}/attendance/parent">Parent view</a>
+        <a class="ms-top__link" href="/{{ school_name }}/portals">← School workspace</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="ms-auth__body">
+    <aside class="ms-auth__story">
+      <div>
+        <div class="ms-eyebrow">Gate &amp; class attendance</div>
+        <h1>One student. One record. One school day.</h1>
+        <p>This station is used by gatekeepers and teachers to validate a student's arrival as it happens. Every entry is timestamped and signed with the name of the person who recorded it.</p>
+        <ul>
+          <li><span><b>Scan or type</b><br>Use the student's ID card QR code, or enter their student number.</span></li>
+          <li><span><b>Validate the arrival</b><br>Mark present or late in a single action.</span></li>
+          <li><span><b>Parents see it immediately</b><br>The family account reads from the same record.</span></li>
+          <li><span><b>Reviewed by the office</b><br>The administration can export the day's register.</span></li>
+        </ul>
+      </div>
+      <div class="ms-auth__foot">Station accounts are issued by the school administration. Do not share a station login.</div>
+    </aside>
+
+    <section class="ms-auth__form">
+      <div class="ms-auth__mark">AT</div>
+      <h2>Sign in to the station</h2>
+      <p class="ms-auth__sub">Gatekeepers use their username · Teachers use their school email</p>
+
+      {% if error %}<div class="ms-alert" role="alert">{{ error }}</div>{% endif %}
+
+      <form method="POST" action="/{{ school_name }}/attendance/login">
+        <label class="ms-field" for="identifier">
+          <span>Teacher email or gatekeeper username</span>
+          <input class="ms-input" id="identifier" name="identifier" type="text" required autofocus
+                 autocomplete="username" autocapitalize="none" spellcheck="false"
+                 placeholder="e.g. j.mukamana@school.rw or gate.main">
+        </label>
+        <label class="ms-field" for="password">
+          <span>Password</span>
+          <input class="ms-input" id="password" name="password" type="password" required
+                 autocomplete="current-password" placeholder="Enter your password">
+        </label>
+        <button class="ms-btn ms-btn--block" type="submit" style="margin-top:6px">Open attendance station</button>
+      </form>
+
+      <p class="ms-auth__meta">
+        Parents do not sign in here. <a href="/{{ school_name }}/attendance/parent">Open the parent attendance view</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="ms-shell ms-foot">
+    <span><b>GS Gisozi 1</b> · Attendance station · Powered by 1percent</span>
+    <span>Attendance data is visible to the school and to linked parents only.</span>
+  </footer>
+</div>
+</body>
+</html>

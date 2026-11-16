@@ -1,19 +1,72 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#14532d">
-<title>School administrator sign in · MYSCHOOL</title>
-<style>
-:root{color-scheme:light;--green:#166534;--dark:#14532d;--ink:#17231b;--muted:#68766b;--line:#e0e8e0;--wash:#f4f7f4}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--wash);color:var(--ink);font:14px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.top{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,5vw,72px)}.brand{display:flex;align-items:center;gap:11px;font-weight:850;font-size:20px;letter-spacing:-.04em}.mark{width:40px;height:40px;border-radius:12px;background:var(--green);color:white;display:grid;place-items:center;font-size:12px;letter-spacing:0}.top a{font-size:12px;color:var(--green);font-weight:750;text-decoration:none}.layout{width:100%;min-height:calc(100vh - 72px);margin:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,1fr);gap:0;align-items:stretch}.story{background:linear-gradient(145deg,#14532d,#176b45);color:#fff;border-radius:0;padding:clamp(32px,6vw,84px);display:flex;flex-direction:column;justify-content:space-between;min-height:590px;overflow:hidden;position:relative}.story:after{content:"";position:absolute;width:300px;height:300px;border:1px solid #ffffff1f;border-radius:50%;right:-120px;top:140px;box-shadow:0 0 0 35px #ffffff08,0 0 0 70px #ffffff06;pointer-events:none}.eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;font-weight:800;color:#bce8c5}.story h1{font-size:clamp(32px,4vw,48px);letter-spacing:-.05em;line-height:1.08;margin:15px 0}.lead{color:#e0eee2;max-width:440px;font-size:15px}.features{list-style:none;padding:0;margin:30px 0 0;display:grid;gap:17px;position:relative;z-index:1}.features li{display:flex;gap:12px;align-items:flex-start;color:#f3faf4;font-size:13px}.check{flex:0 0 25px;height:25px;border-radius:8px;background:#ffffff1c;display:grid;place-items:center;font-weight:800}.story-foot{border-top:1px solid #ffffff2b;padding-top:20px;margin-top:40px;color:#d0e6d3;font-size:12px}.form-card{background:#fff;border:0;border-radius:0;padding:clamp(32px,6vw,84px);box-shadow:0 18px 50px #183c200b;display:flex;flex-direction:column;justify-content:center;min-width:0}.form-mark{width:44px;height:44px;border-radius:13px;background:#e9f5eb;color:var(--green);display:grid;place-items:center;font-weight:900;margin-bottom:24px}.form-card h2{font-size:25px;letter-spacing:-.04em;margin:0 0 6px}.sub{color:var(--muted);margin:0 0 25px;font-size:13px}.error{padding:12px 14px;background:#fff1f0;color:#a32929;border:1px solid #f5d4d1;border-radius:10px;font-size:13px;margin-bottom:16px}label{display:block;font-size:12px;font-weight:750;margin:16px 0 7px}input{width:100%;border:1px solid #d5dfd6;border-radius:11px;padding:13px 14px;font:inherit;outline:none;background:#fff}input:focus{border-color:var(--green);box-shadow:0 0 0 3px #16653417}.submit{width:100%;border:0;border-radius:11px;background:var(--green);color:#fff;padding:13px 16px;font-weight:800;font-size:14px;margin-top:22px;cursor:pointer}.submit:hover{background:var(--dark)}.help{font-size:11px;color:var(--muted);text-align:center;margin:17px 0 0}.bottom{max-width:none;margin:0;padding:12px 24px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:12px}@media(max-width:800px){.layout{grid-template-columns:1fr;width:100%;margin:0;min-height:0}.story{min-height:0;padding:28px;border-radius:0}.story h1{font-size:32px}.features{grid-template-columns:1fr 1fr;gap:12px}.story-foot{margin-top:26px}.bottom{max-width:none}}@media(max-width:500px){.layout{width:100%;gap:0}.story,.form-card{border-radius:0;padding:24px}.features{grid-template-columns:1fr}.top{padding:0 16px}.bottom{flex-direction:column}}
-</style></head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123a2b">
+  <title>Administrator sign in · {{ school_name|title }} · MYSCHOOL</title>
+  <link rel="stylesheet" href="/static/myschool-ui.css">
+</head>
 <body>
-<header class="top"><a class="brand" href="/"><span class="mark">MS</span><span>MYSCHOOL</span></a><a href="/{{ school_name }}/portals">← All school roles</a></header>
-<main class="layout">
-<aside class="story"><div><div class="eyebrow">A clearer school day</div><h1>One school.<br>Everything connected.</h1><p class="lead">MYSCHOOL brings learning, communication and school operations into one organized workspace.</p>
-<ul class="features"><li><span class="check">✓</span><span><strong>Academic visibility</strong><br>Keep student records, marks and timetables organized.</span></li><li><span class="check">✓</span><span><strong>Connected families</strong><br>Help parents stay informed through linked student access.</span></li><li><span class="check">✓</span><span><strong>Role-based access</strong><br>Staff use the tools assigned to their school responsibilities.</span></li><li><span class="check">✓</span><span><strong>School operations</strong><br>Manage supported school services from one place.</span></li></ul></div><div class="story-foot">Private school workspace · Access depends on your assigned account and permissions.</div></aside>
-<section class="form-card"><div class="form-mark">MS</div><h2>Administrator sign in</h2><p class="sub">{{ school_name|title }} · School management</p>
-{% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
-<form method="POST" action="/{{ school_name }}/admin/login"><label for="username">Username</label><input id="username" type="text" name="username" autocomplete="username" required autofocus placeholder="Enter your username"><label for="password">Password</label><input id="password" type="password" name="password" autocomplete="current-password" required placeholder="Enter your password"><button class="submit" type="submit">Sign in to MYSCHOOL →</button></form>
-<p class="help">School administrator access only. If you need an account, contact your system administrator.</p></section></main>
-<footer class="bottom"><span>MYSCHOOL · Powered by 1percent</span><span>Use your school-issued credentials.</span></footer>
-</body></html>
+<div class="ms-auth">
+  <header class="ms-top">
+    <div class="ms-shell ms-top__inner">
+      <a class="ms-brand" href="/">
+        <span class="ms-crest">MS</span>
+        <span>
+          <span class="ms-brand__name">MYSCHOOL</span>
+          <span class="ms-brand__sub">Administration</span>
+        </span>
+      </a>
+      <nav class="ms-top__nav">
+        <a class="ms-top__link" href="/{{ school_name }}/portals">← All school roles</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="ms-auth__body">
+    <aside class="ms-auth__story">
+      <div>
+        <div class="ms-eyebrow">School operations</div>
+        <h1>The records behind a well-run school.</h1>
+        <p>One administrative workspace for student information, staffing, parent access and the daily running of {{ school_name|title }}.</p>
+        <ul>
+          <li><span><b>Student records</b><br>Enrolment, classes, promotion and archived learners.</span></li>
+          <li><span><b>Staffing</b><br>Teacher accounts, subjects and class assignments.</span></li>
+          <li><span><b>Parent access</b><br>Linking codes and parent account administration.</span></li>
+          <li><span><b>Daily operations</b><br>Attendance, canteen services and term reports.</span></li>
+        </ul>
+      </div>
+      <div class="ms-auth__foot">Private school workspace · Sign-in is limited to accounts issued by the school or system administrator.</div>
+    </aside>
+
+    <section class="ms-auth__form">
+      <div class="ms-auth__mark">AD</div>
+      <h2>Administrator sign in</h2>
+      <p class="ms-auth__sub">{{ school_name|title }} · School management</p>
+
+      {% if error %}<div class="ms-alert" role="alert">{{ error }}</div>{% endif %}
+
+      <form method="POST" action="/{{ school_name }}/admin/login">
+        <label class="ms-field" for="username">
+          <span>Username</span>
+          <input class="ms-input" id="username" type="text" name="username" autocomplete="username" required autofocus placeholder="Enter your username">
+        </label>
+        <label class="ms-field" for="password">
+          <span>Password</span>
+          <input class="ms-input" id="password" type="password" name="password" autocomplete="current-password" required placeholder="Enter your password">
+        </label>
+        <button class="ms-btn ms-btn--block" type="submit" style="margin-top:6px">Sign in to the school workspace</button>
+      </form>
+
+      <p class="ms-auth__meta">If you do not have administrator credentials, contact the system administrator responsible for {{ school_name|title }}.</p>
+    </section>
+  </main>
+
+  <footer class="ms-shell ms-foot">
+    <span>MYSCHOOL · Powered by <b>1percent</b></span>
+    <span>Use the credentials issued by your school.</span>
+  </footer>
+</div>
+</body>
+</html>

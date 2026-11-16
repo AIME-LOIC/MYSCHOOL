@@ -3,62 +3,140 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#14532d">
-  <title>Choose your portal · MYSCHOOL</title>
-  <style>
-    :root{color-scheme:light;--green:#166534;--green-dark:#14532d;--ink:#17231b;--muted:#647267;--line:#e1e9e1;--bg:#f5f8f5;--surface:#fff;--soft:#edf6ef}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    a{color:inherit;text-decoration:none}.shell{max-width:1180px;margin:auto;padding:28px 24px 48px}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:36px}.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.03em;font-size:20px}.mark{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--green);color:#fff;font-size:13px;letter-spacing:0}.back{color:var(--muted);font-weight:650;padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:#fff}
-    .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.13em;font-weight:800;color:var(--green)}h1{font-size:clamp(30px,4vw,44px);letter-spacing:-.045em;line-height:1.1;margin:10px 0 12px}.intro{max-width:650px;color:var(--muted);font-size:15px;margin:0}.school{margin-top:22px;display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);padding:8px 12px;border-radius:999px;font-weight:700;font-size:12px}.school:before{content:"";width:7px;height:7px;background:#22a05a;border-radius:50%}
-    .section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:34px 0 14px}.section-head h2{font-size:16px;margin:0;letter-spacing:-.02em}.section-head p{font-size:12px;color:var(--muted);margin:3px 0 0}
-    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.portal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;min-width:0;display:flex;flex-direction:column;min-height:222px;transition:border-color .15s,transform .15s,box-shadow .15s}.portal:hover{border-color:#9bc7a4;transform:translateY(-2px);box-shadow:0 10px 28px #143c1a0b}.portal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.glyph{height:40px;width:40px;border-radius:12px;background:var(--soft);display:grid;place-items:center;color:var(--green);font-size:18px;font-weight:800}.status{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:5px 7px;border-radius:6px;background:#e9f7ed;color:#226d3b}.status.setup{background:#f3f4f3;color:#69746b}.portal h3{font-size:16px;margin:16px 0 5px;letter-spacing:-.02em}.portal p{margin:0;color:var(--muted);font-size:12.5px}.duties{margin:12px 0 17px;padding-left:17px;color:#455348;font-size:12px}.duties li{margin:3px 0}.action{margin-top:auto;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:800;color:var(--green);padding-top:12px;border-top:1px solid #edf1ed}.action.disabled{color:#879187}.footer{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:11px}.footer strong{color:var(--ink)}
-    @media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.shell{padding:22px 18px 36px}}@media(max-width:560px){.grid{grid-template-columns:1fr}.portal{min-height:0}.top{margin-bottom:28px}.footer{flex-direction:column}.back{font-size:12px}}
-  </style>
+  <meta name="theme-color" content="#123a2b">
+  <title>{{ school.school_name|title }} · Portals · MYSCHOOL</title>
+  <link rel="stylesheet" href="/static/myschool-ui.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="top">
-      <a class="brand" href="/"><span class="mark">MS</span><span>MYSCHOOL</span></a>
-      <a class="back" href="/">← Change school</a>
-    </header>
-    <section aria-labelledby="page-title">
-      <div class="eyebrow">One school · Clear responsibilities</div>
-      <h1 id="page-title">Where do you need to go?</h1>
-      <p class="intro">Choose the portal that matches your role. Each workspace is designed around the tasks you are responsible for, so you can get to the right information without navigating unrelated tools.</p>
-      <div class="school">{{ school.school_name|title }}</div>
+  <header class="ms-top">
+    <div class="ms-shell ms-top__inner">
+      <a class="ms-brand" href="/">
+        <span class="ms-crest">MS</span>
+        <span>
+          <span class="ms-brand__name">MYSCHOOL</span>
+          <span class="ms-brand__sub">{{ school.school_name|title }}</span>
+        </span>
+      </a>
+      <nav class="ms-top__nav">
+        <a class="ms-top__link" href="/">Change school</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="ms-shell ms-main">
+    <div class="ms-eyebrow">School code {{ school.school_code }}</div>
+    <h1 class="ms-display">Where do you <em>need to go?</em></h1>
+    <p class="ms-lead">Choose the workspace that matches your role at {{ school.school_name|title }}. Each entry point signs you in to the tools built for that responsibility, and nothing else.</p>
+
+    <section class="ms-section" aria-labelledby="workspaces">
+      <div class="ms-section__head">
+        <h2 id="workspaces" class="ms-h2">School workspaces</h2>
+        <p>Sign in with the account issued by the school.</p>
+      </div>
+
+      <div class="ms-grid ms-grid--3">
+        <a class="ms-entry" href="/{{ school_name }}/student-login">
+          <span class="ms-entry__index">01 / Learner</span>
+          <h3>Student</h3>
+          <p>Your personal learning workspace.</p>
+          <ul class="ms-entry__list">
+            <li>Timetable and class information</li>
+            <li>Published learning records</li>
+            <li>Your student account</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Student sign in</span><span class="arrow">→</span></div>
+        </a>
+
+        <a class="ms-entry" href="/{{ school_name }}/parentportal">
+          <span class="ms-entry__index">02 / Family</span>
+          <h3>Parent &amp; guardian</h3>
+          <p>Stay informed about your linked child.</p>
+          <ul class="ms-entry__list">
+            <li>Published marks and reports</li>
+            <li>Student linking and account access</li>
+            <li>Follow-up with the school</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Open parent portal</span><span class="arrow">→</span></div>
+        </a>
+
+        <a class="ms-entry" href="/{{ school_name }}/teacher">
+          <span class="ms-entry__index">03 / Teaching</span>
+          <h3>Teacher</h3>
+          <p>Teaching, marks and academic responsibilities.</p>
+          <ul class="ms-entry__list">
+            <li>Assigned classes and subjects</li>
+            <li>Marks and personal timetable</li>
+            <li>DOS tools for authorised staff</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Teacher sign in</span><span class="arrow">→</span></div>
+        </a>
+
+        <a class="ms-entry" href="/{{ school_name }}/admin/login">
+          <span class="ms-entry__index">04 / Operations</span>
+          <h3>School administrator</h3>
+          <p>Records, staffing and school operations.</p>
+          <ul class="ms-entry__list">
+            <li>Student and teacher records</li>
+            <li>Parent access and reports</li>
+            <li>School services and settings</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Administrator sign in</span><span class="arrow">→</span></div>
+        </a>
+
+        <a class="ms-entry" href="/{{ school_name }}/canteen-admin">
+          <span class="ms-entry__index">05 / Canteen</span>
+          <h3>Canteen staff</h3>
+          <p>Approved canteen transactions and menus.</p>
+          <ul class="ms-entry__list">
+            <li>Menu items and prices</li>
+            <li>Student card linking</li>
+            <li>Top-ups and transaction review</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Canteen workspace</span><span class="arrow">→</span></div>
+        </a>
+
+        <article class="ms-entry ms-entry--muted">
+          <span class="ms-entry__index">06 / Academic office</span>
+          <h3>Director of Studies</h3>
+          <p>Academic planning and timetable coordination.</p>
+          <ul class="ms-entry__list">
+            <li>Class timetables</li>
+            <li>Teacher and class assignments</li>
+            <li>DOS academic tools</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Sign in through Teacher</span><span class="arrow">↗</span></div>
+        </article>
+
+        <article class="ms-entry ms-entry--muted">
+          <span class="ms-entry__index">07 / Leadership</span>
+          <h3>Headmaster / headteacher</h3>
+          <p>School leadership and oversight.</p>
+          <ul class="ms-entry__list">
+            <li>School-wide performance</li>
+            <li>Staffing and operations</li>
+            <li>Reports and follow-up</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Account not configured</span></div>
+        </article>
+
+        <article class="ms-entry ms-entry--muted">
+          <span class="ms-entry__index">08 / Welfare</span>
+          <h3>Patron &amp; matron</h3>
+          <p>Student activities and welfare support.</p>
+          <ul class="ms-entry__list">
+            <li>Assigned student groups</li>
+            <li>Welfare checks</li>
+            <li>Escalation to school leaders</li>
+          </ul>
+          <div class="ms-entry__foot"><span>Account not configured</span></div>
+        </article>
+      </div>
     </section>
-    <div class="section-head"><div><h2>School workspaces</h2><p>Choose your role to sign in and continue.</p></div></div>
-    <section class="grid" aria-label="School role portals">
-      <a class="portal" href="/{{ school_name }}/student-login">
-        <div class="portal-head"><span class="glyph">ST</span><span class="status">Available</span></div><h3>Student</h3><p>Your personal learning workspace.</p><ul class="duties"><li>View your timetable and school information</li><li>Review available learning records</li><li>Manage your student account</li></ul><div class="action">Student sign in <span>→</span></div>
-      </a>
-      <a class="portal" href="/{{ school_name }}/parentportal">
-        <div class="portal-head"><span class="glyph">PA</span><span class="status">Available</span></div><h3>Parent / Guardian</h3><p>Stay informed about your linked child.</p><ul class="duties"><li>Access published marks and reports</li><li>Use the parent account and student link</li><li>Follow up with the school</li></ul><div class="action">Open parent portal <span>→</span></div>
-      </a>
-      <a class="portal" href="/{{ school_name }}/teacher">
-        <div class="portal-head"><span class="glyph">TE</span><span class="status">Available</span></div><h3>Teacher</h3><p>Teaching and academic responsibilities.</p><ul class="duties"><li>Work with assigned classes and subjects</li><li>Manage marks and view your timetable</li><li>DOS tools appear for authorized staff</li></ul><div class="action">Teacher sign in <span>→</span></div>
-      </a>
-      <a class="portal" href="/{{ school_name }}/admin/login">
-        <div class="portal-head"><span class="glyph">AD</span><span class="status">Available</span></div><h3>School administrator</h3><p>Manage the school's operational records.</p><ul class="duties"><li>Maintain student and teacher records</li><li>Manage parent access and school reports</li><li>Configure supported school services</li></ul><div class="action">Administrator sign in <span>→</span></div>
-      </a>
-      <a class="portal" href="/{{ school_name }}/canteen-admin">
-        <div class="portal-head"><span class="glyph">CA</span><span class="status">Available</span></div><h3>Canteen staff</h3><p>Handle approved canteen transactions.</p><ul class="duties"><li>Manage menu items and prices</li><li>Link student cards where permitted</li><li>Record top-ups and review transactions</li></ul><div class="action">Canteen workspace <span>→</span></div>
-      </a>
-      <article class="portal">
-        <div class="portal-head"><span class="glyph">DO</span><span class="status">Teacher access</span></div><h3>Director of Studies (DOS)</h3><p>Academic planning and timetable coordination.</p><ul class="duties"><li>Build and maintain class timetables</li><li>Review teacher and class assignments</li><li>Use academic tools available to DOS-authorized teachers</li></ul><div class="action">Sign in through Teacher <span>↗</span></div>
-      </article>
-      <article class="portal">
-        <div class="portal-head"><span class="glyph">HM</span><span class="status setup">Setup required</span></div><h3>Headmaster / Headteacher</h3><p>School leadership and oversight.</p><ul class="duties"><li>Review school-wide performance</li><li>Oversee staffing and school operations</li><li>Monitor key reports and follow-up actions</li></ul><div class="action disabled">Dedicated account not configured</div>
-      </article>
-      <article class="portal">
-        <div class="portal-head"><span class="glyph">PT</span><span class="status setup">Setup required</span></div><h3>Patron</h3><p>Student activities and assigned welfare support.</p><ul class="duties"><li>Follow up on assigned student groups</li><li>Coordinate activities and student support</li><li>Record relevant follow-up actions</li></ul><div class="action disabled">Dedicated account not configured</div>
-      </article>
-      <article class="portal">
-        <div class="portal-head"><span class="glyph">MT</span><span class="status setup">Setup required</span></div><h3>Matron</h3><p>Boarding and student welfare, where applicable.</p><ul class="duties"><li>Follow up on assigned boarding students</li><li>Record welfare checks and concerns</li><li>Escalate issues to authorized school leaders</li></ul><div class="action disabled">Dedicated account not configured</div>
-      </article>
-    </section>
-    <footer class="footer"><span><strong>MYSCHOOL</strong> · School management workspace</span><span>Access depends on your assigned account and permissions.</span></footer>
+
+    <footer class="ms-foot">
+      <span><b>{{ school.school_name|title }}</b> · School portal directory</span>
+      <span>Access depends on your assigned account and permissions.</span>
+    </footer>
   </main>
 </body>
 </html>

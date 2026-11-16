@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123a2b">
+  <title>Operations workspace · GS Gisozi 1</title>
+  <link rel="stylesheet" href="/static/myschool-ui.css">
+  <style>
+    body { background: #f5f4ee; }
+    .ws-wrap { width: min(1280px, calc(100% - 44px)); margin: 0 auto; }
+    .ws-head { padding: 30px 0 22px; display: flex; justify-content: space-between; align-items: end; gap: 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    .ws-head h1 { font: 500 clamp(27px, 3.6vw, 40px)/1.06 'Fraunces', serif; letter-spacing: -.032em; margin: 9px 0 6px; }
+    .ws-head p { margin: 0; color: var(--muted); font-size: 13px; }
+    .ws-head .stamp { text-align: right; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+    .ws-head .stamp b { display: block; color: var(--ink); font-size: 12.5px; }
+    .ws-tabs { margin-top: 22px; }
+    .ws-body { padding: 0 0 52px; }
+    .ws-toolbar { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+    .ws-toolbar .ms-field { margin: 0; }
+    .ws-toolbar .ms-field > span { font-size: 10px; }
+    .ws-toolbar .ms-input, .ws-toolbar .ms-select { padding: 8px 10px; font-size: 13px; }
+    .ws-grid-4 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .ws-grid-4 .ms-stat { padding: 13px 15px; }
+    .ws-grid-4 .ms-stat__value { font-size: 25px; }
+    .ws-cols { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+    .ws-side { display: grid; gap: 14px; }
+    .ws-note { font-size: 12.5px; color: var(--muted); line-height: 1.75; margin: 0; }
+    .ws-note + .ws-note { margin-top: 10px; }
+    .code { font: 600 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; color: var(--forest); }
+    .ws-table { min-width: 700px; }
+    .ws-sub { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+    .ws-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .ws-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .ws-form-grid .ms-field { margin-bottom: 0; }
+    .ws-span { grid-column: 1 / -1; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .chip { position: relative; }
+    .chip input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .chip span {
+      display: inline-block; padding: 5px 9px; font-size: 11.5px; font-weight: 600;
+      border: 1px solid var(--line-strong); border-radius: 5px; color: var(--muted);
+      background: #fff; cursor: pointer;
+    }
+    .chip input:checked + span { background: var(--forest); border-color: var(--forest); color: #fdfcf7; }
+    .chip input:focus-visible + span { outline: 2px solid var(--forest-2); outline-offset: 1px; }
+    .ws-status { font-size: 12px; min-height: 18px; margin: 10px 0 0; color: var(--muted); }
+    .is-error { color: var(--red) !important; }
+    .is-ok { color: var(--green) !important; }
+    .tt-wrap { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+    .tt { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tt th { background: #fbfaf6; padding: 9px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--line); text-align: center; }
+    .tt th:first-child { text-align: left; width: 74px; }
+    .tt td { border-bottom: 1px solid #eeede5; border-left: 1px solid #f1f0e8; padding: 3px; vertical-align: top; height: 44px; }
+    .tt td:first-child { border-left: 0; padding: 8px 10px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .tt tr:last-child td { border-bottom: 0; }
+    .tt-cell { width: 100%; height: 40px; border: 0; background: transparent; text-align: left; padding: 4px 6px; border-radius: 5px; cursor: pointer; }
+    .tt-cell:hover { background: var(--sage); }
+    .tt-cell b { display: block; font-size: 11.5px; font-weight: 600; line-height: 1.3; }
+    .tt-cell small { display: block; font-size: 10px; color: var(--muted); }
+    .tt-cell.is-empty { color: #b9c1ba; font-size: 13px; text-align: center; }
+    .tt-cell.is-selected { background: var(--ochre-soft); box-shadow: inset 0 0 0 1px #dfc79c; }
+    @media (max-width: 1080px) {
+      .ws-cols { grid-template-columns: 1fr; }
+      .ws-grid-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 620px) {
+      .ws-wrap { width: calc(100% - 26px); }
+      .ws-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .ws-form-grid { grid-template-columns: 1fr; }
+      .ws-head { flex-direction: column; align-items: flex-start; }
+      .ws-head .stamp { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header class="ms-top">
+    <div class="ws-wrap ms-top__inner">
+      <a class="ms-brand" href="/{{ school_name }}/portals">
+        <span class="ms-crest">GS1</span>
+        <span>
+          <span class="ms-brand__name">Operations workspace</span>
+          <span class="ms-brand__sub">GS Gisozi 1 · School administration</span>
+        </span>
+      </a>
+      <nav class="ms-top__nav">
+        <a class="ms-top__link" href="/{{ school_name }}/admin">Full admin dashboard</a>
+        <a class="ms-btn ms-btn--ghost ms-btn--sm" href="/{{ school_name }}/admin/logout">Sign out</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="ws-wrap">
+    <section class="ws-head">
+      <div>
+        <div class="ms-eyebrow">School code {{ school.school_code }} · Administration</div>
+        <h1>Run the school day from one desk.</h1>
+        <p>Attendance, family access, gate staff, teaching staff and the timetable for GS Gisozi 1.</p>
+      </div>
+      <div class="stamp">
+        <b>{{ today }}</b>
+        Signed in as school administrator<br>
+        Changes take effect immediately.
+      </div>
+    </section>
+
+    <div class="ms-tabs ws-tabs" role="tablist" aria-label="Workspace sections">
+      <button class="ms-tab is-active" role="tab" aria-selected="true" data-tab="attendance" type="button">Attendance</button>
+      <button class="ms-tab" role="tab" aria-selected="false" data-tab="parents" type="button">Parent access</button>
+      <button class="ms-tab" role="tab" aria-selected="false" data-tab="gatekeepers" type="button">Gatekeepers</button>
+      <button class="ms-tab" role="tab" aria-selected="false" data-tab="teachers" type="button">Teachers</button>
+      <button class="ms-tab" role="tab" aria-selected="false" data-tab="timetable" type="button">Timetable</button>
+    </div>
+
+    <div class="ws-body">
+      <!-- ============ Attendance ============ -->
+      <section id="panel-attendance" role="tabpanel">
+        <div class="ws-toolbar">
+          <label class="ms-field"><span>Date</span><input class="ms-input" type="date" id="att-date"></label>
+          <label class="ms-field"><span>Class</span>
+            <select class="ms-select" id="att-class">
+              <option value="">All classes</option>
+              {% for cls in classes %}<option value="{{ cls }}">{{ cls }}</option>{% endfor %}
+            </select>
+          </label>
+          <button class="ms-btn ms-btn--ghost ms-btn--sm" type="button" id="att-refresh">Refresh</button>
+          <a class="ms-btn ms-btn--ghost ms-btn--sm" id="att-cards" href="/{{ school_name }}/admin/attendance/cards">ID cards</a>
+          <a class="ms-btn ms-btn--sm" id="att-export" href="#">Export CSV</a>
+          <span class="ws-status" id="att-status" style="margin-left:auto"></span>
+        </div>
+
+        <div class="ws-grid-4">
+          <div class="ms-stat"><div class="ms-stat__label">Students</div><div class="ms-stat__value" id="att-total">—</div></div>
+          <div class="ms-stat"><div class="ms-stat__label">Present</div><div class="ms-stat__value" id="att-present">—</div></div>
+          <div class="ms-stat"><div class="ms-stat__label">Late</div><div class="ms-stat__value" id="att-late">—</div></div>
+          <div class="ms-stat"><div class="ms-stat__label">Absent</div><div class="ms-stat__value" id="att-absent">—</div></div>
+          <div class="ms-stat"><div class="ms-stat__label">Rate</div><div class="ms-stat__value"><span id="att-rate">—</span><small id="att-rate-unit"></small></div></div>
+        </div>
+
+        <div class="ws-cols">
+          <div class="ms-panel">
+            <div class="ms-panel__head">
+              <h2 class="ms-h3">Student register</h2>
+              <span class="ms-small ms-muted" id="att-caption">Today</span>
+            </div>
+            <div class="ms-table-wrap">
+              <table class="ms-table ws-table">
+                <thead><tr><th>Student</th><th>Class</th><th>Status</th><th>Recorded by</th><th>Method</th><th class="num">Time</th></tr></thead>
+                <tbody id="att-rows"><tr><td colspan="6"><div class="ms-empty">Loading attendance…</div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside class="ws-side">
+            <div class="ms-panel">
+              <div class="ms-panel__head"><h2 class="ms-h3">By class</h2></div>
+              <div class="ms-table-wrap">
+                <table class="ms-table" style="min-width:0">
+                  <thead><tr><th>Class</th><th class="num">Rate</th><th class="num">Unmarked</th></tr></thead>
+                  <tbody id="att-classes"><tr><td colspan="3" class="ms-empty">—</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="ms-paper-block">
+              <p class="ws-note">Attendance is validated by gatekeepers and teachers at the station. This view reads the same records, so there is no separate end-of-day register to reconcile.</p>
+              <p class="ws-note">Export the selected date and class for the office file or a class meeting.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ Parent access ============ -->
+      <section id="panel-parents" class="is-hidden" role="tabpanel">
+        <div class="ws-cols">
+          <div class="ms-panel">
+            <div class="ms-panel__head">
+              <h2 class="ms-h3">Student &amp; parent links</h2>
+              <span class="ms-small ms-muted" id="par-caption">—</span>
+            </div>
+            <div class="ms-panel__body" style="padding-bottom:0">
+              <div class="ws-toolbar">
+                <label class="ms-field" style="flex:1;min-width:180px"><span>Search student</span>
+                  <input class="ms-input" id="par-search" type="search" placeholder="Name or student number">
+                </label>
+                <label class="ms-field"><span>Class</span>
+                  <select class="ms-select" id="par-class">
+                    <option value="">All classes</option>
+                    {% for cls in classes %}<option value="{{ cls }}">{{ cls }}</option>{% endfor %}
+                  </select>
+                </label>
+                <button class="ms-btn ms-btn--ghost ms-btn--sm" type="button" id="par-refresh">Refresh</button>
+              </div>
+
+              <div id="par-form-wrap" class="ms-paper-block is-hidden" style="margin-bottom:16px">
+                <div class="ms-between" style="margin-bottom:12px">
+                  <div>
+                    <div class="ms-eyebrow" style="font-size:9.5px">Create parent account</div>
+                    <h3 class="ms-h3" id="par-form-title" style="margin-top:5px">—</h3>
+                  </div>
+                  <button class="ms-btn ms-btn--quiet ms-btn--sm" type="button" id="par-form-cancel">Cancel</button>
+                </div>
+                <form id="par-form">
+                  <input type="hidden" name="student_id" id="par-student-id">
+                  <div class="ws-form-grid">
+                    <label class="ms-field"><span>Parent / guardian name</span>
+                      <input class="ms-input" name="parent_name" required maxlength="120" placeholder="Full name">
+                    </label>
+                    <label class="ms-field"><span>Email (used to sign in)</span>
+                      <input class="ms-input" name="email" type="email" required autocomplete="off" placeholder="parent@example.com">
+                    </label>
+                    <label class="ms-field ws-span"><span>Temporary password</span>
+                      <input class="ms-input" name="password" type="text" required minlength="8" maxlength="128" placeholder="At least 8 characters">
+                    </label>
+                  </div>
+                  <div class="ms-row" style="margin-top:14px">
+                    <button class="ms-btn ms-btn--sm" type="submit">Create and link account</button>
+                    <span class="ws-status" id="par-form-status" style="margin:0"></span>
+                  </div>
+                  <p class="ms-hint">Give the parent this email and temporary password. They sign in at the family attendance page.</p>
+                </form>
+              </div>
+            </div>
+            <div class="ms-table-wrap">
+              <table class="ms-table ws-table">
+                <thead><tr><th>Student</th><th>Class</th><th>Link code</th><th>Parent account</th><th>Actions</th></tr></thead>
+                <tbody id="par-rows"><tr><td colspan="5"><div class="ms-empty">Loading students…</div></td></tr></tbody>
+              </table>
+            </div>
+            <div class="ms-panel__foot" id="par-foot">Link codes identify the student when a parent account is created at the office.</div>
+          </div>
+
+          <aside class="ws-side">
+            <div class="ms-paper-block">
+              <div class="ms-eyebrow" style="margin-bottom:8px">Parent access</div>
+              <p class="ws-note">Each student can have one active parent account. Creating an account links it to the child's attendance and published reports.</p>
+              <p class="ws-note">A link code is single-student and can be regenerated if it is shared by mistake.</p>
+            </div>
+            <div class="ms-panel">
+              <div class="ms-panel__head"><h2 class="ms-h3">Before you create an account</h2></div>
+              <div class="ms-panel__body">
+                <p class="ws-note">Confirm the guardian's identity and the correct child. Use an email the family can access — it becomes their sign-in name.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ Gatekeepers ============ -->
+      <section id="panel-gatekeepers" class="is-hidden" role="tabpanel">
+        <div class="ws-cols">
+          <div class="ms-panel">
+              <div class="ms-panel__head">
+                <h2 class="ms-h3">Gate station accounts</h2>
+                <span class="ms-small ms-muted" id="gk-caption">—</span>
+              </div>
+              <div class="ms-table-wrap">
+                <table class="ms-table ws-table" style="min-width:520px">
+                  <thead><tr><th>Gatekeeper</th><th>Username</th><th>Created</th><th>Actions</th></tr></thead>
+                  <tbody id="gk-rows"><tr><td colspan="4"><div class="ms-empty">Loading gatekeepers…</div></td></tr></tbody>
+                </table>
+              </div>
+              <div class="ms-panel__foot">Gatekeepers sign in at the attendance station with a username, not an email.</div>
+          </div>
+
+          <aside class="ws-side">
+            <div class="ms-panel">
+              <div class="ms-panel__head"><h2 class="ms-h3">Add a gatekeeper</h2></div>
+              <div class="ms-panel__body">
+                <form id="gk-form">
+                  <label class="ms-field"><span>Full name</span>
+                    <input class="ms-input" name="full_name" required maxlength="120" placeholder="e.g. Jean Bosco">
+                  </label>
+                  <label class="ms-field"><span>Username</span>
+                    <input class="ms-input" name="username" required minlength="3" maxlength="80"
+                           autocapitalize="none" spellcheck="false" placeholder="e.g. gate.main">
+                  </label>
+                  <label class="ms-field"><span>Password</span>
+                    <input class="ms-input" name="password" type="text" required minlength="8" maxlength="128" placeholder="At least 8 characters">
+                  </label>
+                  <button class="ms-btn ms-btn--block" type="submit">Create gate account</button>
+                  <p class="ws-status" id="gk-status"></p>
+                </form>
+                <p class="ms-hint">Usernames use lowercase letters, numbers, dots, hyphens or underscores. Disable an account by deleting it here.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ Teachers ============ -->
+      <section id="panel-teachers" class="is-hidden" role="tabpanel">
+        <div class="ws-cols">
+          <div class="ms-panel">
+            <div class="ms-panel__head">
+              <h2 class="ms-h3">Teaching staff</h2>
+              <span class="ms-small ms-muted" id="teach-caption">—</span>
+            </div>
+            <div class="ms-table-wrap">
+              <table class="ms-table ws-table">
+                <thead><tr><th>Teacher</th><th>Email</th><th>Subjects</th><th>Classes</th></tr></thead>
+                <tbody id="teach-rows"><tr><td colspan="4"><div class="ms-empty">Open this tab to load teachers.</div></td></tr></tbody>
+              </table>
+            </div>
+            <div class="ms-panel__foot">Teachers sign in with their email. Class and subject assignments also drive the timetable.</div>
+          </div>
+
+          <aside class="ws-side">
+            <div class="ms-panel">
+              <div class="ms-panel__head"><h2 class="ms-h3">Add a teacher</h2></div>
+              <div class="ms-panel__body">
+                <form id="teach-form">
+                  <label class="ms-field"><span>Full name</span>
+                    <input class="ms-input" name="full_name" required maxlength="120" placeholder="e.g. Alice Uwase">
+                  </label>
+                  <label class="ms-field"><span>School email</span>
+                    <input class="ms-input" name="email" type="email" required autocomplete="off" placeholder="teacher@school.rw">
+                  </label>
+                  <label class="ms-field"><span>Initial password</span>
+                    <input class="ms-input" name="password" type="text" required minlength="8" maxlength="128" placeholder="At least 8 characters">
+                  </label>
+                  <label class="ms-field"><span>Subjects</span>
+                    <input class="ms-input" name="subjects" required placeholder="Mathematics, Physics">
+                  </label>
+                  <div class="ms-field">
+                    <span>Classes</span>
+                    <div class="chips">
+                      {% for cls in classes %}
+                      <label class="chip"><input type="checkbox" name="classes" value="{{ cls }}"><span>{{ cls }}</span></label>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <button class="ms-btn ms-btn--block" type="submit">Create teacher account</button>
+                  <p class="ws-status" id="teach-status"></p>
+                </form>
+                <p class="ms-hint">Separate multiple subjects with commas. A teacher may take several classes; each class/subject pair can only belong to one teacher.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ Timetable ============ -->
+      <section id="panel-timetable" class="is-hidden" role="tabpanel">
+        <div class="ws-toolbar">
+          <label class="ms-field"><span>Class</span>
+            <select class="ms-select" id="tt-class">
+              {% for cls in classes %}<option value="{{ cls }}">{{ cls }}</option>{% endfor %}
+            </select>
+          </label>
+          <button class="ms-btn ms-btn--ghost ms-btn--sm" type="button" id="tt-refresh">Refresh</button>
+          <span class="ws-status" id="tt-status" style="margin-left:auto"></span>
+        </div>
+
+        <div class="ws-cols">
+          <div class="tt-wrap">
+            <table class="tt">
+              <thead>
+                <tr><th>Period</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th></tr>
+              </thead>
+              <tbody id="tt-body">
+                <tr><td colspan="6"><div class="ms-empty">Choose a class to load its timetable.</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <aside class="ws-side">
+            <div class="ms-panel">
+              <div class="ms-panel__head"><h2 class="ms-h3">Slot editor</h2></div>
+              <div class="ms-panel__body">
+                <p class="ws-note" id="tt-slot-label" style="margin-bottom:14px">Select a cell in the timetable.</p>
+                <label class="ms-field"><span>Subject</span>
+                  <select class="ms-select" id="tt-subject"><option value="">Choose a subject</option></select>
+                </label>
+                <label class="ms-field"><span>Teacher</span>
+                  <select class="ms-select" id="tt-teacher"><option value="">Unassigned</option></select>
+                </label>
+                <div class="ms-row">
+                  <button class="ms-btn ms-btn--sm" type="button" id="tt-save">Save slot</button>
+                  <button class="ms-btn ms-btn--danger ms-btn--sm" type="button" id="tt-clear">Clear</button>
+                </div>
+                <p class="ws-status" id="tt-editor-status"></p>
+                <p class="ms-hint">Subjects come from teacher assignments for this class. Only teachers assigned to the class can take the slot.</p>
+              </div>
+            </div>
+            <div class="ms-paper-block">
+              <p class="ws-note">The timetable feeds the teacher workspace and the student portal. Save each slot as you build the week.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
+
+    <footer class="ms-foot">
+      <span><b>GS Gisozi 1</b> · Operations workspace · Powered by 1percent</span>
+      <span>Administrator actions are logged against the school account.</span>
+    </footer>
+  </main>
+
+  <script>
+    const schoolName = {{ school_name|tojson }};
+    const base = '/' + encodeURIComponent(schoolName);
+    const classes = {{ classes|tojson }};
+    const TT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+    const statusLabel = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Not marked';
+    const statusClass = s => 'ms-badge ms-badge--' + (s || 'unmarked');
+    const todayIso = () => {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    };
+
+    function setStatus(id, message, kind) {
+      const node = $(id);
+      if (!node) return;
+      if (node.dataset.baseClass === undefined) node.dataset.baseClass = node.className;
+      node.textContent = message || '';
+      node.className = node.dataset.baseClass + (kind ? ' is-' + kind : '');
+    }
+
+    async function api(url, options) {
+      const response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      if (response.status === 401) {
+        window.location.href = base + '/admin/login';
+        throw new Error('Administrator sign-in required.');
+      }
+      let data = null;
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok) {
+        let detail = data && data.detail;
+        if (Array.isArray(detail)) detail = detail.map(d => d.msg).join(' ');
+        throw new Error(detail || 'The request could not be completed.');
+      }
+      return data;
+    }
+
+    const loaded = { attendance: false, parents: false, gatekeepers: false, teachers: false, timetable: false };
+    const tabs = document.querySelectorAll('.ms-tab');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => openTab(tab.dataset.tab));
+    });
+
+    function openTab(name) {
+      tabs.forEach(t => {
+        const active = t.dataset.tab === name;
+        t.classList.toggle('is-active', active);
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      ['attendance', 'parents', 'gatekeepers', 'teachers', 'timetable'].forEach(key => {
+        $('panel-' + key).classList.toggle('is-hidden', key !== name);
+      });
+      if (!loaded[name]) {
+        loaded[name] = true;
+        if (name === 'attendance') loadAttendance();
+        if (name === 'parents') loadParents();
+        if (name === 'gatekeepers') loadGatekeepers();
+        if (name === 'teachers') loadTeachers();
+        if (name === 'timetable') loadTimetable();
+      }
+    }
+
+    /* ---------------- Attendance ---------------- */
+    $('att-date').value = todayIso();
+
+    function exportUrl() {
+      const params = new URLSearchParams();
+      params.set('date', $('att-date').value || todayIso());
+      if ($('att-class').value) params.set('class_name', $('att-class').value);
+      return base + '/admin/attendance/export?' + params.toString();
+    }
+
+    function cardsUrl() {
+      const cls = $('att-class').value;
+      return base + '/admin/attendance/cards' + (cls ? '?class_name=' + encodeURIComponent(cls) : '');
+    }
+
+    async function loadAttendance() {
+      setStatus('att-status', 'Loading…');
+      const params = new URLSearchParams();
+      params.set('date', $('att-date').value || todayIso());
+      if ($('att-class').value) params.set('class_name', $('att-class').value);
+      $('att-export').href = exportUrl();
+      $('att-cards').href = cardsUrl();
+      try {
+        const data = await api(base + '/admin/attendance?' + params.toString());
+        const s = data.summary;
+        $('att-total').textContent = s.students;
+        $('att-present').textContent = s.present;
+        $('att-late').textContent = s.late;
+        $('att-absent').textContent = s.absent;
+        $('att-rate').textContent = s.rate == null ? '—' : s.rate;
+        $('att-rate-unit').textContent = s.rate == null ? '' : '%';
+        $('att-caption').textContent = data.date + ' · ' + s.marked + ' of ' + s.students + ' marked';
+        $('att-rows').innerHTML = data.records.length ? data.records.map(r =>
+          '<tr>' +
+            '<td><b>' + esc(r.student_name) + '</b><span class="ws-sub">#' + r.student_id + '</span></td>' +
+            '<td>' + esc(r.class_name || '—') + '</td>' +
+            '<td><span class="' + statusClass(r.status) + '">' + statusLabel(r.status) + '</span></td>' +
+            '<td class="ms-small ms-muted">' + esc(r.recorded_by || '—') + '</td>' +
+            '<td class="ms-small ms-muted">' + (r.method === 'qr' ? 'Gate scan' : r.method ? 'Staff entry' : '—') + '</td>' +
+            '<td class="num ms-small ms-muted">' + esc(r.recorded_at || '—') + '</td>' +
+          '</tr>').join('') : '<tr><td colspan="6"><div class="ms-empty">No active students for this selection.</div></td></tr>';
+        $('att-classes').innerHTML = data.by_class.length ? data.by_class.map(row =>
+          '<tr><td>' + esc(row.class_name) + '</td>' +
+          '<td class="num">' + (row.rate == null ? '—' : row.rate + '%') + '</td>' +
+          '<td class="num">' + row.unmarked + '</td></tr>').join('')
+          : '<tr><td colspan="3"><div class="ms-empty">No classes recorded.</div></td></tr>';
+        setStatus('att-status', 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } catch (error) {
+        setStatus('att-status', error.message, 'error');
+      }
+    }
+
+    $('att-refresh').addEventListener('click', loadAttendance);
+    $('att-date').addEventListener('change', loadAttendance);
+    $('att-class').addEventListener('change', loadAttendance);
+
+    /* ---------------- Parent access ---------------- */
+    let parentRows = [];
+
+    async function loadParents() {
+      setStatus('par-foot', 'Loading students…');
+      const params = new URLSearchParams();
+      if ($('par-search').value.trim()) params.set('q', $('par-search').value.trim());
+      if ($('par-class').value) params.set('class_name', $('par-class').value);
+      try {
+        const data = await api(base + '/admin/parent-access?' + params.toString());
+        parentRows = data.students || [];
+        $('par-caption').textContent = parentRows.length + ' students · ' + data.accounts + ' parent accounts';
+        $('par-rows').innerHTML = parentRows.length ? parentRows.map(s => {
+          const account = s.account;
+          return '<tr data-student="' + s.student_id + '">' +
+            '<td><b>' + esc(s.student_name) + '</b><span class="ws-sub">#' + s.student_id + '</span></td>' +
+            '<td>' + esc(s.class_name || '—') + '</td>' +
+            '<td><span class="code">' + esc(s.parent_link_code || '—') + '</span></td>' +
+            '<td>' + (account
+              ? '<b>' + esc(account.parent_name) + '</b><span class="ws-sub">' + esc(account.email) + (account.is_active ? '' : ' · inactive') + '</span>'
+              : '<span class="ms-small ms-muted">No account</span>') + '</td>' +
+            '<td><div class="ws-actions">' +
+              (account ? '' : '<button class="ms-btn ms-btn--sm" type="button" data-create="' + s.student_id + '">Create account</button>') +
+              '<button class="ms-btn ms-btn--ghost ms-btn--sm" type="button" data-code="' + s.student_id + '" data-has="' + (s.parent_link_code ? 1 : 0) + '">' +
+                (s.parent_link_code ? 'New code' : 'Generate code') + '</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('') : '<tr><td colspan="5"><div class="ms-empty">No students match this search.</div></td></tr>';
+        setStatus('par-foot', parentRows.length + ' students shown. Link codes can be regenerated at any time.');
+      } catch (error) {
+        $('par-rows').innerHTML = '<tr><td colspan="5"><div class="ms-empty">' + esc(error.message) + '</div></td></tr>';
+        setStatus('par-foot', '', null);
+      }
+    }
+
+    $('par-rows').addEventListener('click', async event => {
+      const createButton = event.target.closest('[data-create]');
+      if (createButton) {
+        const student = parentRows.find(s => String(s.student_id) === createButton.dataset.create);
+        if (!student) return;
+        $('par-student-id').value = student.student_id;
+        $('par-form-title').textContent = student.student_name + ' · ' + (student.class_name || 'No class');
+        $('par-form').reset();
+        $('par-student-id').value = student.student_id;
+        setStatus('par-form-status', '');
+        $('par-form-wrap').classList.remove('is-hidden');
+        $('par-form').querySelector('[name="parent_name"]').focus();
+        $('par-form-wrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const codeButton = event.target.closest('[data-code]');
+      if (codeButton) {
+        const id = codeButton.dataset.code;
+        const regenerate = codeButton.dataset.has === '1';
+        if (regenerate && !confirm('Generate a new link code? The previous code will stop matching this student.')) return;
+        codeButton.disabled = true;
+        try {
+          const body = new URLSearchParams();
+          body.set('regenerate', regenerate ? '1' : '0');
+          const data = await api(base + '/admin/parent-access/' + id + '/code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+          });
+          await loadParents();
+          setStatus('par-foot', 'Link code for student #' + data.student_id + ' is ' + data.parent_link_code + '.', 'ok');
+        } catch (error) {
+          setStatus('par-foot', error.message, 'error');
+          codeButton.disabled = false;
+        }
+      }
+    });
+
+    $('par-form-cancel').addEventListener('click', () => {
+      $('par-form-wrap').classList.add('is-hidden');
+      $('par-form').reset();
+    });
+
+    $('par-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      setStatus('par-form-status', 'Creating account…');
+      try {
+        const data = await api(base + '/admin/parent-access/link', { method: 'POST', body: new FormData(form) });
+        form.reset();
+        $('par-form-wrap').classList.add('is-hidden');
+        await loadParents();
+        setStatus('par-foot', 'Parent account created for ' + data.email + '. Share the email and temporary password with the family.', 'ok');
+      } catch (error) {
+        setStatus('par-form-status', error.message, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $('par-refresh').addEventListener('click', loadParents);
+    $('par-class').addEventListener('change', loadParents);
+    $('par-search').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); loadParents(); } });
+
+    /* ---------------- Gatekeepers ---------------- */
+    async function loadGatekeepers() {
+      try {
+        const data = await api(base + '/admin/gatekeepers');
+        const staff = data.gatekeepers || [];
+        $('gk-caption').textContent = staff.length + (staff.length === 1 ? ' account' : ' accounts');
+        $('gk-rows').innerHTML = staff.length ? staff.map(g =>
+          '<tr>' +
+            '<td><b>' + esc(g.full_name) + '</b></td>' +
+            '<td><span class="code">' + esc(g.username) + '</span></td>' +
+            '<td class="ms-small ms-muted">' + esc(g.created_at || '—') + '</td>' +
+            '<td><button class="ms-btn ms-btn--danger ms-btn--sm" type="button" data-remove="' + g.id + '" data-name="' + esc(g.full_name) + '">Remove</button></td>' +
+          '</tr>').join('') : '<tr><td colspan="4"><div class="ms-empty">No gatekeeper accounts yet. Add the first gate account on the right.</div></td></tr>';
+      } catch (error) {
+        $('gk-rows').innerHTML = '<tr><td colspan="4"><div class="ms-empty">' + esc(error.message) + '</div></td></tr>';
+      }
+    }
+
+    $('gk-rows').addEventListener('click', async event => {
+      const button = event.target.closest('[data-remove]');
+      if (!button) return;
+      if (!confirm('Remove ' + button.dataset.name + '\'s gate account? They will no longer be able to sign in.')) return;
+      button.disabled = true;
+      try {
+        await api(base + '/admin/gatekeepers/' + button.dataset.remove, { method: 'DELETE' });
+        await loadGatekeepers();
+        setStatus('gk-status', 'Gate account removed.', 'ok');
+      } catch (error) {
+        setStatus('gk-status', error.message, 'error');
+        button.disabled = false;
+      }
+    });
+
+    $('gk-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      setStatus('gk-status', 'Creating gate account…');
+      try {
+        const data = await api(base + '/admin/gatekeepers', { method: 'POST', body: new FormData(form) });
+        form.reset();
+        await loadGatekeepers();
+        setStatus('gk-status', 'Created. Gatekeeper signs in as ' + data.username + '.', 'ok');
+      } catch (error) {
+        setStatus('gk-status', error.message, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    /* ---------------- Teachers ---------------- */
+    async function loadTeachers() {
+      try {
+        const data = await api(base + '/admin/teachers');
+        const teachers = data.teachers || [];
+        $('teach-caption').textContent = teachers.length + ' teachers';
+        $('teach-rows').innerHTML = teachers.length ? teachers.map(t =>
+          '<tr>' +
+            '<td><b>' + esc(t.full_name) + '</b><span class="ws-sub">' + (t.is_dos ? 'DOS · ' : '') + (t.is_active ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td class="ms-small">' + esc(t.email) + '</td>' +
+            '<td class="ms-small ms-muted">' + esc((t.subjects || []).join(', ') || '—') + '</td>' +
+            '<td class="ms-small ms-muted">' + esc((t.classes || []).join(', ') || '—') + '</td>' +
+          '</tr>').join('') : '<tr><td colspan="4"><div class="ms-empty">No teachers added yet.</div></td></tr>';
+      } catch (error) {
+        $('teach-rows').innerHTML = '<tr><td colspan="4"><div class="ms-empty">' + esc(error.message) + '</div></td></tr>';
+      }
+    }
+
+    $('teach-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      const selected = Array.from(form.querySelectorAll('input[name="classes"]:checked')).map(i => i.value);
+      if (!selected.length) {
+        setStatus('teach-status', 'Select at least one class for this teacher.', 'error');
+        return;
+      }
+      const body = new FormData(form);
+      body.delete('classes');
+      selected.forEach(cls => body.append('classes', cls));
+      button.disabled = true;
+      setStatus('teach-status', 'Creating teacher account…');
+      try {
+        const data = await api(base + '/admin/teachers', { method: 'POST', body });
+        form.reset();
+        await loadTeachers();
+        setStatus('teach-status', 'Created. ' + data.email + ' signs in with the password you set.', 'ok');
+      } catch (error) {
+        setStatus('teach-status', error.message, 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    /* ---------------- Timetable ---------------- */
+    const ttState = { slots: {}, options: {}, selection: null, class: '', loaded: false };
+
+    async function loadTimetable() {
+      const className = $('tt-class').value;
+      if (!className) return;
+      ttState.class = className;
+      setStatus('tt-status', 'Loading timetable…');
+      try {
+        const data = await api(base + '/admin/timetable?class_name=' + encodeURIComponent(className));
+        ttState.slots = {};
+        (data.slots || []).forEach(slot => { ttState.slots[slot.day + '-' + slot.period] = slot; });
+        ttState.options = data.subject_options || {};
+        renderTimetable();
+        setStatus('tt-status', className + ' · ' + (data.slots || []).length + ' slots filled');
+        ttState.loaded = true;
+        clearEditor();
+      } catch (error) {
+        setStatus('tt-status', error.message, 'error');
+        $('tt-body').innerHTML = '<tr><td colspan="6"><div class="ms-empty">' + esc(error.message) + '</div></td></tr>';
+      }
+    }
+
+    function renderTimetable() {
+      const rows = [];
+      for (let period = 1; period <= 8; period++) {
+        let row = '<tr><td>P' + period + '</td>';
+        for (let day = 1; day <= 5; day++) {
+          const slot = ttState.slots[day + '-' + period];
+          const selected = ttState.selection && ttState.selection.day === day && ttState.selection.period === period;
+          const teacher = slot && slot.teacher_id && ttState.options[slot.subject]
+            ? (ttState.options[slot.subject].find(t => t.teacher_id === slot.teacher_id) || {}).teacher_name
+            : '';
+          row += '<td><button class="tt-cell' + (slot ? '' : ' is-empty') + (selected ? ' is-selected' : '') + '" type="button" data-day="' + day + '" data-period="' + period + '">' +
+            (slot ? '<b>' + esc(slot.subject) + '</b><small>' + esc(teacher || 'Unassigned') + '</small>' : '+') +
+          '</button></td>';
+        }
+        rows.push(row + '</tr>');
+      }
+      $('tt-body').innerHTML = rows.join('');
+    }
+
+    function clearEditor() {
+      ttState.selection = null;
+      $('tt-slot-label').textContent = 'Select a cell in the timetable.';
+      $('tt-subject').innerHTML = '<option value="">Choose a subject</option>';
+      $('tt-teacher').innerHTML = '<option value="">Unassigned</option>';
+      setStatus('tt-editor-status', '');
+      renderTimetable();
+    }
+
+    function fillTeachers(subject, selectedId) {
+      const list = ttState.options[subject] || [];
+      $('tt-teacher').innerHTML = '<option value="">Unassigned</option>' + list.map(t =>
+        '<option value="' + t.teacher_id + '"' + (selectedId && Number(selectedId) === t.teacher_id ? ' selected' : '') + '>' +
+        esc(t.teacher_name) + '</option>').join('');
+    }
+
+    $('tt-body').addEventListener('click', event => {
+      const cell = event.target.closest('.tt-cell');
+      if (!cell) return;
+      const day = Number(cell.dataset.day);
+      const period = Number(cell.dataset.period);
+      const slot = ttState.slots[day + '-' + period];
+      ttState.selection = { day, period, slot: slot || null };
+      $('tt-slot-label').textContent = 'Week ' + TT_DAYS[day - 1] + ' · Period ' + period + (slot ? ' · currently ' + slot.subject : ' · empty slot');
+      const subjects = Object.keys(ttState.options).sort();
+      $('tt-subject').innerHTML = '<option value="">Choose a subject</option>' + subjects.map(s =>
+        '<option value="' + esc(s) + '"' + (slot && slot.subject === s ? ' selected' : '') + '>' + esc(s) + '</option>').join('');
+      if (slot) fillTeachers(slot.subject, slot.teacher_id);
+      else $('tt-teacher').innerHTML = '<option value="">Unassigned</option>';
+      setStatus('tt-editor-status', '');
+      renderTimetable();
+    });
+
+    $('tt-subject').addEventListener('change', event => fillTeachers(event.target.value, null));
+
+    $('tt-save').addEventListener('click', async () => {
+      if (!ttState.selection) { setStatus('tt-editor-status', 'Select a timetable cell first.', 'error'); return; }
+      const subject = $('tt-subject').value;
+      if (!subject) { setStatus('tt-editor-status', 'Choose a subject for the slot.', 'error'); return; }
+      const teacherValue = $('tt-teacher').value;
+      setStatus('tt-editor-status', 'Saving…');
+      try {
+        await api(base + '/admin/timetable', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            class_name: ttState.class,
+            day: ttState.selection.day,
+            period: ttState.selection.period,
+            subject,
+            teacher_id: teacherValue ? Number(teacherValue) : null
+          })
+        });
+        await loadTimetable();
+        setStatus('tt-status', 'Slot saved.', 'ok');
+      } catch (error) {
+        setStatus('tt-editor-status', error.message, 'error');
+      }
+    });
+
+    $('tt-clear').addEventListener('click', async () => {
+      if (!ttState.selection || !ttState.selection.slot) {
+        setStatus('tt-editor-status', 'This cell is already empty.', 'error');
+        return;
+      }
+      if (!confirm('Clear this timetable slot?')) return;
+      try {
+        await api(base + '/admin/timetable/' + ttState.selection.slot.id, { method: 'DELETE' });
+        await loadTimetable();
+        setStatus('tt-status', 'Slot cleared.', 'ok');
+      } catch (error) {
+        setStatus('tt-editor-status', error.message, 'error');
+      }
+    });
+
+    $('tt-refresh').addEventListener('click', loadTimetable);
+    $('tt-class').addEventListener('change', loadTimetable);
+
+    // Initialise the first tab.
+    openTab('attendance');
+  </script>
+</body>
+</html>

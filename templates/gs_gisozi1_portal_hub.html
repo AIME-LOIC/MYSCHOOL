@@ -1,33 +1,277 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#123c32">
-<title>GS Gisozi 1 · School Workspace</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--forest:#123c32;--forest2:#1b5947;--mint:#dff3e9;--lime:#c6ef77;--ink:#172c26;--muted:#6a7e76;--line:#dfeae4;--paper:#f5f8f5;--white:#fff}
-*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.55 'DM Sans',sans-serif}a{color:inherit;text-decoration:none}.shell{width:min(1160px,calc(100% - 40px));margin:auto}
-.top{height:78px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:12px;font:800 18px Manrope,sans-serif;color:var(--forest)}.crest{width:43px;height:43px;border-radius:14px;background:var(--forest);color:var(--lime);display:grid;place-items:center;font:800 13px Manrope;letter-spacing:-.04em}.brand small{display:block;font:600 10px 'DM Sans';letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-top:1px}.top-right{display:flex;gap:10px;align-items:center}.powered{font-size:11px;color:var(--muted)}.powered b{color:var(--forest)}
-.hero{margin:34px 0 24px;border-radius:25px;background:linear-gradient(115deg,#123c32 0%,#1b5947 68%,#286b52 100%);color:#fff;padding:clamp(28px,5vw,54px);position:relative;overflow:hidden}.hero:before,.hero:after{content:'';position:absolute;border:1px solid #ffffff19;border-radius:50%;pointer-events:none}.hero:before{width:380px;height:380px;right:-100px;top:-210px}.hero:after{width:270px;height:270px;right:60px;bottom:-210px}.hero-content{position:relative;z-index:1;max-width:690px}.eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--lime);font-size:10px;font-weight:800;letter-spacing:.17em;text-transform:uppercase}.eyebrow:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 5px #c6ef7720}h1{font:800 clamp(32px,5vw,53px)/1.07 Manrope,sans-serif;letter-spacing:-.055em;margin:17px 0 13px}h1 span{color:var(--lime)}.hero p{max-width:590px;color:#d4e8dd;line-height:1.8;margin:0;font-size:14px}.hero-foot{display:flex;align-items:center;gap:10px;margin-top:27px;color:#e1f1e7;font-size:11px}.hero-foot span{border:1px solid #ffffff32;border-radius:99px;padding:7px 11px}
-.section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:34px 0 15px}.section-head h2{font:800 19px Manrope;margin:0;letter-spacing:-.03em}.section-head p{font-size:12px;color:var(--muted);margin:4px 0 0}.roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.role{background:#fff;border:1px solid var(--line);border-radius:19px;padding:21px;min-height:205px;display:flex;flex-direction:column;transition:.18s}.role:hover{transform:translateY(-3px);border-color:#9fc8b2;box-shadow:0 15px 35px #143b2a10}.role-icon{width:44px;height:44px;border-radius:14px;background:var(--mint);color:var(--forest2);display:grid;place-items:center;font:800 16px Manrope}.role h3{font:800 16px Manrope;margin:17px 0 6px}.role p{font-size:12px;color:var(--muted);line-height:1.65;margin:0 0 18px}.open{margin-top:auto;padding-top:13px;border-top:1px solid #edf2ee;display:flex;justify-content:space-between;align-items:center;color:var(--forest2);font-size:12px;font-weight:800}
-.attendance{margin:22px 0 45px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center}.attendance-copy{display:flex;gap:15px;align-items:flex-start}.attendance-icon{width:45px;height:45px;flex:0 0 45px;border-radius:14px;background:#f0f5df;color:#527326;display:grid;place-items:center;font:800 15px Manrope}.attendance h3{font:800 15px Manrope;margin:0 0 5px}.attendance p{font-size:12px;color:var(--muted);margin:0;line-height:1.7}.attendance-link{background:var(--forest);color:#fff;border-radius:11px;padding:12px 16px;font-size:12px;font-weight:800;white-space:nowrap}.foot{border-top:1px solid var(--line);padding:18px 0 25px;display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:11px}
-@media(max-width:760px){.roles{grid-template-columns:1fr 1fr}.attendance{grid-template-columns:1fr}.attendance-link{justify-self:start}}@media(max-width:520px){.shell{width:min(100% - 28px,1160px)}.top{height:68px}.powered{display:none}.hero{margin-top:20px;border-radius:19px}.roles{grid-template-columns:1fr}.role{min-height:0}.section-head{align-items:start;flex-direction:column}.attendance{padding:18px}.foot{flex-direction:column}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123a2b">
+  <title>GS Gisozi 1 · School workspace</title>
+  <link rel="stylesheet" href="/static/myschool-ui.css">
+  <style>
+    .g1-masthead {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      padding: 30px 0 26px;
+      border-bottom: 1px solid var(--line);
+    }
+    .g1-seal {
+      width: 96px; height: 96px;
+      border: 1px solid var(--forest);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      text-align: center;
+      background: var(--surface);
+      color: var(--forest);
+      position: relative;
+    }
+    .g1-seal::before {
+      content: ''; position: absolute; inset: 5px;
+      border: 1px solid var(--line-strong); border-radius: 50%;
+    }
+    .g1-seal span {
+      font: 500 24px/1 'Fraunces', serif; letter-spacing: -.02em;
+    }
+    .g1-seal small {
+      display: block; font: 600 8px/1.4 'Inter', sans-serif;
+      letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-top: 4px;
+    }
+    .g1-masthead h1 {
+      font: 500 clamp(30px, 4vw, 44px)/1.05 'Fraunces', Georgia, serif;
+      letter-spacing: -.035em; margin: 0; color: var(--forest-ink);
+    }
+    .g1-masthead h1 small {
+      display: block; font: 600 10.5px 'Inter', sans-serif;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--ochre);
+      margin-bottom: 9px;
+    }
+    .g1-masthead p { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
+    .g1-meta { text-align: right; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+    .g1-meta b { display: block; color: var(--ink); font-size: 12.5px; }
+
+    .g1-line {
+      margin: 34px 0 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+      gap: 0;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .g1-line__copy { padding: 30px 32px; border-right: 1px solid var(--line); }
+    .g1-line__copy p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; max-width: 60ch; }
+    .g1-line__copy p + p { margin-top: 12px; }
+    .g1-line__aside { padding: 26px 26px; background: #fbfaf6; display: grid; gap: 14px; align-content: start; }
+    .g1-fact { border-top: 1px solid var(--line); padding-top: 10px; }
+    .g1-fact:first-child { border-top: 0; padding-top: 0; }
+    .g1-fact span { display: block; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); font-weight: 700; }
+    .g1-fact b { display: block; font-size: 13px; font-weight: 600; margin-top: 3px; }
+
+    .g1-role-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .g1-role {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 22px; display: flex; flex-direction: column;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .g1-role:hover { border-color: var(--line-strong); box-shadow: var(--shadow); }
+    .g1-role__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .g1-role__head span:first-child { font: 500 12px 'Fraunces', serif; color: var(--ochre); }
+    .g1-role h3 { font: 600 20px/1.2 'Fraunces', serif; margin: 15px 0 6px; letter-spacing: -.02em; }
+    .g1-role > p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.65; }
+    .g1-role__links { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 2px; }
+    .g1-role__links a {
+      display: flex; justify-content: space-between; gap: 10px;
+      padding: 7px 0; font-size: 12.5px; font-weight: 600; color: var(--forest);
+      border-bottom: 1px dotted #ebeae0;
+    }
+    .g1-role__links a:last-child { border-bottom: 0; }
+    .g1-role__links a:hover { color: var(--forest-2); }
+    .g1-role__links a span { color: var(--faint); font-weight: 400; }
+
+    .g1-attendance {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .g1-attendance__intro { padding: 26px 30px; border-right: 1px solid var(--line); }
+    .g1-attendance__intro h3 { font: 600 21px/1.25 'Fraunces', serif; margin: 8px 0 8px; letter-spacing: -.02em; }
+    .g1-attendance__intro p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+    .g1-attendance__lanes { display: grid; }
+    .g1-lane {
+      padding: 17px 22px; display: flex; align-items: center; gap: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .g1-lane:last-child { border-bottom: 0; }
+    .g1-lane__no {
+      width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center;
+      border: 1px solid var(--line-strong); border-radius: 50%;
+      font: 500 11px 'Fraunces', serif; color: var(--forest);
+    }
+    .g1-lane b { display: block; font-size: 13px; }
+    .g1-lane small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+    .g1-lane a { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--forest); white-space: nowrap; }
+    .g1-lane a:hover { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .g1-masthead { grid-template-columns: 74px minmax(0, 1fr); gap: 18px; }
+      .g1-seal { width: 68px; height: 68px; }
+      .g1-seal span { font-size: 18px; }
+      .g1-seal small { display: none; }
+      .g1-meta { display: none; }
+      .g1-line { grid-template-columns: 1fr; }
+      .g1-line__copy { border-right: 0; border-bottom: 1px solid var(--line); }
+      .g1-role-grid { grid-template-columns: 1fr 1fr; }
+      .g1-attendance { grid-template-columns: 1fr; }
+      .g1-attendance__intro { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+    @media (max-width: 600px) {
+      .g1-role-grid { grid-template-columns: 1fr; }
+      .g1-masthead { grid-template-columns: 1fr; }
+      .g1-seal { display: none; }
+      .g1-line__copy, .g1-line__aside, .g1-attendance__intro { padding: 22px; }
+    }
+  </style>
 </head>
 <body>
-<div class="shell">
-<header class="top"><a class="brand" href="/{{ school_name }}/portals"><span class="crest">GS1</span><span>GS GISOZI 1<small>School community workspace</small></span></a><div class="top-right"><span class="powered">A school experience by <b>1percent</b></span></div></header>
-<main>
-<section class="hero"><div class="hero-content"><div class="eyebrow">A dedicated digital campus</div><h1>One school. <span>Every learner.</span><br>Always connected.</h1><p>Welcome to the GS Gisozi 1 digital school workspace. A dedicated place for families, teachers and school leaders to work together, follow progress and keep every learner supported.</p><div class="hero-foot"><span>Parent partnership</span><span>Teaching & learning</span><span>School operations</span></div></div></section>
-<div class="section-head"><div><h2>Choose your workspace</h2><p>Continue using the tools assigned to your role at GS Gisozi 1.</p></div></div>
-<section class="roles" aria-label="GS Gisozi 1 workspaces">
-<a class="role" href="/{{ school_name }}/parentportal"><span class="role-icon">PA</span><h3>Parent & Guardian</h3><p>Stay close to your child's learning journey, school communication and published academic updates.</p><div class="open">Enter parent space <span>→</span></div></a>
-<a class="role" href="/{{ school_name }}/teacher"><span class="role-icon">TE</span><h3>Teacher workspace</h3><p>Manage assigned classes, follow learner progress and access your teaching tools.</p><div class="open">Enter teacher space <span>→</span></div></a>
-<a class="role" href="/{{ school_name }}/admin/login"><span class="role-icon">AD</span><h3>School administration</h3><p>Manage school records, staff, student information and school-wide operations.</p><div class="open">Administrator sign in <span>→</span></div></a>
-</section>
-<section class="attendance"><div class="attendance-copy"><span class="attendance-icon">QR</span><div><h3>Smart student attendance</h3><p>Dedicated attendance workflow planned for GS Gisozi 1, designed around QR verification and student-card tap-in, with parent updates after attendance is recorded.</p></div></div><a class="attendance-link" href="/{{ school_name }}/teacher">Teacher access <span aria-hidden="true">→</span></a></section>
-</main>
-<footer class="foot"><span>GS Gisozi 1 · Digital School Workspace</span><span>Powered by <b>1percent Rwanda</b></span></footer>
-</div>
-</body></html>
+  <header class="ms-top">
+    <div class="ms-shell ms-top__inner">
+      <a class="ms-brand" href="/{{ school_name }}/portals">
+        <span class="ms-crest">GS1</span>
+        <span>
+          <span class="ms-brand__name">GS Gisozi 1</span>
+          <span class="ms-brand__sub">School community workspace</span>
+        </span>
+      </a>
+      <nav class="ms-top__nav">
+        <a class="ms-top__link" href="/">All schools</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="ms-shell" style="padding-bottom:56px">
+    <section class="g1-masthead">
+      <div class="g1-seal"><div><span>GS1</span><small>Gisozi · Kigali</small></div></div>
+      <div>
+        <h1><small>School code {{ school.school_code }}</small>GS Gisozi 1</h1>
+        <p>Digital campus for families, teachers, gate staff and school leadership.</p>
+      </div>
+      <div class="g1-meta">
+        <b>Working week</b>
+        Monday – Friday<br>
+        <b style="margin-top:8px">Access</b>
+        Role-based school accounts
+      </div>
+    </section>
+
+    <section class="g1-line" aria-label="About this workspace">
+      <div class="g1-line__copy">
+        <p>Every part of the GS Gisozi 1 school day now runs through this workspace: attendance is validated at the gate, parents see the same record, teachers work from assigned classes, and the administration keeps student, staff and timetable records in one place.</p>
+        <p>Choose a workspace below. You will only be asked for the credentials that belong to that role.</p>
+      </div>
+      <div class="g1-line__aside">
+        <div class="g1-fact"><span>Attendance</span><b>Gate scan &amp; manual desk</b></div>
+        <div class="g1-fact"><span>Parent visibility</span><b>Daily record and monthly summary</b></div>
+        <div class="g1-fact"><span>Administration</span><b>Families, staff &amp; timetables</b></div>
+      </div>
+    </section>
+
+    <section class="ms-section" aria-labelledby="roles-title">
+      <div class="ms-section__head">
+        <h2 id="roles-title" class="ms-h2">Choose your workspace</h2>
+        <p>Four entry points, each with its own responsibilities.</p>
+      </div>
+
+      <div class="g1-role-grid">
+        <article class="g1-role">
+          <div class="g1-role__head"><span>01 / Family</span><span class="ms-badge ms-badge--present">Daily updates</span></div>
+          <h3>Parents &amp; guardians</h3>
+          <p>Follow your child's attendance and published academic reports from one family account.</p>
+          <div class="g1-role__links">
+            <a href="/{{ school_name }}/attendance/parent">Attendance record <span>→</span></a>
+            <a href="/{{ school_name }}/parentportal">Reports &amp; portal <span>→</span></a>
+            <a href="/{{ school_name }}/parent/login">Parent sign in <span>→</span></a>
+          </div>
+        </article>
+
+        <article class="g1-role">
+          <div class="g1-role__head"><span>02 / Teaching</span><span class="ms-badge">Staff account</span></div>
+          <h3>Teachers</h3>
+          <p>Work from your assigned classes, enter marks, view your timetable and validate attendance.</p>
+          <div class="g1-role__links">
+            <a href="/{{ school_name }}/teacher">Teaching workspace <span>→</span></a>
+            <a href="/{{ school_name }}/attendance/station">Attendance station <span>→</span></a>
+          </div>
+        </article>
+
+        <article class="g1-role">
+          <div class="g1-role__head"><span>03 / Gate</span><span class="ms-badge">Station account</span></div>
+          <h3>Gatekeepers</h3>
+          <p>Validate arrivals with a student ID or QR scan and keep the gate record accurate in real time.</p>
+          <div class="g1-role__links">
+            <a href="/{{ school_name }}/attendance/login">Gate attendance sign in <span>→</span></a>
+          </div>
+        </article>
+
+        <article class="g1-role" style="grid-column: span 1">
+          <div class="g1-role__head"><span>04 / Operations</span><span class="ms-badge ms-badge--quiet">Administrator</span></div>
+          <h3>School administration</h3>
+          <p>Manage students and parent links, add teachers, build timetables and review attendance.</p>
+          <div class="g1-role__links">
+            <a href="/{{ school_name }}/admin/workspace">Operations workspace <span>→</span></a>
+            <a href="/{{ school_name }}/admin/login">Administrator sign in <span>→</span></a>
+          </div>
+        </article>
+
+        <article class="g1-role" style="grid-column: span 1">
+          <div class="g1-role__head"><span>05 / Learner</span><span class="ms-badge">Student ID</span></div>
+          <h3>Students</h3>
+          <p>Sign in with your student ID to see your timetable, class information and student account.</p>
+          <div class="g1-role__links">
+            <a href="/{{ school_name }}/student-login">Student sign in <span>→</span></a>
+          </div>
+        </article>
+
+        <article class="g1-role" style="grid-column: span 1">
+          <div class="g1-role__head"><span>06 / Canteen</span><span class="ms-badge">Staff account</span></div>
+          <h3>Canteen</h3>
+          <p>Manage the published menu, student cards, top-ups and approved canteen transactions.</p>
+          <div class="g1-role__links">
+            <a href="/{{ school_name }}/canteen-admin">Canteen workspace <span>→</span></a>
+          </div>
+        </article>
+      </div>
+
+      <div class="g1-attendance" id="attendance">
+        <div class="g1-attendance__intro">
+          <div class="ms-eyebrow">Student attendance</div>
+          <h3>A single record, validated once.</h3>
+          <p>The gate or a teacher validates a student's arrival, and the same record appears in the parent account. No separate registers, and no re-typing at the end of the day.</p>
+          <a class="ms-btn ms-btn--ghost ms-btn--sm" href="/{{ school_name }}/attendance/login" style="margin-top:18px">Open attendance station</a>
+        </div>
+        <div class="g1-attendance__lanes">
+          <div class="g1-lane">
+            <span class="g1-lane__no">1</span>
+            <div><b>Validate at the station</b><small>Student ID entry or QR scan, marked present or late.</small></div>
+            <a href="/{{ school_name }}/attendance/login">Staff →</a>
+          </div>
+          <div class="g1-lane">
+            <span class="g1-lane__no">2</span>
+            <div><b>See it in the family account</b><small>Parents review the daily record and monthly summary.</small></div>
+            <a href="/{{ school_name }}/attendance/parent">Parents →</a>
+          </div>
+          <div class="g1-lane">
+            <span class="g1-lane__no">3</span>
+            <div><b>Review school-wide</b><small>Class-by-class attendance with export for the office.</small></div>
+            <a href="/{{ school_name }}/admin/workspace">Office →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="ms-foot">
+      <span><b>GS Gisozi 1</b> · Digital school workspace · Powered by 1percent</span>
+      <span>Attendance and reports are visible only to linked accounts.</span>
+    </footer>
+  </main>
+</body>
+</html>

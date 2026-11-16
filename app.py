@@ -9,15 +9,16 @@ from typing import List, Dict, Optional
 from pydantic import BaseModel
 import pandas as pd
 import threading, time, requests, os, signal, hashlib, hmac
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import re
 import json
 import logging
 from difflib import SequenceMatcher
+from functools import lru_cache
 from openpyxl.styles import Font, PatternFill
 
 from config import get_db, engine, Base, init_db
-from model import Student, Visit, Product, SupportRequest, ParentAccount, StudentMark, CanteenAdmin, Teacher, TimetableSlot
+from model import Student, Visit, Product, SupportRequest, ParentAccount, StudentMark, CanteenAdmin, Teacher, TimetableSlot, AttendanceRecord, Gatekeeper
 from system_admin import School, create_school_database, list_all_schools, delete_school_database, get_school_database_info
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -832,7 +833,8 @@ def admin_choice(school_name: str, request: Request, db: Session = Depends(get_d
     return templates.TemplateResponse("admin.html", {
         "request": request,
         "school_name": school_name,
-        "school_code": school.school_code
+        "school_code": school.school_code,
+        "is_sch003": _is_gs_gisozi1(school),
     })
 
 
@@ -2156,6 +2158,7 @@ def teacher_page(school_name: str, request: Request, db: Session = Depends(get_d
         "teacher": teacher,
         "logged_in": bool(teacher),
         "teacher_is_dos": bool(teacher.is_dos) if teacher else False,
+        "is_sch003": _is_gs_gisozi1(school),
         "teacher_subjects": _string_to_list(teacher.subjects) if teacher else [],
         "teacher_classes": sorted(_string_to_list(teacher.classes)) if teacher else [],
     })
@@ -2172,6 +2175,7 @@ def teacher_login(school_name: str, request: Request, email: str = Form(...), pa
         return templates.TemplateResponse("teacher.html", {
             "request": request, "school": school, "school_name": school_name, "teacher": None,
             "logged_in": False, "teacher_subjects": [], "teacher_classes": [],
+            "is_sch003": _is_gs_gisozi1(school),
             "error": "Invalid email or password",
         })
     expires = int(time.time()) + _TEACHER_SESSION_SECONDS
@@ -3166,3 +3170,735 @@ def eats_pay_by_student_card_id(school_name: str, payload: EatsStudentCodePaymen
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="Payment could not be completed. No approval was returned.")
+
+
+# ============================================================================
+# GS GISOZI 1 (SCH-003) — ATTENDANCE WORKSPACE
+# These routes exist only for the school whose System Admin code is SCH-003.
+# ============================================================================
+_GATEKEEPER_COOKIE = "myschool_gatekeeper_session"
+_ATTENDANCE_STATUSES = {"present", "late", "absent"}
+
+
+def _sch003_school(school_name: str, db: Session) -> School:
+    """Resolve the school and refuse everything that is not GS Gisozi 1."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    if not _is_gs_gisozi1(school):
+        raise HTTPException(status_code=404, detail="This workspace is only available for GS Gisozi 1 (SCH-003).")
+    return school
+
+
+def _attendance_actor(request: Request, school: School, db: Session):
+    """Who is operating the attendance station: a teacher or a gatekeeper."""
+    teacher_id = _read_teacher_session(request, school.id)
+    if teacher_id:
+        teacher = db.query(Teacher).filter(
+            Teacher.id == teacher_id, Teacher.school_id == school.id, Teacher.is_active == 1
+        ).first()
+        if teacher:
+            return {"role": "teacher", "id": teacher.id, "name": teacher.full_name}
+    gatekeeper_id = _read_signed_role_token(request, _GATEKEEPER_COOKIE, "gatekeeper", school.id)
+    if gatekeeper_id:
+        staff = db.query(Gatekeeper).filter(
+            Gatekeeper.id == gatekeeper_id, Gatekeeper.school_id == school.id, Gatekeeper.is_active == 1
+        ).first()
+        if staff:
+            return {"role": "gatekeeper", "id": staff.id, "name": staff.full_name}
+    return None
+
+
+def _attendance_students(db: Session, school: School, class_name: str | None = None):
+    query = db.query(Student).filter(
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.is_active == 1,
+    )
+    if class_name and class_name.strip() and class_name.strip().lower() != "all":
+        query = query.filter(Student.class_name == class_name.strip())
+    return query.order_by(Student.class_name, Student.student_name).all()
+
+
+def _attendance_day(date_text: str | None) -> date:
+    if date_text:
+        try:
+            return datetime.strptime(date_text.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    return datetime.now().date()
+
+
+def _attendance_summary(students, records, target_day: date) -> dict:
+    by_student = {r.student_id: r for r in records}
+    summary = {"students": len(students), "present": 0, "late": 0, "absent": 0, "unmarked": 0}
+    for student in students:
+        record = by_student.get(student.id)
+        if not record:
+            summary["unmarked"] += 1
+        elif record.status in _ATTENDANCE_STATUSES:
+            summary[record.status] += 1
+        else:
+            summary["unmarked"] += 1
+    marked = summary["students"] - summary["unmarked"]
+    summary["marked"] = marked
+    summary["rate"] = round(((summary["present"] + summary["late"]) / marked) * 100) if marked else None
+    summary["date"] = target_day.isoformat()
+    return summary
+
+
+def _attendance_classes(students) -> list[str]:
+    return sorted({s.class_name for s in students if s.class_name})
+
+
+# A printed card carries a signed token instead of the bare student number, so a
+# card from another school (or a hand-written number) cannot be replayed here.
+_ATTENDANCE_CARD_RE = re.compile(r"GS1-(\d{1,10})-(\d{1,10})-([0-9A-F]{10})", re.I)
+
+
+def _attendance_card_token(school: School, student: Student) -> str:
+    payload = f"GS1-{school.id}-{student.id}"
+    signature = hmac.new(
+        _signing_secret().encode(), f"attendance-card:{payload}".encode(), hashlib.sha256
+    ).hexdigest()[:10].upper()
+    return f"{payload}-{signature}"
+
+
+def _attendance_card_student_id(school: School, code: str):
+    """Return the student id inside a valid signed card token, else None."""
+    match = _ATTENDANCE_CARD_RE.search(code or "")
+    if not match:
+        return None
+    school_text, student_text, signature = match.groups()
+    if int(school_text) != school.id:
+        return None
+    payload = f"GS1-{school_text}-{student_text}"
+    expected = hmac.new(
+        _signing_secret().encode(), f"attendance-card:{payload}".encode(), hashlib.sha256
+    ).hexdigest()[:10].upper()
+    if not hmac.compare_digest(signature.upper(), expected):
+        return None
+    return int(student_text)
+
+
+def _attendance_find_student(db: Session, school: School, code: str):
+    """Resolve a scanned card token, a pasted token, or a typed student number."""
+    text = (code or "").strip()
+    student_id = _attendance_card_student_id(school, text)
+    if student_id is None:
+        # Only a bare student number may fall back to ID lookup. A malformed or
+        # foreign card token must never be read as "student 1" from its digits.
+        if not re.fullmatch(r"\d{1,9}", text):
+            return None
+        student_id = int(text)
+    return db.query(Student).filter(
+        Student.id == student_id,
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.is_active == 1,
+    ).first()
+
+
+@lru_cache(maxsize=4096)
+def _attendance_qr_svg(token: str) -> str:
+    """Inline SVG QR code, so ID cards print without any network request."""
+    import base64
+    import io
+    import qrcode
+    from qrcode.image.svg import SvgPathImage
+
+    image = qrcode.make(token, image_factory=SvgPathImage, box_size=10, border=2)
+    buffer = io.BytesIO()
+    image.save(buffer)
+    svg = buffer.getvalue()
+    # Force an opaque quiet zone so the code still scans if a card is printed on
+    # tinted stock or the SVG is shown on a dark page.
+    svg = svg.replace(b"<path", b'<rect width="100%" height="100%" fill="#ffffff"/><path', 1)
+    return "data:image/svg+xml;base64," + base64.b64encode(svg).decode("ascii")
+
+
+@app.get("/{school_name}/attendance/login", response_class=HTMLResponse)
+def sch003_attendance_login_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    """Sign-in for the attendance station (teachers by email, gatekeepers by username)."""
+    school = _sch003_school(school_name, db)
+    if _attendance_actor(request, school, db):
+        return RedirectResponse(f"/{school_name}/attendance/station", status_code=303)
+    return templates.TemplateResponse("sch003_attendance_login.html", {
+        "request": request, "school": school, "school_name": school_name, "error": "",
+    })
+
+
+@app.post("/{school_name}/attendance/login")
+def sch003_attendance_login(
+    school_name: str,
+    request: Request,
+    identifier: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    school = _sch003_school(school_name, db)
+    identifier_clean = identifier.strip().lower()
+    teacher = db.query(Teacher).filter(
+        Teacher.school_id == school.id, Teacher.email == identifier_clean, Teacher.is_active == 1
+    ).first()
+    if teacher and _student_password_matches(password, teacher.password_hash):
+        token = _signed_role_token("teacher", teacher.id, school.id, int(time.time()) + _TEACHER_SESSION_SECONDS)
+        response = RedirectResponse(f"/{school_name}/attendance/station", status_code=303)
+        response.set_cookie(_TEACHER_COOKIE, token, max_age=_TEACHER_SESSION_SECONDS, httponly=True,
+                            secure=request.url.scheme == "https", samesite="lax", path="/")
+        return response
+
+    staff = db.query(Gatekeeper).filter(
+        Gatekeeper.school_id == school.id, Gatekeeper.username == identifier_clean, Gatekeeper.is_active == 1
+    ).first()
+    if staff and _student_password_matches(password, staff.password_hash):
+        token = _signed_role_token("gatekeeper", staff.id, school.id, int(time.time()) + _TEACHER_SESSION_SECONDS)
+        response = RedirectResponse(f"/{school_name}/attendance/station", status_code=303)
+        response.set_cookie(_GATEKEEPER_COOKIE, token, max_age=_TEACHER_SESSION_SECONDS, httponly=True,
+                            secure=request.url.scheme == "https", samesite="lax", path="/")
+        return response
+
+    return templates.TemplateResponse("sch003_attendance_login.html", {
+        "request": request, "school": school, "school_name": school_name,
+        "error": "Those details did not match a teacher email or gatekeeper username at this school.",
+    }, status_code=401)
+
+
+@app.get("/{school_name}/attendance/station")
+def sch003_attendance_station(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = _sch003_school(school_name, db)
+    actor = _attendance_actor(request, school, db)
+    if not actor:
+        return RedirectResponse(f"/{school_name}/attendance/login", status_code=303)
+    students = _attendance_students(db, school)
+    today = datetime.now().date()
+    records = db.query(AttendanceRecord).filter(
+        AttendanceRecord.school_id == school.id, AttendanceRecord.attendance_date == today
+    ).all()
+    return templates.TemplateResponse("sch003_attendance_station.html", {
+        "request": request,
+        "school": school,
+        "school_name": school_name,
+        "actor": actor,
+        "classes": _attendance_classes(students),
+        "today": today,
+        "summary": _attendance_summary(students, records, today),
+    })
+
+
+@app.post("/{school_name}/attendance/logout")
+def sch003_attendance_logout(school_name: str):
+    response = RedirectResponse(f"/{school_name}/attendance/login", status_code=303)
+    response.delete_cookie(_TEACHER_COOKIE, path="/")
+    response.delete_cookie(_GATEKEEPER_COOKIE, path="/")
+    return response
+
+
+@app.get("/{school_name}/attendance/api/student")
+def sch003_attendance_lookup(
+    school_name: str,
+    request: Request,
+    code: str | None = Query(None, min_length=1, max_length=512),
+    student_id: int | None = Query(None, ge=1),
+    db: Session = Depends(get_db),
+):
+    school = _sch003_school(school_name, db)
+    actor = _attendance_actor(request, school, db)
+    if not actor:
+        raise HTTPException(status_code=401, detail="Attendance station login required.")
+    scanned = (code or "").strip() or (str(student_id) if student_id else "")
+    if not scanned:
+        raise HTTPException(status_code=400, detail="Scan a student card or enter a student number.")
+    student = _attendance_find_student(db, school, scanned)
+    if not student:
+        raise HTTPException(status_code=404, detail="That card or number does not match an active student at this school.")
+    matched_by_card = _attendance_card_student_id(school, scanned) is not None
+    today = datetime.now().date()
+    record = db.query(AttendanceRecord).filter(
+        AttendanceRecord.school_id == school.id,
+        AttendanceRecord.student_id == student.id,
+        AttendanceRecord.attendance_date == today,
+    ).first()
+    linked_parent = db.query(ParentAccount).filter(
+        ParentAccount.school_id == school.id,
+        ParentAccount.student_id == student.id,
+        ParentAccount.is_active == 1,
+    ).first()
+    return {
+        "status": "success",
+        "student": {"id": student.id, "student_name": student.student_name, "class_name": student.class_name},
+        "matched_by": "card" if matched_by_card else "number",
+        "parent_linked": bool(linked_parent),
+        "record": None if not record else {
+            "status": record.status,
+            "method": record.method,
+            "recorded_by": record.recorded_by,
+            "recorded_at": record.created_at.strftime("%H:%M") if record.created_at else None,
+        },
+    }
+
+
+@app.post("/{school_name}/attendance/mark")
+def sch003_attendance_mark(
+    school_name: str,
+    request: Request,
+    student_id: int = Form(...),
+    status: str = Form("present"),
+    method: str = Form("manual"),
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    school = _sch003_school(school_name, db)
+    actor = _attendance_actor(request, school, db)
+    if not actor:
+        raise HTTPException(status_code=401, detail="Attendance station login required.")
+    status_clean = status.strip().lower()
+    if status_clean not in _ATTENDANCE_STATUSES:
+        raise HTTPException(status_code=400, detail="Status must be present, late or absent.")
+    method_clean = "qr" if method.strip().lower() == "qr" else "manual"
+    student = db.query(Student).filter(
+        Student.id == student_id,
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.is_active == 1,
+    ).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="No active student with that ID in this school.")
+    today = datetime.now().date()
+    record = db.query(AttendanceRecord).filter(
+        AttendanceRecord.school_id == school.id,
+        AttendanceRecord.student_id == student.id,
+        AttendanceRecord.attendance_date == today,
+    ).first()
+    if record:
+        record.status = status_clean
+        record.method = method_clean
+        record.recorded_by = actor["name"]
+        record.recorded_role = actor["role"]
+        record.note = note.strip()[:300] or None
+    else:
+        record = AttendanceRecord(
+            school_id=school.id,
+            student_id=student.id,
+            attendance_date=today,
+            status=status_clean,
+            method=method_clean,
+            recorded_by=actor["name"],
+            recorded_role=actor["role"],
+            note=note.strip()[:300] or None,
+        )
+        db.add(record)
+    try:
+        db.commit()
+        db.refresh(record)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not save attendance. Please try again.")
+    return {
+        "status": "success",
+        "student": {"id": student.id, "student_name": student.student_name, "class_name": student.class_name},
+        "record": {
+            "status": record.status,
+            "method": record.method,
+            "recorded_by": record.recorded_by,
+            "recorded_at": record.created_at.strftime("%H:%M") if record.created_at else datetime.now().strftime("%H:%M"),
+        },
+    }
+
+
+@app.get("/{school_name}/attendance/api/today")
+def sch003_attendance_today(
+    school_name: str,
+    request: Request,
+    class_name: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    school = _sch003_school(school_name, db)
+    if not _attendance_actor(request, school, db):
+        raise HTTPException(status_code=401, detail="Attendance station login required.")
+    students = _attendance_students(db, school, class_name)
+    today = datetime.now().date()
+    ids = [s.id for s in students]
+    records = db.query(AttendanceRecord).filter(
+        AttendanceRecord.school_id == school.id,
+        AttendanceRecord.attendance_date == today,
+        AttendanceRecord.student_id.in_(ids) if ids else False,
+    ).all() if ids else []
+    by_student = {r.student_id: r for r in records}
+    return {
+        "status": "success",
+        "summary": _attendance_summary(students, records, today),
+        "students": [{
+            "id": s.id,
+            "student_name": s.student_name,
+            "class_name": s.class_name,
+            "attendance": None if s.id not in by_student else {
+                "status": by_student[s.id].status,
+                "recorded_by": by_student[s.id].recorded_by,
+                "recorded_at": by_student[s.id].created_at.strftime("%H:%M") if by_student[s.id].created_at else None,
+            },
+        } for s in students],
+    }
+
+
+# ---------------- Parent view of attendance ----------------
+@app.get("/{school_name}/attendance/parent", response_class=HTMLResponse)
+def sch003_parent_attendance_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = _sch003_school(school_name, db)
+    parent_id = _read_parent_session(request, school.id)
+    account = db.query(ParentAccount).filter(
+        ParentAccount.id == parent_id, ParentAccount.school_id == school.id, ParentAccount.is_active == 1
+    ).first() if parent_id else None
+    student = db.query(Student).filter(
+        Student.id == account.student_id,
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+    ).first() if account else None
+
+    records, monthly, summary = [], [], None
+    month_label = datetime.now().strftime("%B %Y")
+    if student:
+        today = datetime.now().date()
+        month_start = today.replace(day=1)
+        records = db.query(AttendanceRecord).filter(
+            AttendanceRecord.school_id == school.id,
+            AttendanceRecord.student_id == student.id,
+        ).order_by(AttendanceRecord.attendance_date.desc()).limit(40).all()
+        monthly = db.query(AttendanceRecord).filter(
+            AttendanceRecord.school_id == school.id,
+            AttendanceRecord.student_id == student.id,
+            AttendanceRecord.attendance_date >= month_start,
+        ).all()
+        summary = {
+            "present": sum(1 for r in monthly if r.status == "present"),
+            "late": sum(1 for r in monthly if r.status == "late"),
+            "absent": sum(1 for r in monthly if r.status == "absent"),
+            "days": len(monthly),
+        }
+    return templates.TemplateResponse("sch003_parent_attendance.html", {
+        "request": request,
+        "school": school,
+        "school_name": school_name,
+        "parent": account,
+        "student": student,
+        "records": records,
+        "summary": summary,
+        "month_label": month_label,
+        "error": "",
+    })
+
+
+@app.post("/{school_name}/attendance/parent/login")
+def sch003_parent_attendance_login(
+    school_name: str,
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    school = _sch003_school(school_name, db)
+    account = db.query(ParentAccount).filter(
+        ParentAccount.school_id == school.id,
+        ParentAccount.email == email.strip().lower(),
+        ParentAccount.is_active == 1,
+    ).first()
+    if not account or not _student_password_matches(password, account.password_hash):
+        return templates.TemplateResponse("sch003_parent_attendance.html", {
+            "request": request, "school": school, "school_name": school_name,
+            "parent": None, "student": None, "records": [], "summary": None,
+            "month_label": datetime.now().strftime("%B %Y"),
+            "error": "Email or password is incorrect.",
+        }, status_code=401)
+    token = _signed_role_token("parent", account.id, school.id, int(time.time()) + _PARENT_SESSION_SECONDS)
+    response = RedirectResponse(f"/{school_name}/attendance/parent", status_code=303)
+    response.set_cookie(_PARENT_COOKIE, token, max_age=_PARENT_SESSION_SECONDS, httponly=True,
+                        secure=request.url.scheme == "https", samesite="lax", path="/")
+    return response
+
+
+# ---------------- Admin workspace data (SCH-003) ----------------
+@app.get("/{school_name}/admin/attendance")
+def sch003_admin_attendance(
+    school_name: str,
+    request: Request,
+    day: str | None = Query(None, alias="date"),
+    class_name: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    target_day = _attendance_day(day)
+    students = _attendance_students(db, school, class_name)
+    ids = [s.id for s in students]
+    records = db.query(AttendanceRecord).filter(
+        AttendanceRecord.school_id == school.id,
+        AttendanceRecord.attendance_date == target_day,
+        AttendanceRecord.student_id.in_(ids) if ids else False,
+    ).all() if ids else []
+    by_student = {r.student_id: r for r in records}
+    all_students = _attendance_students(db, school)
+    class_rows = []
+    for cls in _attendance_classes(all_students):
+        class_students = [s for s in all_students if s.class_name == cls]
+        class_rows.append({"class_name": cls, **_attendance_summary(class_students, [r for r in records if r.student_id in {s.id for s in class_students}], target_day)})
+    return {
+        "status": "success",
+        "date": target_day.isoformat(),
+        "summary": _attendance_summary(students, records, target_day),
+        "classes": _attendance_classes(all_students),
+        "by_class": class_rows,
+        "records": [{
+            "student_id": s.id,
+            "student_name": s.student_name,
+            "class_name": s.class_name,
+            "status": by_student[s.id].status if s.id in by_student else None,
+            "method": by_student[s.id].method if s.id in by_student else None,
+            "recorded_by": by_student[s.id].recorded_by if s.id in by_student else None,
+            "recorded_at": by_student[s.id].created_at.strftime("%H:%M") if s.id in by_student and by_student[s.id].created_at else None,
+        } for s in students],
+    }
+
+
+@app.get("/{school_name}/admin/attendance/export")
+def sch003_admin_attendance_export(
+    school_name: str,
+    request: Request,
+    day: str | None = Query(None, alias="date"),
+    class_name: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    import csv, io
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    target_day = _attendance_day(day)
+    students = _attendance_students(db, school, class_name)
+    ids = [s.id for s in students]
+    records = db.query(AttendanceRecord).filter(
+        AttendanceRecord.school_id == school.id,
+        AttendanceRecord.attendance_date == target_day,
+        AttendanceRecord.student_id.in_(ids) if ids else False,
+    ).all() if ids else []
+    by_student = {r.student_id: r for r in records}
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Date", "Student ID", "Student", "Class", "Status", "Method", "Recorded by", "Time"])
+    for s in students:
+        r = by_student.get(s.id)
+        writer.writerow([
+            target_day.isoformat(), s.id, s.student_name, s.class_name,
+            r.status if r else "unmarked", r.method if r else "",
+            r.recorded_by if r else "", r.created_at.strftime("%H:%M") if r and r.created_at else "",
+        ])
+    filename = f"attendance_{target_day.isoformat()}.csv".replace(" ", "_")
+    return Response(content=buffer.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.get("/{school_name}/admin/parent-access")
+def sch003_admin_parent_access(
+    school_name: str,
+    request: Request,
+    q: str | None = Query(None),
+    class_name: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    students = _attendance_students(db, school, class_name)
+    if q and q.strip():
+        term = q.strip().lower()
+        students = [s for s in students if term in s.student_name.lower() or term in str(s.id)]
+    accounts = db.query(ParentAccount).filter(ParentAccount.school_id == school.id).all()
+    account_by_student: dict[int, ParentAccount] = {}
+    for account in accounts:
+        account_by_student.setdefault(account.student_id, account)
+    return {
+        "status": "success",
+        "students": [{
+            "student_id": s.id,
+            "student_name": s.student_name,
+            "class_name": s.class_name,
+            "parent_link_code": s.parent_link_code,
+            "account": None if s.id not in account_by_student else {
+                "id": account_by_student[s.id].id,
+                "parent_name": account_by_student[s.id].parent_name,
+                "email": account_by_student[s.id].email,
+                "is_active": bool(account_by_student[s.id].is_active),
+            },
+        } for s in students],
+        "accounts": len(accounts),
+    }
+
+
+@app.post("/{school_name}/admin/parent-access/{student_id}/code")
+def sch003_generate_parent_code(
+    school_name: str,
+    student_id: int,
+    request: Request,
+    regenerate: int = Form(0),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    student = db.query(Student).filter(
+        Student.id == student_id,
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.is_active == 1,
+    ).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found in this school.")
+    if not student.parent_link_code or regenerate:
+        alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        student.parent_link_code = "".join(_secrets.choice(alphabet) for _ in range(10))
+        db.commit()
+    return {"status": "success", "student_id": student.id, "parent_link_code": student.parent_link_code}
+
+
+@app.post("/{school_name}/admin/parent-access/link")
+def sch003_link_parent_account(
+    school_name: str,
+    request: Request,
+    student_id: int = Form(...),
+    parent_name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    student = db.query(Student).filter(
+        Student.id == student_id,
+        (Student.school_id == school.id) | (Student.school_id.is_(None)),
+        Student.is_active == 1,
+    ).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found in this school.")
+    name_clean = parent_name.strip()[:120]
+    email_clean = email.strip().lower()
+    if not name_clean or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email_clean):
+        raise HTTPException(status_code=400, detail="Enter the parent's name and a valid email address.")
+    if len(password) < 8 or len(password) > 128:
+        raise HTTPException(status_code=400, detail="Password must be 8-128 characters.")
+    if db.query(ParentAccount).filter(ParentAccount.school_id == school.id, ParentAccount.email == email_clean).first():
+        raise HTTPException(status_code=409, detail="An account with this email already exists for this school.")
+    if db.query(ParentAccount).filter(ParentAccount.school_id == school.id, ParentAccount.student_id == student.id, ParentAccount.is_active == 1).first():
+        raise HTTPException(status_code=409, detail="This student already has an active parent account.")
+    account = ParentAccount(school_id=school.id, student_id=student.id, parent_name=name_clean,
+                            email=email_clean, password_hash=_student_password_hash(password), is_active=1)
+    db.add(account)
+    try:
+        db.commit()
+        db.refresh(account)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not create the parent account.")
+    return {"status": "success", "account_id": account.id, "email": account.email}
+
+
+@app.get("/{school_name}/admin/gatekeepers")
+def sch003_list_gatekeepers(school_name: str, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    staff = db.query(Gatekeeper).filter(Gatekeeper.school_id == school.id).order_by(Gatekeeper.created_at.desc()).all()
+    return {"status": "success", "gatekeepers": [{
+        "id": g.id, "full_name": g.full_name, "username": g.username,
+        "is_active": bool(g.is_active),
+        "created_at": g.created_at.strftime("%Y-%m-%d") if g.created_at else "",
+    } for g in staff]}
+
+
+@app.post("/{school_name}/admin/gatekeepers")
+def sch003_create_gatekeeper(
+    school_name: str,
+    request: Request,
+    full_name: str = Form(...),
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    name_clean = full_name.strip()[:120]
+    username_clean = username.strip().lower()
+    if not name_clean:
+        raise HTTPException(status_code=400, detail="Full name is required.")
+    if not re.fullmatch(r"[a-z0-9_.-]{3,80}", username_clean):
+        raise HTTPException(status_code=400, detail="Username must be 3-80 letters, numbers or ._-")
+    if len(password) < 8 or len(password) > 128:
+        raise HTTPException(status_code=400, detail="Password must be 8-128 characters.")
+    if db.query(Gatekeeper).filter(Gatekeeper.school_id == school.id, Gatekeeper.username == username_clean).first():
+        raise HTTPException(status_code=409, detail="That gatekeeper username already exists.")
+    staff = Gatekeeper(school_id=school.id, full_name=name_clean, username=username_clean,
+                       password_hash=_student_password_hash(password), is_active=1)
+    db.add(staff)
+    try:
+        db.commit()
+        db.refresh(staff)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Could not create the gatekeeper account.")
+    return {"status": "success", "id": staff.id, "username": staff.username}
+
+
+@app.delete("/{school_name}/admin/gatekeepers/{gatekeeper_id}")
+def sch003_delete_gatekeeper(school_name: str, gatekeeper_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _check_admin(request, school_name):
+        raise HTTPException(status_code=401, detail="School administrator login required.")
+    school = _sch003_school(school_name, db)
+    staff = db.query(Gatekeeper).filter(Gatekeeper.id == gatekeeper_id, Gatekeeper.school_id == school.id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Gatekeeper not found.")
+    db.delete(staff)
+    db.commit()
+    return {"status": "success"}
+
+
+@app.get("/{school_name}/admin/attendance/cards", response_class=HTMLResponse)
+def sch003_attendance_cards(
+    school_name: str,
+    request: Request,
+    class_name: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Printable attendance ID cards with signed QR codes for the gate station."""
+    school = _sch003_school(school_name, db)
+    if not _check_admin(request, school_name):
+        return RedirectResponse(f"/{school_name}/admin/login", status_code=302)
+    all_students = _attendance_students(db, school)
+    selected = (class_name or "").strip()
+    students = [s for s in all_students if not selected or s.class_name == selected]
+    cards = []
+    for student in students:
+        token = _attendance_card_token(school, student)
+        cards.append({"student": student, "token": token, "qr": _attendance_qr_svg(token)})
+    return templates.TemplateResponse("sch003_attendance_cards.html", {
+        "request": request,
+        "school": school,
+        "school_name": school_name,
+        "classes": _attendance_classes(all_students),
+        "selected_class": selected,
+        "cards": cards,
+        "card_count": len(cards),
+    })
+
+
+@app.get("/{school_name}/admin/workspace", response_class=HTMLResponse)
+def sch003_admin_workspace(school_name: str, request: Request, db: Session = Depends(get_db)):
+    """Single operations workspace for GS Gisozi 1: parents, teachers, timetable, attendance."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    if not _is_gs_gisozi1(school):
+        raise HTTPException(status_code=404, detail="This workspace is only available for GS Gisozi 1 (SCH-003).")
+    if not _check_admin(request, school_name):
+        return RedirectResponse(f"/{school_name}/admin/login", status_code=302)
+    return templates.TemplateResponse("sch003_admin_workspace.html", {
+        "request": request,
+        "school": school,
+        "school_name": school_name,
+        "classes": VALID_CLASSES,
+        "today": datetime.now().strftime("%A, %d %B %Y"),
+    })
