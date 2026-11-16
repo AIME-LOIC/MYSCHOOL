@@ -3,17 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#123a2b">
+  <meta name="theme-color" content="#16140f">
   <title>{% if student %}Attendance · {{ student.student_name }}{% else %}Parent attendance{% endif %} · GS Gisozi 1</title>
   <link rel="stylesheet" href="/static/myschool-ui.css">
+  <link rel="stylesheet" href="/static/sch003-ui.css">
   <style>
-    .pa-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 26px 0; }
-    .pa-hero { padding: 34px 0 26px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 24px; align-items: end; flex-wrap: wrap; }
-    .pa-hero h1 { font: 500 clamp(28px, 4vw, 42px)/1.05 'Fraunces', serif; letter-spacing: -.03em; margin: 10px 0 8px; }
-    .pa-hero h1 em { font-style: italic; color: var(--forest-2); }
-    .pa-hero p { margin: 0; color: var(--muted); font-size: 13.5px; }
-    .pa-child { text-align: right; font-size: 12px; color: var(--muted); }
-    .pa-child b { display: block; font: 600 17px 'Fraunces', serif; color: var(--forest-ink); }
+    .pa-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 22px 0 26px; border-bottom: 1px solid var(--line-strong); }
+    .pa-hero { padding: 24px 0 22px; border-bottom: 1px solid var(--line-strong); display: flex; justify-content: space-between; gap: 24px; align-items: end; flex-wrap: wrap; }
+    .pa-hero h1 { font: 700 clamp(30px, 4vw, 44px)/1.02 var(--font-display); letter-spacing: -.03em; margin: 10px 0 8px; }
+    .pa-hero h1 em { font-style: italic; color: var(--rust); }
+    .pa-hero p { margin: 0; color: var(--muted); font-size: 13px; }
+    .pa-child { text-align: right; font: 10.5px/1.7 var(--font-mono); color: var(--muted); }
+    .pa-child b { display: block; font: 700 19px/1.2 var(--font-display); color: var(--ink); margin-bottom: 2px; }
     .pa-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; padding-bottom: 48px; }
     .pa-side { display: grid; gap: 14px; }
     .pa-side .ms-panel__body p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
@@ -25,7 +26,7 @@
     }
   </style>
 </head>
-<body>
+<body class="s3 s3-parent">
   <header class="ms-top">
     <div class="ms-shell ms-top__inner">
       <a class="ms-brand" href="/{{ school_name }}/portals">
@@ -49,6 +50,10 @@
   </header>
 
   <main class="ms-shell">
+    <div class="s3-strip">
+      <span><b>Family record</b> / attendance</span>
+      <span>School code {{ school.school_code }} · {{ 'linked account' if parent else 'parent sign-in' }}</span>
+    </div>
     {% if not parent %}
     <section class="pa-hero">
       <div>

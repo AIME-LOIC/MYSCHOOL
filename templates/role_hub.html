@@ -3,9 +3,88 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#123a2b">
+  <meta name="theme-color" content="#ece7da">
   <title>{{ school.school_name|title }} · Portals · MYSCHOOL</title>
   <link rel="stylesheet" href="/static/myschool-ui.css">
+  <style>
+    .desk-head { border-bottom: 1px solid var(--rule); padding: 9px 0 0; }
+    .desk-meta {
+      display: flex; justify-content: space-between; gap: 16px;
+      font: 500 9.5px/1.5 var(--font-mono); letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .desk-meta b { color: var(--ink); font-weight: 600; }
+    .desk-intro {
+      display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(240px, .5fr);
+      gap: 48px; align-items: end; padding: 28px 0 26px;
+    }
+    .desk-intro .ms-display { margin-bottom: 0; max-width: 14ch; }
+    .desk-intro__note {
+      border-top: 1px solid var(--line-strong); padding-top: 9px;
+      font-size: 12px; color: var(--muted); line-height: 1.65;
+    }
+    .desk-intro__note b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 3px; }
+
+    .desk-table { border-bottom: 1px solid var(--rule); }
+    .desk-labels {
+      display: grid; grid-template-columns: 52px minmax(0, 1.15fr) minmax(0, 1fr) 158px;
+      gap: 20px; padding: 8px 0;
+      border-bottom: 1px solid var(--line-strong);
+      font: 600 9px/1.4 var(--font-mono); letter-spacing: .1em;
+      text-transform: uppercase; color: var(--faint);
+    }
+    .desk-row {
+      display: grid; grid-template-columns: 52px minmax(0, 1.15fr) minmax(0, 1fr) 158px;
+      gap: 20px; align-items: start;
+      padding: 17px 0; border-top: 1px solid var(--line);
+      transition: background .12s;
+    }
+    .desk-row:first-child { border-top: 0; }
+    a.desk-row:hover { background: var(--surface); }
+    .desk-row__no {
+      font: 500 10.5px/1.5 var(--font-mono); color: var(--faint);
+      padding-top: 3px;
+    }
+    a.desk-row:hover .desk-row__no { color: var(--rust); }
+    .desk-row h2 {
+      font: 700 22px/1.15 var(--font-display); letter-spacing: -.018em;
+      margin: 0 0 4px;
+    }
+    .desk-row p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.55; max-width: 40ch; }
+    .desk-row ul {
+      list-style: none; margin: 1px 0 0; padding: 0;
+      font-size: 11.5px; color: var(--ink-2); line-height: 1.5;
+      display: grid; gap: 3px;
+    }
+    .desk-row ul li::before { content: '— '; color: var(--line-strong); }
+    .desk-row__go {
+      text-align: right; font: 600 11px/1.4 var(--font-mono);
+      color: var(--rust); align-self: center;
+    }
+    .desk-row__go span { display: block; color: var(--faint); font-weight: 400; font-size: 9.5px; margin-top: 2px; }
+    .desk-row.is-muted { background: transparent; }
+    .desk-row.is-muted h2 { color: var(--faint); }
+    .desk-row.is-muted p, .desk-row.is-muted ul { color: var(--faint); }
+    .desk-row.is-muted .desk-row__go { color: var(--faint); text-align: right; font-weight: 400; }
+    .desk-row.is-muted .desk-row__go span { color: var(--faint); }
+
+    @media (max-width: 880px) {
+      .desk-intro { grid-template-columns: 1fr; gap: 22px; padding-bottom: 22px; }
+      .desk-labels { grid-template-columns: 40px minmax(0, 1fr) 120px; }
+      .desk-labels span:nth-child(3) { display: none; }
+      .desk-row { grid-template-columns: 40px minmax(0, 1fr) 120px; }
+      .desk-row ul { grid-column: 2; margin-top: 4px; }
+      .desk-row__go { grid-column: 3; grid-row: 1 / span 2; }
+    }
+    @media (max-width: 600px) {
+      .desk-labels { display: none; }
+      .desk-row { grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 15px 0; }
+      .desk-row h2 { font-size: 20px; }
+      .desk-row ul { grid-column: 2; }
+      .desk-row__go { grid-column: 2; grid-row: auto; text-align: left; padding-top: 2px; }
+      .desk-row__go span { display: inline; margin-left: 6px; }
+    }
+  </style>
 </head>
 <body>
   <header class="ms-top">
@@ -17,119 +96,96 @@
           <span class="ms-brand__sub">{{ school.school_name|title }}</span>
         </span>
       </a>
-      <nav class="ms-top__nav">
+      <nav class="ms-top__nav" aria-label="School">
         <a class="ms-top__link" href="/">Change school</a>
       </nav>
     </div>
   </header>
 
-  <main class="ms-shell ms-main">
-    <div class="ms-eyebrow">School code {{ school.school_code }}</div>
-    <h1 class="ms-display">Where do you <em>need to go?</em></h1>
-    <p class="ms-lead">Choose the workspace that matches your role at {{ school.school_name|title }}. Each entry point signs you in to the tools built for that responsibility, and nothing else.</p>
+  <main class="ms-shell">
+    <section class="desk-head">
+      <div class="desk-meta">
+        <span><b>{{ school.school_name|title }}</b> / access directory</span>
+        <span>School code {{ school.school_code }}</span>
+      </div>
+      <div class="desk-intro">
+        <div>
+          <div class="ms-eyebrow">Choose your desk</div>
+          <h1 class="ms-display">Who are you <em>here?</em></h1>
+        </div>
+        <div class="desk-intro__note">
+          <b>One school, separate desks.</b>
+          Sign in only at the entrance that matches your role. Every desk uses the account issued by {{ school.school_name|title }}; nothing else is shared between them.
+        </div>
+      </div>
+    </section>
 
-    <section class="ms-section" aria-labelledby="workspaces">
+    <section aria-labelledby="workspaces">
       <div class="ms-section__head">
-        <h2 id="workspaces" class="ms-h2">School workspaces</h2>
-        <p>Sign in with the account issued by the school.</p>
+        <h2 id="workspaces" class="ms-h2">School desks</h2>
+        <p>Eight role entrances · choose one</p>
       </div>
 
-      <div class="ms-grid ms-grid--3">
-        <a class="ms-entry" href="/{{ school_name }}/student-login">
-          <span class="ms-entry__index">01 / Learner</span>
-          <h3>Student</h3>
-          <p>Your personal learning workspace.</p>
-          <ul class="ms-entry__list">
-            <li>Timetable and class information</li>
-            <li>Published learning records</li>
-            <li>Your student account</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Student sign in</span><span class="arrow">→</span></div>
+      <div class="desk-labels" aria-hidden="true">
+        <span>No.</span><span>Desk and purpose</span><span>What you can do</span><span>Entrance</span>
+      </div>
+
+      <div class="desk-table">
+        <a class="desk-row" href="/{{ school_name }}/student-login">
+          <span class="desk-row__no">01</span>
+          <div><h2>Student</h2><p>Your own learning workspace.</p></div>
+          <ul><li>Timetable and class information</li><li>Published learning records</li><li>Your student account</li></ul>
+          <div class="desk-row__go">Student sign in <span>Learner account →</span></div>
         </a>
 
-        <a class="ms-entry" href="/{{ school_name }}/parentportal">
-          <span class="ms-entry__index">02 / Family</span>
-          <h3>Parent &amp; guardian</h3>
-          <p>Stay informed about your linked child.</p>
-          <ul class="ms-entry__list">
-            <li>Published marks and reports</li>
-            <li>Student linking and account access</li>
-            <li>Follow-up with the school</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Open parent portal</span><span class="arrow">→</span></div>
+        <a class="desk-row" href="/{{ school_name }}/parentportal">
+          <span class="desk-row__no">02</span>
+          <div><h2>Parent &amp; guardian</h2><p>Stay informed about your linked child.</p></div>
+          <ul><li>Published marks and reports</li><li>Student linking and account access</li><li>Follow-up with the school</li></ul>
+          <div class="desk-row__go">Open parent portal <span>Family account →</span></div>
         </a>
 
-        <a class="ms-entry" href="/{{ school_name }}/teacher">
-          <span class="ms-entry__index">03 / Teaching</span>
-          <h3>Teacher</h3>
-          <p>Teaching, marks and academic responsibilities.</p>
-          <ul class="ms-entry__list">
-            <li>Assigned classes and subjects</li>
-            <li>Marks and personal timetable</li>
-            <li>DOS tools for authorised staff</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Teacher sign in</span><span class="arrow">→</span></div>
+        <a class="desk-row" href="/{{ school_name }}/teacher">
+          <span class="desk-row__no">03</span>
+          <div><h2>Teacher</h2><p>Teaching, marks and academic responsibilities.</p></div>
+          <ul><li>Assigned classes and subjects</li><li>Marks and personal timetable</li><li>DOS tools for authorised staff</li></ul>
+          <div class="desk-row__go">Teacher sign in <span>Staff account →</span></div>
         </a>
 
-        <a class="ms-entry" href="/{{ school_name }}/admin/login">
-          <span class="ms-entry__index">04 / Operations</span>
-          <h3>School administrator</h3>
-          <p>Records, staffing and school operations.</p>
-          <ul class="ms-entry__list">
-            <li>Student and teacher records</li>
-            <li>Parent access and reports</li>
-            <li>School services and settings</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Administrator sign in</span><span class="arrow">→</span></div>
+        <a class="desk-row" href="/{{ school_name }}/admin/login">
+          <span class="desk-row__no">04</span>
+          <div><h2>School administrator</h2><p>Records, staffing and school operations.</p></div>
+          <ul><li>Student and teacher records</li><li>Parent access and reports</li><li>School services and settings</li></ul>
+          <div class="desk-row__go">Administrator sign in <span>Office account →</span></div>
         </a>
 
-        <a class="ms-entry" href="/{{ school_name }}/canteen-admin">
-          <span class="ms-entry__index">05 / Canteen</span>
-          <h3>Canteen staff</h3>
-          <p>Approved canteen transactions and menus.</p>
-          <ul class="ms-entry__list">
-            <li>Menu items and prices</li>
-            <li>Student card linking</li>
-            <li>Top-ups and transaction review</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Canteen workspace</span><span class="arrow">→</span></div>
+        <a class="desk-row" href="/{{ school_name }}/canteen-admin">
+          <span class="desk-row__no">05</span>
+          <div><h2>Canteen staff</h2><p>Approved canteen transactions and menus.</p></div>
+          <ul><li>Menu items and prices</li><li>Student card linking</li><li>Top-ups and transaction review</li></ul>
+          <div class="desk-row__go">Canteen workspace <span>Staff account →</span></div>
         </a>
 
-        <article class="ms-entry ms-entry--muted">
-          <span class="ms-entry__index">06 / Academic office</span>
-          <h3>Director of Studies</h3>
-          <p>Academic planning and timetable coordination.</p>
-          <ul class="ms-entry__list">
-            <li>Class timetables</li>
-            <li>Teacher and class assignments</li>
-            <li>DOS academic tools</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Sign in through Teacher</span><span class="arrow">↗</span></div>
-        </article>
+        <div class="desk-row is-muted">
+          <span class="desk-row__no">06</span>
+          <div><h2>Director of Studies</h2><p>Academic planning and timetable coordination.</p></div>
+          <ul><li>Class timetables</li><li>Teacher and class assignments</li><li>DOS academic tools</li></ul>
+          <div class="desk-row__go">Sign in through Teacher <span>Not a separate login</span></div>
+        </div>
 
-        <article class="ms-entry ms-entry--muted">
-          <span class="ms-entry__index">07 / Leadership</span>
-          <h3>Headmaster / headteacher</h3>
-          <p>School leadership and oversight.</p>
-          <ul class="ms-entry__list">
-            <li>School-wide performance</li>
-            <li>Staffing and operations</li>
-            <li>Reports and follow-up</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Account not configured</span></div>
-        </article>
+        <div class="desk-row is-muted">
+          <span class="desk-row__no">07</span>
+          <div><h2>Headmaster / headteacher</h2><p>School leadership and oversight.</p></div>
+          <ul><li>School-wide performance</li><li>Staffing and operations</li><li>Reports and follow-up</li></ul>
+          <div class="desk-row__go">Account not configured <span>Contact the system administrator</span></div>
+        </div>
 
-        <article class="ms-entry ms-entry--muted">
-          <span class="ms-entry__index">08 / Welfare</span>
-          <h3>Patron &amp; matron</h3>
-          <p>Student activities and welfare support.</p>
-          <ul class="ms-entry__list">
-            <li>Assigned student groups</li>
-            <li>Welfare checks</li>
-            <li>Escalation to school leaders</li>
-          </ul>
-          <div class="ms-entry__foot"><span>Account not configured</span></div>
-        </article>
+        <div class="desk-row is-muted">
+          <span class="desk-row__no">08</span>
+          <div><h2>Patron &amp; matron</h2><p>Student activities and welfare support.</p></div>
+          <ul><li>Assigned student groups</li><li>Welfare checks</li><li>Escalation to school leaders</li></ul>
+          <div class="desk-row__go">Account not configured <span>Contact the system administrator</span></div>
+        </div>
       </div>
     </section>
 

@@ -3,67 +3,70 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#123a2b">
+  <meta name="theme-color" content="#16140f">
   <title>Attendance station · GS Gisozi 1</title>
   <link rel="stylesheet" href="/static/myschool-ui.css">
+  <link rel="stylesheet" href="/static/sch003-ui.css">
   <style>
-    body { background: #f4f3ec; }
     .st-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
-    .st-head { padding: 26px 0 22px; display: flex; justify-content: space-between; align-items: end; gap: 20px; border-bottom: 1px solid var(--line); }
-    .st-head h1 { font: 500 clamp(26px, 3.4vw, 38px)/1.08 'Fraunces', serif; letter-spacing: -.03em; margin: 9px 0 0; }
-    .st-head .when { text-align: right; font-size: 12px; color: var(--muted); }
-    .st-head .when b { display: block; font: 500 17px 'Fraunces', serif; color: var(--forest-ink); margin-bottom: 2px; }
-    .st-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
-    .st-stats .ms-stat { padding: 13px 15px; }
-    .st-stats .ms-stat__value { font-size: 26px; }
-    .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 348px; gap: 18px; align-items: start; padding-bottom: 40px; }
-    .st-desk { display: grid; gap: 16px; }
+    .st-head { padding: 22px 0 18px; display: flex; justify-content: space-between; align-items: end; gap: 20px; }
+    .st-head h1 { font: 700 clamp(28px, 3.4vw, 40px)/1.04 var(--font-display); letter-spacing: -.03em; margin: 8px 0 0; }
+    .st-head .when { text-align: right; font: 10.5px/1.6 var(--font-mono); color: var(--muted); }
+    .st-head .when b { display: block; font: 700 20px/1.2 var(--font-display); color: var(--ink); margin-bottom: 2px; }
+    .st-stats {
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0;
+      border-bottom: 1px solid var(--line-strong); margin: 0 0 20px;
+    }
+    .st-stats .ms-stat { padding: 10px 14px 12px; }
+    .st-stats .ms-stat__value { font-size: 28px; }
+    .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 352px; gap: 20px; align-items: start; padding-bottom: 40px; }
+    .st-desk { display: grid; gap: 18px; }
     .st-finder { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
-    .st-finder .ms-input { font-size: 16px; letter-spacing: .02em; }
+    .st-finder .ms-input { font-size: 16px; letter-spacing: .02em; border-color: var(--rule); }
     .st-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .st-tools .ms-input, .st-tools .ms-select { padding: 8px 10px; font-size: 12.5px; }
-    .st-tools .ms-input { width: 210px; }
-    .st-tools .ms-select { width: auto; padding-right: 32px; }
+    .st-tools .ms-input, .st-tools .ms-select { padding: 7px 9px; font-size: 12px; }
+    .st-tools .ms-input { width: 200px; }
+    .st-tools .ms-select { width: auto; padding-right: 30px; }
     .st-table { min-width: 620px; }
     .st-table tbody tr { cursor: pointer; }
-    .st-table tbody tr.is-selected { background: var(--sage); }
+    .st-table tbody tr.is-selected { background: var(--rust-soft); box-shadow: inset 3px 0 0 var(--rust); }
     .st-name { font-weight: 600; }
-    .st-id { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
-    .st-station { position: sticky; top: 92px; display: grid; gap: 14px; }
-    .st-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-    .st-card__head { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-    .st-card__head h2 { font: 600 13px 'Inter', sans-serif; letter-spacing: .06em; text-transform: uppercase; margin: 0; color: #5c6760; }
-    .st-card__body { padding: 16px; }
-    .st-who__name { font: 600 22px/1.2 'Fraunces', serif; letter-spacing: -.02em; margin: 0 0 2px; }
-    .st-who__meta { font-size: 12px; color: var(--muted); }
-    .st-who__status { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
-    .st-actions { display: grid; gap: 8px; margin-top: 14px; }
-    .st-mark { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 7px; border: 1px solid var(--line-strong); background: #fff; cursor: pointer; transition: .14s; }
-    .st-mark:hover { border-color: var(--forest); background: var(--sage); }
+    .st-id { font: 500 10.5px/1.4 var(--font-mono); color: var(--faint); }
+    .st-station { position: sticky; top: 88px; display: grid; gap: 16px; }
+    .st-card { background: var(--surface); border: 1px solid var(--line-strong); border-top: 2px solid var(--rule); overflow: hidden; }
+    .st-card__head { padding: 11px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .st-card__head h2 { font: 600 9.5px/1.4 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; margin: 0; color: var(--muted); }
+    .st-card__body { padding: 14px; }
+    .st-who__name { font: 700 24px/1.15 var(--font-display); letter-spacing: -.02em; margin: 0 0 2px; }
+    .st-who__meta { font-size: 11.5px; color: var(--muted); }
+    .st-who__status { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: center; font-size: 11.5px; color: var(--muted); }
+    .st-actions { display: grid; gap: 0; margin-top: 12px; border-top: 1px solid var(--line); }
+    .st-mark { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; padding: 11px 2px; border: 0; border-bottom: 1px solid var(--line); background: transparent; cursor: pointer; transition: background .12s, padding .12s; }
+    .st-mark:hover { background: var(--surface-2); padding-left: 8px; padding-right: 8px; }
     .st-mark b { display: block; font-size: 13px; }
     .st-mark small { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
-    .st-mark kbd { font: 600 10px 'Inter', sans-serif; color: var(--faint); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px; }
-    .st-mark--present:hover { background: var(--green-soft); border-color: #a9c9b6; }
-    .st-mark--late:hover { background: var(--amber-soft); border-color: #dfc79c; }
-    .st-mark--absent:hover { background: var(--red-soft); border-color: #dcb5ae; }
-    .st-note { margin-top: 10px; }
-    .st-note textarea { min-height: 54px; font-size: 12.5px; }
-    .st-empty { text-align: center; padding: 26px 16px; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
-    .st-log { font-size: 11.5px; color: var(--muted); }
+    .st-mark kbd { font: 600 10px var(--font-mono); color: var(--muted); border: 1px solid var(--line-strong); border-bottom-width: 2px; padding: 1px 5px; background: var(--surface); }
+    .st-mark--present:hover { box-shadow: inset 3px 0 0 var(--green); }
+    .st-mark--late:hover { box-shadow: inset 3px 0 0 var(--amber); }
+    .st-mark--absent:hover { box-shadow: inset 3px 0 0 var(--red); }
+    .st-note { margin-top: 12px; }
+    .st-note textarea { min-height: 52px; font-size: 12.5px; }
+    .st-empty { padding: 22px 14px; color: var(--muted); font: 11.5px/1.7 var(--font-mono); }
+    .st-log { font: 10.5px/1.6 var(--font-mono); color: var(--muted); margin: 10px 0 0; }
     .st-log b { color: var(--ink); font-weight: 600; }
     .st-scan { margin-top: 10px; display: none; }
     .st-scan.is-on { display: block; }
     .scan-frame { aspect-ratio: 4 / 3; position: relative; }
-    .scan-flash { position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 8px 10px; border-radius: 6px; font: 600 12px 'Inter', sans-serif; text-align: center; opacity: 0; transform: translateY(4px); transition: opacity .16s, transform .16s; pointer-events: none; }
+    .scan-flash { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 8px 10px; font: 600 11px/1.4 var(--font-mono); text-align: center; opacity: 0; transform: translateY(4px); transition: opacity .16s, transform .16s; pointer-events: none; }
     .scan-flash.is-ok, .scan-flash.is-bad { opacity: 1; transform: none; }
-    .scan-flash.is-ok { background: rgba(21, 84, 58, .94); color: #f3faf4; }
-    .scan-flash.is-bad { background: rgba(140, 51, 39, .95); color: #fff5f2; }
-    .scan-status { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; font-size: 11.5px; color: var(--muted); }
-    .scan-status .st-live i { background: var(--ochre); }
+    .scan-flash.is-ok { background: rgba(43, 97, 71, .96); color: #f3faf4; }
+    .scan-flash.is-bad { background: rgba(160, 46, 32, .96); color: #fff5f2; }
+    .scan-status { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; font: 10.5px/1.5 var(--font-mono); color: var(--muted); }
+    .scan-status .st-live i { background: var(--rust); }
     #scan-torch { margin-left: auto; }
-    .st-saved { margin-top: 12px; padding: 9px 11px; border: 1px solid #b9d4c3; border-left: 3px solid #1f6b48; background: #eef6ef; border-radius: 6px; font-size: 12px; color: #1d5138; }
-    .st-live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
-    .st-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: block; animation: pulse 2.4s infinite; }
+    .st-saved { margin-top: 12px; padding: 9px 11px; border: 1px solid #b9cdb3; border-left: 3px solid var(--green); background: var(--green-soft); font: 11px/1.5 var(--font-mono); color: #24513a; }
+    .st-live { display: inline-flex; align-items: center; gap: 6px; font: 10px/1.4 var(--font-mono); color: var(--muted); }
+    .st-live i { width: 5px; height: 5px; background: var(--green); display: block; animation: pulse 2.4s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
     @media (max-width: 1040px) {
       .st-grid { grid-template-columns: 1fr; }
@@ -80,7 +83,7 @@
     }
   </style>
 </head>
-<body>
+<body class="s3 s3-station">
   <header class="ms-top">
     <div class="st-wrap ms-top__inner">
       <a class="ms-brand" href="/{{ school_name }}/portals">
@@ -101,6 +104,10 @@
   </header>
 
   <main class="st-wrap">
+    <div class="s3-strip">
+      <span><b>Gate desk 01</b> / live attendance register</span>
+      <span>School code {{ school.school_code }} · {{ actor.role }}</span>
+    </div>
     <section class="st-head">
       <div>
         <div class="ms-eyebrow">Arrivals · {{ today.strftime('%A') }}</div>

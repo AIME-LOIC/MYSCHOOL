@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#123a2b">
+  <meta name="theme-color" content="#ece7da">
   <title>MYSCHOOL Rwanda · School portals and student services</title>
   <meta name="description" content="MYSCHOOL is a school portal platform for families, students, teachers, and school administrators in Rwanda. Find your school and access its online services.">
   <meta name="robots" content="index,follow,max-image-preview:large">
@@ -25,94 +25,132 @@
   }
   </script>
   <style>
-    .home-hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
-      gap: 48px;
-      align-items: end;
-      padding: 48px 0 40px;
-      border-bottom: 1px solid var(--line);
+    .dir-head { padding: 34px 0 0; }
+    .dir-strip {
+      display: flex; justify-content: space-between; gap: 18px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+      font: 500 9.5px/1.4 var(--font-mono); letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
     }
-    .home-hero .ms-lead { margin-top: 2px; }
-    .home-search {
-      margin-top: 28px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .dir-strip b { color: var(--ink); font-weight: 600; }
+    .dir-intro {
+      display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, .6fr);
+      gap: 54px; align-items: start; padding: 30px 0 28px;
+    }
+    .dir-intro .ms-display { margin-top: 12px; max-width: 13ch; }
+    .dir-intro .ms-lead { max-width: 52ch; }
+    .dir-note { border-top: 1px solid var(--line-strong); padding-top: 10px; }
+    .dir-note__label {
+      display: block; font: 600 9.5px/1.4 var(--font-mono);
+      letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    }
+    .dir-note ol { list-style: none; margin: 10px 0 0; padding: 0; counter-reset: step; }
+    .dir-note li {
+      display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px;
+      padding: 9px 0; border-top: 1px dotted var(--line);
+      font-size: 12px; color: var(--muted); line-height: 1.55;
+    }
+    .dir-note li:first-child { border-top: 0; }
+    .dir-note li::before {
+      counter-increment: step; content: counter(step, decimal-leading-zero);
+      font: 500 10px/1.6 var(--font-mono); color: var(--rust);
+    }
+    .dir-note b { display: block; color: var(--ink); font-weight: 600; font-size: 12.5px; }
+    .dir-search { border-top: 2px solid var(--rule); padding: 13px 0 18px; }
+    .dir-search label {
+      display: block; font: 600 9.5px/1.4 var(--font-mono);
+      letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .dir-search__row { display: flex; align-items: center; gap: 12px; max-width: 620px; }
+    .dir-search__row svg { color: var(--rust); flex: 0 0 auto; }
+    .dir-search input {
+      flex: 1; border: 0; border-bottom: 1px solid var(--line-strong);
+      background: transparent; outline: none; padding: 8px 0;
+      font: 400 17px/1.3 var(--font-display); color: var(--ink);
+      border-radius: 0;
+    }
+    .dir-search input::placeholder { color: #9b937f; }
+    .dir-search input:focus { border-bottom-color: var(--rule); }
+    .dir-count {
+      font: 10.5px/1.4 var(--font-mono); color: var(--muted);
+      padding-bottom: 4px; white-space: nowrap;
+    }
+
+    .dir-list-head {
+      display: grid; grid-template-columns: 62px minmax(0, 1fr) 260px 30px;
+      gap: 18px; padding: 8px 0;
       border-bottom: 1px solid var(--line-strong);
-      padding-bottom: 8px;
-      max-width: 480px;
+      font: 600 9px/1.4 var(--font-mono); letter-spacing: .11em;
+      text-transform: uppercase; color: var(--faint);
     }
-    .home-search input {
-      flex: 1; border: 0; background: transparent; outline: none;
-      font-size: 15px; padding: 8px 0;
+    .school-list { border-bottom: 1px solid var(--rule); }
+    .school-row {
+      display: grid; grid-template-columns: 62px minmax(0, 1fr) 260px 30px;
+      gap: 18px; align-items: center;
+      padding: 16px 0; border-top: 1px solid var(--line);
+      cursor: pointer; outline-offset: 2px;
+      transition: background .12s;
     }
-    .home-search input::placeholder { color: #9aa59d; }
-    .home-search svg { color: var(--muted); flex: 0 0 auto; }
-    .home-count { font-size: 12px; color: var(--muted); margin-top: 12px; }
-    .how { border-left: 1px solid var(--line); padding-left: 30px; }
-    .how h2 { font: 600 15px/1.3 'Fraunces', serif; margin: 0 0 14px; }
-    .how ol { margin: 0; padding: 0; list-style: none; counter-reset: how; }
-    .how li {
-      position: relative; padding: 11px 0 11px 30px;
-      border-top: 1px dotted var(--line); font-size: 12.5px; color: var(--muted);
-      line-height: 1.55;
+    .school-row:first-child { border-top: 0; }
+    .school-row:hover, .school-row:focus-visible { background: var(--surface); }
+    .school-row__no {
+      font: 500 11px/1.4 var(--font-mono); color: var(--faint);
+      align-self: start; padding-top: 4px;
     }
-    .how li:first-child { border-top: 0; }
-    .how li::before {
-      counter-increment: how; content: counter(how, decimal-leading-zero);
-      position: absolute; left: 0; top: 11px;
-      font: 500 11px 'Fraunces', serif; color: var(--ochre);
-    }
-    .how li b { display: block; color: var(--ink); font-weight: 600; font-size: 13px; margin-bottom: 2px; }
-    .school-list { margin-top: 0; }
-    .school-card {
-      display: flex; flex-direction: column;
-      background: var(--surface); border: 1px solid var(--line);
-      border-radius: var(--radius); padding: 20px 20px 16px;
-      cursor: pointer; min-height: 190px;
-      transition: border-color .15s, box-shadow .15s, transform .15s;
-      outline-offset: 3px;
-    }
-    .school-card:hover, .school-card:focus-visible {
-      border-color: var(--line-strong); box-shadow: var(--shadow); transform: translateY(-2px);
-    }
-    .school-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .school-row:hover .school-row__no { color: var(--rust); }
+    .school-row__id { display: flex; align-items: center; gap: 14px; min-width: 0; }
     .school-mark {
-      width: 38px; height: 38px; display: grid; place-items: center;
-      background: var(--paper-2); border: 1px solid var(--line);
-      color: var(--forest); font: 600 15px 'Fraunces', serif; border-radius: 4px 4px 8px 8px;
+      width: 38px; height: 42px; flex: 0 0 38px;
+      display: grid; place-items: center;
+      background: var(--surface); border: 1px solid var(--line-strong);
+      color: var(--ink); font: 700 15px/1 var(--font-display);
       overflow: hidden;
     }
     .school-mark img { width: 100%; height: 100%; object-fit: contain; padding: 4px; background: #fff; }
-    .school-card h2 {
-      font: 600 18px/1.25 'Fraunces', serif; letter-spacing: -.015em;
-      margin: 18px 0 4px; overflow-wrap: anywhere;
+    .school-row h2 {
+      font: 700 24px/1.12 var(--font-display); letter-spacing: -.02em;
+      margin: 0 0 3px; overflow-wrap: anywhere;
     }
-    .school-card__code {
-      font-size: 10.5px; color: var(--faint); letter-spacing: .1em; text-transform: uppercase; font-weight: 600;
+    .school-row__code {
+      font: 500 9.5px/1.4 var(--font-mono); letter-spacing: .07em;
+      text-transform: uppercase; color: var(--muted);
     }
-    .school-card__links {
-      margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line);
-      display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
-      font-size: 12px;
+    .school-row__links {
+      display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center;
+      font: 600 11.5px/1.4 var(--font-ui);
     }
-    .school-card__links a { color: var(--forest); font-weight: 600; }
-    .school-card__links a:hover { text-decoration: underline; }
-    .school-card__links .secondary { color: var(--muted); font-weight: 500; }
-    .school-card__links .primary { margin-left: auto; }
-    .state-card {
-      grid-column: 1 / -1; border: 1px dashed var(--line-strong);
-      border-radius: var(--radius); padding: 34px 24px; text-align: center;
-      color: var(--muted); font-size: 13px; background: #fbfaf6;
+    .school-row__links a { color: var(--ink-2); border-bottom: 1px solid transparent; padding: 2px 0; }
+    .school-row__links a:hover { color: var(--rust); border-bottom-color: var(--rust); }
+    .school-row__links .primary { color: var(--rust); }
+    .school-row__go { font: 400 18px/1 var(--font-mono); color: var(--faint); text-align: right; }
+    .school-row:hover .school-row__go { color: var(--rust); }
+    .dir-empty {
+      padding: 38px 0; border-top: 1px solid var(--line);
+      color: var(--muted); font: 12px/1.6 var(--font-mono);
     }
-    @media (max-width: 860px) {
-      .home-hero { grid-template-columns: 1fr; gap: 30px; padding-top: 34px; }
-      .how { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
-      .how ol { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+    .dir-empty b { display: block; font: 700 20px/1.3 var(--font-display); color: var(--ink); margin-bottom: 4px; }
+
+    @media (max-width: 900px) {
+      .dir-intro { grid-template-columns: 1fr; gap: 26px; padding-bottom: 24px; }
+      .dir-note ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 18px; }
+      .dir-note li { border-top: 0; }
+      .dir-list-head { grid-template-columns: 44px minmax(0, 1fr) 200px; }
+      .dir-list-head span:last-child { display: none; }
+      .school-row { grid-template-columns: 44px minmax(0, 1fr) 200px; }
+      .school-row__go { display: none; }
     }
-    @media (max-width: 540px) {
-      .how ol { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      .dir-note ol { grid-template-columns: 1fr; }
+      .dir-note li { border-top: 1px dotted var(--line); }
+      .dir-note li:first-child { border-top: 0; }
+      .dir-list-head { display: none; }
+      .school-row {
+        grid-template-columns: 32px minmax(0, 1fr);
+        gap: 12px; padding: 15px 0;
+      }
+      .school-row__links { grid-column: 2; margin-top: -4px; gap: 4px 14px; }
+      .school-row h2 { font-size: 21px; }
     }
   </style>
 </head>
@@ -132,35 +170,49 @@
     </div>
   </header>
 
-  <main class="ms-shell ms-main" style="padding-top:0">
-    <section class="home-hero">
-      <div>
-        <div class="ms-eyebrow">One account per family</div>
-        <h1 class="ms-display">Start with your <em>child's school.</em></h1>
-        <p class="ms-lead">Every school on MYSCHOOL runs its own portal for families, students and staff. Choose a school below, then sign in to the workspace that matches your role.</p>
-        <div class="home-search">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4" stroke-linecap="round"/></svg>
-          <input id="school-search" type="search" placeholder="Search by school name or code" autocomplete="off" aria-label="Search schools">
-        </div>
-        <div id="school-count" class="home-count" aria-live="polite">Loading schools…</div>
+  <main class="ms-shell">
+    <section class="dir-head">
+      <div class="dir-strip">
+        <span><b>Public directory</b> / registered schools</span>
+        <span>Kigali · Rwanda</span>
       </div>
-      <aside class="how">
-        <h2>How access works</h2>
-        <ol>
-          <li><b>Select the school</b>Choose the school your student attends.</li>
-          <li><b>Choose your role</b>Parent, student, teacher or administrator.</li>
-          <li><b>Sign in securely</b>Each portal only shows what your role is allowed to see.</li>
-        </ol>
-      </aside>
+
+      <div class="dir-intro">
+        <div>
+          <div class="ms-eyebrow">One account per family</div>
+          <h1 class="ms-display">Start with the <em>school.</em></h1>
+          <p class="ms-lead">Every school on MYSCHOOL keeps its own portal. Find the school your student attends, then use the entrance that matches who you are — parent, student, teacher or staff.</p>
+        </div>
+        <aside class="dir-note" aria-label="How access works">
+          <span class="dir-note__label">How access works</span>
+          <ol>
+            <li><span><b>Find the school</b>Search the register by name or school code.</span></li>
+            <li><span><b>Choose your desk</b>Family, learner, teaching or administration.</span></li>
+            <li><span><b>Sign in</b>Each account only opens the records it is issued for.</span></li>
+          </ol>
+        </aside>
+      </div>
+
+      <div class="dir-search">
+        <label for="school-search">Find a school by name or code</label>
+        <div class="dir-search__row">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4" stroke-linecap="round"/></svg>
+          <input id="school-search" type="search" placeholder="e.g. GS Gisozi 1 or SCH-003" autocomplete="off" aria-label="Search schools">
+          <span id="school-count" class="dir-count" aria-live="polite">Loading…</span>
+        </div>
+      </div>
     </section>
 
-    <section class="ms-section" aria-labelledby="schools-title">
+    <section aria-labelledby="schools-title">
       <div class="ms-section__head">
         <h2 id="schools-title" class="ms-h2">Registered schools</h2>
-        <p>Parent and student services are available on each school portal.</p>
+        <p>Parent and student services are available on each portal.</p>
       </div>
-      <div id="school-grid" class="ms-grid ms-grid--3" aria-live="polite">
-        <div class="state-card">Loading registered schools…</div>
+      <div class="dir-list-head" aria-hidden="true">
+        <span>No.</span><span>School</span><span>Access points</span><span></span>
+      </div>
+      <div id="school-grid" class="school-list" aria-live="polite">
+        <div class="dir-empty">Loading registered schools…</div>
       </div>
     </section>
 
@@ -189,37 +241,42 @@
         String(s.school_name || '').toLowerCase().includes(term) ||
         String(s.school_code || '').toLowerCase().includes(term));
       count.textContent = shown.length
-        ? shown.length + (shown.length === 1 ? ' school available' : ' schools available')
-        : 'No schools match that search';
+        ? shown.length + (shown.length === 1 ? ' school' : ' schools')
+        : 'No match';
       grid.replaceChildren();
       if (!shown.length) {
-        grid.appendChild(el('div', 'state-card', schools.length
-          ? 'No school matches that name or code. Try a shorter search.'
-          : 'No active schools are registered yet. Please contact the school administrator.'));
+        const empty = el('div', 'dir-empty');
+        const title = el('b', null, schools.length ? 'No school matches that search.' : 'No active schools are registered yet.');
+        empty.append(title, document.createTextNode(schools.length
+          ? 'Try a shorter name or the school code, for example SCH-003.'
+          : 'Contact the system administrator to register a school.'));
+        grid.appendChild(empty);
         return;
       }
-      shown.forEach(s => {
+      shown.forEach((s, index) => {
         const name = String(s.school_name || 'School');
         const portalUrl = '/' + encodeURIComponent(name) + '/portals';
         const parentUrl = '/' + encodeURIComponent(name) + '/parentportal';
         const studentUrl = '/' + encodeURIComponent(name) + '/student-login';
 
-        const card = el('article', 'school-card');
-        card.setAttribute('role', 'link');
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('aria-label', 'Open ' + name);
-        card.addEventListener('click', event => {
+        const row = el('article', 'school-row');
+        row.setAttribute('role', 'link');
+        row.setAttribute('tabindex', '0');
+        row.setAttribute('aria-label', 'Open ' + name);
+        row.addEventListener('click', event => {
           if (event.target.closest('a')) return;
           window.location.href = portalUrl;
         });
-        card.addEventListener('keydown', event => {
-          if ((event.key === 'Enter' || event.key === ' ') && event.target === card) {
+        row.addEventListener('keydown', event => {
+          if ((event.key === 'Enter' || event.key === ' ') && event.target === row) {
             event.preventDefault();
             window.location.href = portalUrl;
           }
         });
 
-        const top = el('div', 'school-card__top');
+        const num = el('span', 'school-row__no', String(index + 1).padStart(2, '0'));
+
+        const id = el('div', 'school-row__id');
         const mark = el('div', 'school-mark');
         const isSos = /\bsos\b/i.test(name) && !/impactful technical high school/i.test(name);
         if (isSos) {
@@ -231,24 +288,24 @@
         } else {
           mark.textContent = name.trim().charAt(0).toUpperCase() || 'S';
         }
-        top.appendChild(mark);
-        const badge = el('span', 'ms-badge ms-badge--quiet', 'Open');
-        top.appendChild(badge);
+        const identity = el('div');
+        identity.append(
+          el('h2', null, name),
+          el('div', 'school-row__code', 'Code ' + (s.school_code || '—') + ' · Rwanda')
+        );
+        id.append(mark, identity);
 
-        const title = el('h2', null, name);
-        const code = el('div', 'school-card__code', 'School code ' + (s.school_code || '—'));
-
-        const links = el('div', 'school-card__links');
-        const portals = el('a', 'primary', 'School portals →');
-        portals.href = portalUrl;
-        const parent = el('a', 'secondary', 'Parent');
+        const links = el('div', 'school-row__links');
+        const parent = el('a', null, 'Parent');
         parent.href = parentUrl;
-        const student = el('a', 'secondary', 'Student');
+        const student = el('a', null, 'Student');
         student.href = studentUrl;
+        const portals = el('a', 'primary', 'Portals →');
+        portals.href = portalUrl;
         links.append(parent, student, portals);
 
-        card.append(top, title, code, links);
-        grid.appendChild(card);
+        row.append(num, id, links, el('span', 'school-row__go', '→'));
+        grid.appendChild(row);
       });
     }
 
@@ -260,8 +317,8 @@
         renderSchools();
       })
       .catch(() => {
-        grid.innerHTML = '<div class="state-card">Schools could not be loaded right now. Refresh in a moment or contact the administrator.</div>';
-        count.textContent = 'Unable to load schools';
+        grid.innerHTML = '<div class="dir-empty"><b>Schools could not be loaded.</b>Refresh in a moment, or contact the system administrator if this continues.</div>';
+        count.textContent = 'Unavailable';
       });
   </script>
 </body>

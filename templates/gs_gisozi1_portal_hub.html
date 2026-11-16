@@ -3,273 +3,220 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#123a2b">
-  <title>GS Gisozi 1 · School workspace</title>
+  <meta name="theme-color" content="#16140f">
+  <title>GS Gisozi 1 · Gate and school desks</title>
   <link rel="stylesheet" href="/static/myschool-ui.css">
+  <link rel="stylesheet" href="/static/sch003-ui.css">
   <style>
-    .g1-masthead {
-      display: grid;
-      grid-template-columns: 116px minmax(0, 1fr) auto;
-      gap: 28px;
-      align-items: center;
-      padding: 30px 0 26px;
-      border-bottom: 1px solid var(--line);
+    .g1-strip {
+      display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      padding: 7px 0; border-bottom: 1px solid var(--line-strong);
+      font: 500 9.5px/1.45 var(--font-mono); letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
     }
-    .g1-seal {
-      width: 96px; height: 96px;
-      border: 1px solid var(--forest);
-      border-radius: 50%;
-      display: grid; place-items: center;
-      text-align: center;
-      background: var(--surface);
-      color: var(--forest);
-      position: relative;
+    .g1-strip b { color: var(--rust); font-weight: 600; }
+    .g1-board {
+      display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .45fr);
+      border-bottom: 1px solid var(--rule);
     }
-    .g1-seal::before {
-      content: ''; position: absolute; inset: 5px;
-      border: 1px solid var(--line-strong); border-radius: 50%;
+    .g1-board__lead { padding: 34px 44px 32px 0; border-right: 1px solid var(--line-strong); }
+    .g1-board__lead .ms-display { max-width: 12ch; margin-top: 12px; }
+    .g1-board__lead .ms-lead { max-width: 48ch; }
+    .g1-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+    .g1-textlink {
+      font: 600 11px/1.4 var(--font-mono); color: var(--ink-2);
+      border-bottom: 1px solid var(--line-strong); padding: 8px 0;
     }
-    .g1-seal span {
-      font: 500 24px/1 'Fraunces', serif; letter-spacing: -.02em;
-    }
-    .g1-seal small {
-      display: block; font: 600 8px/1.4 'Inter', sans-serif;
-      letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-top: 4px;
-    }
-    .g1-masthead h1 {
-      font: 500 clamp(30px, 4vw, 44px)/1.05 'Fraunces', Georgia, serif;
-      letter-spacing: -.035em; margin: 0; color: var(--forest-ink);
-    }
-    .g1-masthead h1 small {
-      display: block; font: 600 10.5px 'Inter', sans-serif;
-      letter-spacing: .18em; text-transform: uppercase; color: var(--ochre);
-      margin-bottom: 9px;
-    }
-    .g1-masthead p { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
-    .g1-meta { text-align: right; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
-    .g1-meta b { display: block; color: var(--ink); font-size: 12.5px; }
+    .g1-textlink:hover { color: var(--rust); border-bottom-color: var(--rust); }
 
-    .g1-line {
-      margin: 34px 0 0;
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
-      gap: 0;
-      border: 1px solid var(--line);
-      background: var(--surface);
+    .g1-board__desk { padding: 28px 0 26px 30px; display: flex; flex-direction: column; }
+    .g1-desk__head {
+      display: flex; justify-content: space-between; align-items: start; gap: 12px;
+      padding-bottom: 9px; border-bottom: 2px solid var(--rule);
     }
-    .g1-line__copy { padding: 30px 32px; border-right: 1px solid var(--line); }
-    .g1-line__copy p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; max-width: 60ch; }
-    .g1-line__copy p + p { margin-top: 12px; }
-    .g1-line__aside { padding: 26px 26px; background: #fbfaf6; display: grid; gap: 14px; align-content: start; }
-    .g1-fact { border-top: 1px solid var(--line); padding-top: 10px; }
-    .g1-fact:first-child { border-top: 0; padding-top: 0; }
-    .g1-fact span { display: block; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); font-weight: 700; }
-    .g1-fact b { display: block; font-size: 13px; font-weight: 600; margin-top: 3px; }
+    .g1-desk__head span:first-child {
+      font: 600 9.5px/1.4 var(--font-mono); letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .g1-desk__head b { font: 400 10px/1.4 var(--font-mono); color: var(--rust); }
+    .g1-desk__list { list-style: none; margin: 0; padding: 0; }
+    .g1-desk__list li {
+      display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 6px;
+      padding: 10px 0; border-bottom: 1px dotted var(--line-strong);
+      font-size: 12px; color: var(--ink-2); line-height: 1.5;
+    }
+    .g1-desk__list li::before {
+      content: attr(data-no);
+      font: 500 10px/1.7 var(--font-mono); color: var(--rust);
+    }
+    .g1-desk__list b { display: block; font-weight: 600; color: var(--ink); }
+    .g1-stamp {
+      align-self: flex-start; margin-top: 22px;
+      border: 2px solid var(--rust); color: var(--rust);
+      padding: 5px 9px 4px; transform: rotate(-1.2deg);
+      font: 600 9.5px/1.3 var(--font-mono); letter-spacing: .14em; text-transform: uppercase;
+    }
 
-    .g1-role-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-    .g1-role {
-      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 22px; display: flex; flex-direction: column;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    .g1-role:hover { border-color: var(--line-strong); box-shadow: var(--shadow); }
-    .g1-role__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-    .g1-role__head span:first-child { font: 500 12px 'Fraunces', serif; color: var(--ochre); }
-    .g1-role h3 { font: 600 20px/1.2 'Fraunces', serif; margin: 15px 0 6px; letter-spacing: -.02em; }
-    .g1-role > p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.65; }
-    .g1-role__links { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 2px; }
-    .g1-role__links a {
-      display: flex; justify-content: space-between; gap: 10px;
-      padding: 7px 0; font-size: 12.5px; font-weight: 600; color: var(--forest);
-      border-bottom: 1px dotted #ebeae0;
-    }
-    .g1-role__links a:last-child { border-bottom: 0; }
-    .g1-role__links a:hover { color: var(--forest-2); }
-    .g1-role__links a span { color: var(--faint); font-weight: 400; }
+    .g1-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--rule); }
+    .g1-flow__step { padding: 18px 22px 20px; border-left: 1px solid var(--line); }
+    .g1-flow__step:first-child { border-left: 0; padding-left: 0; }
+    .g1-flow__no { font: 500 10px/1.4 var(--font-mono); color: var(--rust); }
+    .g1-flow__step b { display: block; margin: 7px 0 3px; font: 700 16px/1.25 var(--font-display); }
+    .g1-flow__step p { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.55; max-width: 34ch; }
 
-    .g1-attendance {
-      margin-top: 18px;
-      border: 1px solid var(--line);
-      background: var(--surface);
-      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    .g1-desks { padding-bottom: 6px; }
+    .g1-desk-labels {
+      display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.1fr) 150px;
+      gap: 16px; padding: 7px 0; border-bottom: 1px solid var(--line-strong);
+      font: 600 9px/1.4 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
     }
-    .g1-attendance__intro { padding: 26px 30px; border-right: 1px solid var(--line); }
-    .g1-attendance__intro h3 { font: 600 21px/1.25 'Fraunces', serif; margin: 8px 0 8px; letter-spacing: -.02em; }
-    .g1-attendance__intro p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
-    .g1-attendance__lanes { display: grid; }
-    .g1-lane {
-      padding: 17px 22px; display: flex; align-items: center; gap: 14px;
-      border-bottom: 1px solid var(--line);
+    .g1-desk-row {
+      display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.1fr) 150px;
+      gap: 16px; align-items: center; padding: 13px 0;
+      border-bottom: 1px solid var(--line); transition: background .12s;
     }
-    .g1-lane:last-child { border-bottom: 0; }
-    .g1-lane__no {
-      width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center;
-      border: 1px solid var(--line-strong); border-radius: 50%;
-      font: 500 11px 'Fraunces', serif; color: var(--forest);
-    }
-    .g1-lane b { display: block; font-size: 13px; }
-    .g1-lane small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
-    .g1-lane a { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--forest); white-space: nowrap; }
-    .g1-lane a:hover { text-decoration: underline; }
+    .g1-desk-row:hover { background: var(--surface); }
+    .g1-desk-row__no { font: 500 10px/1.4 var(--font-mono); color: var(--faint); align-self: start; padding-top: 2px; }
+    .g1-desk-row:hover .g1-desk-row__no { color: var(--rust); }
+    .g1-desk-row h3 { margin: 0; font: 700 17px/1.2 var(--font-display); letter-spacing: -.01em; }
+    .g1-desk-row p { margin: 1px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+    .g1-desk-row__detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .g1-desk-row__go { text-align: right; font: 600 10.5px/1.4 var(--font-mono); color: var(--rust); }
+    .g1-desk-row__go span { display: block; color: var(--faint); font-weight: 400; font-size: 9px; }
 
-    @media (max-width: 900px) {
-      .g1-masthead { grid-template-columns: 74px minmax(0, 1fr); gap: 18px; }
-      .g1-seal { width: 68px; height: 68px; }
-      .g1-seal span { font-size: 18px; }
-      .g1-seal small { display: none; }
-      .g1-meta { display: none; }
-      .g1-line { grid-template-columns: 1fr; }
-      .g1-line__copy { border-right: 0; border-bottom: 1px solid var(--line); }
-      .g1-role-grid { grid-template-columns: 1fr 1fr; }
-      .g1-attendance { grid-template-columns: 1fr; }
-      .g1-attendance__intro { border-right: 0; border-bottom: 1px solid var(--line); }
+    @media (max-width: 980px) {
+      .g1-board { grid-template-columns: 1fr; }
+      .g1-board__lead { padding: 28px 0 24px; border-right: 0; border-bottom: 1px solid var(--line-strong); }
+      .g1-board__desk { padding: 20px 0 22px; }
+      .g1-flow { grid-template-columns: 1fr; }
+      .g1-flow__step { border-left: 0; border-top: 1px solid var(--line); padding: 14px 0; }
+      .g1-flow__step:first-child { border-top: 0; }
     }
-    @media (max-width: 600px) {
-      .g1-role-grid { grid-template-columns: 1fr; }
-      .g1-masthead { grid-template-columns: 1fr; }
-      .g1-seal { display: none; }
-      .g1-line__copy, .g1-line__aside, .g1-attendance__intro { padding: 22px; }
+    @media (max-width: 680px) {
+      .g1-desk-labels { display: none; }
+      .g1-desk-row { grid-template-columns: 28px minmax(0, 1fr); gap: 10px; padding: 13px 0; }
+      .g1-desk-row__detail { grid-column: 2; }
+      .g1-desk-row__go { grid-column: 2; text-align: left; padding-top: 2px; }
+      .g1-desk-row__go span { display: inline; margin-left: 5px; }
+      .g1-board__lead .ms-display { font-size: 40px; }
     }
   </style>
 </head>
-<body>
+<body class="s3">
   <header class="ms-top">
     <div class="ms-shell ms-top__inner">
       <a class="ms-brand" href="/{{ school_name }}/portals">
         <span class="ms-crest">GS1</span>
         <span>
           <span class="ms-brand__name">GS Gisozi 1</span>
-          <span class="ms-brand__sub">School community workspace</span>
+          <span class="ms-brand__sub">Gate desk &amp; school offices</span>
         </span>
       </a>
       <nav class="ms-top__nav">
         <a class="ms-top__link" href="/">All schools</a>
+        <a class="ms-top__link" href="/{{ school_name }}/attendance/parent">Parent attendance</a>
       </nav>
     </div>
   </header>
 
-  <main class="ms-shell" style="padding-bottom:56px">
-    <section class="g1-masthead">
-      <div class="g1-seal"><div><span>GS1</span><small>Gisozi · Kigali</small></div></div>
-      <div>
-        <h1><small>School code {{ school.school_code }}</small>GS Gisozi 1</h1>
-        <p>Digital campus for families, teachers, gate staff and school leadership.</p>
+  <main class="ms-shell">
+    <div class="g1-strip">
+      <span><b>School code {{ school.school_code }}</b> / Kigali, Rwanda</span>
+      <span>Attendance-led campus · gate opens 07:00</span>
+    </div>
+
+    <section class="g1-board">
+      <div class="g1-board__lead">
+        <div class="ms-eyebrow">Only at GS Gisozi 1</div>
+        <h1 class="ms-display">Every arrival, <em>one record.</em></h1>
+        <p class="ms-lead">This school's day starts at the gate. A signed student card is scanned once, the arrival is timestamped against the student, and the parent account reads the same entry — no separate register, no re-typing at the office.</p>
+        <div class="g1-actions">
+          <a class="ms-btn" href="/{{ school_name }}/attendance/login">Open the gate desk →</a>
+          <a class="ms-btn ms-btn--ghost" href="/{{ school_name }}/attendance/parent">Parent attendance</a>
+          <a class="g1-textlink" href="/{{ school_name }}/admin/workspace">Office log →</a>
+        </div>
       </div>
-      <div class="g1-meta">
-        <b>Working week</b>
-        Monday – Friday<br>
-        <b style="margin-top:8px">Access</b>
-        Role-based school accounts
+
+      <aside class="g1-board__desk" aria-label="Gate desk summary">
+        <div class="g1-desk__head">
+          <span>Gate desk / attendance</span>
+          <b>GS1 · 01</b>
+        </div>
+        <ol class="g1-desk__list">
+          <li data-no="01"><span><b>Signed QR student cards</b>Printed by the office, checked at the gate.</span></li>
+          <li data-no="02"><span><b>Continuous camera scan</b>One card after another, with manual entry as backup.</span></li>
+          <li data-no="03"><span><b>Parent view, same entry</b>The family sees the recorded time and the staff member.</span></li>
+          <li data-no="04"><span><b>One daily register</b>Present, late and absent export for the office.</span></li>
+        </ol>
+        <div class="g1-stamp">Gate use · SCH-003</div>
+      </aside>
+    </section>
+
+    <section class="g1-flow" aria-label="How the gate works">
+      <div class="g1-flow__step">
+        <span class="g1-flow__no">01 / Scan</span>
+        <b>Card at the gate</b>
+        <p>A camera or USB scanner reads the signed school token. A typed student number still works when a card is missing.</p>
+      </div>
+      <div class="g1-flow__step">
+        <span class="g1-flow__no">02 / Mark</span>
+        <b>Present, late or absent</b>
+        <p>The staff member on duty saves the status. Each entry carries their name and the exact time.</p>
+      </div>
+      <div class="g1-flow__step">
+        <span class="g1-flow__no">03 / Seen</span>
+        <b>Family and office</b>
+        <p>The parent account and the administration workspace read the same record immediately, including the monthly total.</p>
       </div>
     </section>
 
-    <section class="g1-line" aria-label="About this workspace">
-      <div class="g1-line__copy">
-        <p>Every part of the GS Gisozi 1 school day now runs through this workspace: attendance is validated at the gate, parents see the same record, teachers work from assigned classes, and the administration keeps student, staff and timetable records in one place.</p>
-        <p>Choose a workspace below. You will only be asked for the credentials that belong to that role.</p>
+    <section class="g1-desks" aria-labelledby="desks-title">
+      <div class="ms-section__head" style="margin-top:34px">
+        <h2 id="desks-title" class="ms-h2">The rest of the school</h2>
+        <p>Five entrances outside the gate</p>
       </div>
-      <div class="g1-line__aside">
-        <div class="g1-fact"><span>Attendance</span><b>Gate scan &amp; manual desk</b></div>
-        <div class="g1-fact"><span>Parent visibility</span><b>Daily record and monthly summary</b></div>
-        <div class="g1-fact"><span>Administration</span><b>Families, staff &amp; timetables</b></div>
-      </div>
-    </section>
-
-    <section class="ms-section" aria-labelledby="roles-title">
-      <div class="ms-section__head">
-        <h2 id="roles-title" class="ms-h2">Choose your workspace</h2>
-        <p>Four entry points, each with its own responsibilities.</p>
+      <div class="g1-desk-labels" aria-hidden="true">
+        <span>No.</span><span>Desk</span><span>What it covers</span><span>Entrance</span>
       </div>
 
-      <div class="g1-role-grid">
-        <article class="g1-role">
-          <div class="g1-role__head"><span>01 / Family</span><span class="ms-badge ms-badge--present">Daily updates</span></div>
-          <h3>Parents &amp; guardians</h3>
-          <p>Follow your child's attendance and published academic reports from one family account.</p>
-          <div class="g1-role__links">
-            <a href="/{{ school_name }}/attendance/parent">Attendance record <span>→</span></a>
-            <a href="/{{ school_name }}/parentportal">Reports &amp; portal <span>→</span></a>
-            <a href="/{{ school_name }}/parent/login">Parent sign in <span>→</span></a>
-          </div>
-        </article>
+      <a class="g1-desk-row" href="/{{ school_name }}/attendance/parent">
+        <span class="g1-desk-row__no">01</span>
+        <div><h3>Parents &amp; guardians</h3><p>Family attendance record</p></div>
+        <div class="g1-desk-row__detail">Today's arrival, the month's totals, and the staff member who recorded each entry.</div>
+        <div class="g1-desk-row__go">Parent sign in <span>Family account</span></div>
+      </a>
 
-        <article class="g1-role">
-          <div class="g1-role__head"><span>02 / Teaching</span><span class="ms-badge">Staff account</span></div>
-          <h3>Teachers</h3>
-          <p>Work from your assigned classes, enter marks, view your timetable and validate attendance.</p>
-          <div class="g1-role__links">
-            <a href="/{{ school_name }}/teacher">Teaching workspace <span>→</span></a>
-            <a href="/{{ school_name }}/attendance/station">Attendance station <span>→</span></a>
-          </div>
-        </article>
+      <a class="g1-desk-row" href="/{{ school_name }}/teacher">
+        <span class="g1-desk-row__no">02</span>
+        <div><h3>Teachers</h3><p>Teaching and class records</p></div>
+        <div class="g1-desk-row__detail">Assigned classes, marks, personal timetable and the class-side attendance desk.</div>
+        <div class="g1-desk-row__go">Teaching desk <span>Staff account</span></div>
+      </a>
 
-        <article class="g1-role">
-          <div class="g1-role__head"><span>03 / Gate</span><span class="ms-badge">Station account</span></div>
-          <h3>Gatekeepers</h3>
-          <p>Validate arrivals with a student ID or QR scan and keep the gate record accurate in real time.</p>
-          <div class="g1-role__links">
-            <a href="/{{ school_name }}/attendance/login">Gate attendance sign in <span>→</span></a>
-          </div>
-        </article>
+      <a class="g1-desk-row" href="/{{ school_name }}/admin/workspace">
+        <span class="g1-desk-row__no">03</span>
+        <div><h3>School administration</h3><p>Office and operations</p></div>
+        <div class="g1-desk-row__detail">Students, parent links, gatekeepers, teachers, timetable and the full attendance register.</div>
+        <div class="g1-desk-row__go">Office workspace <span>Administrator</span></div>
+      </a>
 
-        <article class="g1-role" style="grid-column: span 1">
-          <div class="g1-role__head"><span>04 / Operations</span><span class="ms-badge ms-badge--quiet">Administrator</span></div>
-          <h3>School administration</h3>
-          <p>Manage students and parent links, add teachers, build timetables and review attendance.</p>
-          <div class="g1-role__links">
-            <a href="/{{ school_name }}/admin/workspace">Operations workspace <span>→</span></a>
-            <a href="/{{ school_name }}/admin/login">Administrator sign in <span>→</span></a>
-          </div>
-        </article>
+      <a class="g1-desk-row" href="/{{ school_name }}/student-login">
+        <span class="g1-desk-row__no">04</span>
+        <div><h3>Students</h3><p>Learner workspace</p></div>
+        <div class="g1-desk-row__detail">Student ID sign-in for timetable, class information and published records.</div>
+        <div class="g1-desk-row__go">Student sign in <span>Learner account</span></div>
+      </a>
 
-        <article class="g1-role" style="grid-column: span 1">
-          <div class="g1-role__head"><span>05 / Learner</span><span class="ms-badge">Student ID</span></div>
-          <h3>Students</h3>
-          <p>Sign in with your student ID to see your timetable, class information and student account.</p>
-          <div class="g1-role__links">
-            <a href="/{{ school_name }}/student-login">Student sign in <span>→</span></a>
-          </div>
-        </article>
-
-        <article class="g1-role" style="grid-column: span 1">
-          <div class="g1-role__head"><span>06 / Canteen</span><span class="ms-badge">Staff account</span></div>
-          <h3>Canteen</h3>
-          <p>Manage the published menu, student cards, top-ups and approved canteen transactions.</p>
-          <div class="g1-role__links">
-            <a href="/{{ school_name }}/canteen-admin">Canteen workspace <span>→</span></a>
-          </div>
-        </article>
-      </div>
-
-      <div class="g1-attendance" id="attendance">
-        <div class="g1-attendance__intro">
-          <div class="ms-eyebrow">Student attendance</div>
-          <h3>A single record, validated once.</h3>
-          <p>The gate or a teacher validates a student's arrival, and the same record appears in the parent account. No separate registers, and no re-typing at the end of the day.</p>
-          <a class="ms-btn ms-btn--ghost ms-btn--sm" href="/{{ school_name }}/attendance/login" style="margin-top:18px">Open attendance station</a>
-        </div>
-        <div class="g1-attendance__lanes">
-          <div class="g1-lane">
-            <span class="g1-lane__no">1</span>
-            <div><b>Validate at the station</b><small>Student ID entry or QR scan, marked present or late.</small></div>
-            <a href="/{{ school_name }}/attendance/login">Staff →</a>
-          </div>
-          <div class="g1-lane">
-            <span class="g1-lane__no">2</span>
-            <div><b>See it in the family account</b><small>Parents review the daily record and monthly summary.</small></div>
-            <a href="/{{ school_name }}/attendance/parent">Parents →</a>
-          </div>
-          <div class="g1-lane">
-            <span class="g1-lane__no">3</span>
-            <div><b>Review school-wide</b><small>Class-by-class attendance with export for the office.</small></div>
-            <a href="/{{ school_name }}/admin/workspace">Office →</a>
-          </div>
-        </div>
-      </div>
+      <a class="g1-desk-row" href="/{{ school_name }}/canteen-admin">
+        <span class="g1-desk-row__no">05</span>
+        <div><h3>Canteen</h3><p>Menu and student cards</p></div>
+        <div class="g1-desk-row__detail">Published prices, card linking, top-ups and approved canteen transactions.</div>
+        <div class="g1-desk-row__go">Canteen desk <span>Staff account</span></div>
+      </a>
     </section>
 
     <footer class="ms-foot">
-      <span><b>GS Gisozi 1</b> · Digital school workspace · Powered by 1percent</span>
+      <span><b>GS Gisozi 1</b> · Gate desk and school offices · Powered by 1percent</span>
       <span>Attendance and reports are visible only to linked accounts.</span>
     </footer>
   </main>

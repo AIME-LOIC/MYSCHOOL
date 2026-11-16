@@ -3,9 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#123a2b">
+  <meta name="theme-color" content="#ece7da">
   <title>Administrator sign in · {{ school_name|title }} · MYSCHOOL</title>
   <link rel="stylesheet" href="/static/myschool-ui.css">
+  <style>
+    .lg-sheet { width: 100%; max-width: 400px; }
+    .lg-index {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding-bottom: 7px; border-bottom: 1px solid var(--rule);
+      font: 500 9px/1.4 var(--font-mono); letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .lg-index b { color: var(--rust); font-weight: 600; }
+    .lg-sheet h2 { margin-top: 20px; }
+    .lg-sheet .ms-auth__sub { margin-bottom: 22px; }
+    .lg-sheet form { max-width: none; }
+    .lg-sheet .ms-field { margin-bottom: 13px; }
+    .lg-sheet .ms-btn { min-width: 210px; }
+    .lg-foot {
+      margin-top: 24px; padding-top: 10px; border-top: 1px solid var(--line);
+      font: 10px/1.6 var(--font-mono); color: var(--faint);
+      display: flex; justify-content: space-between; gap: 12px;
+    }
+  </style>
 </head>
 <body>
 <div class="ms-auth">
@@ -19,7 +39,7 @@
         </span>
       </a>
       <nav class="ms-top__nav">
-        <a class="ms-top__link" href="/{{ school_name }}/portals">← All school roles</a>
+        <a class="ms-top__link" href="/{{ school_name }}/portals">← All school desks</a>
       </nav>
     </div>
   </header>
@@ -27,9 +47,9 @@
   <main class="ms-auth__body">
     <aside class="ms-auth__story">
       <div>
-        <div class="ms-eyebrow">School operations</div>
-        <h1>The records behind a well-run school.</h1>
-        <p>One administrative workspace for student information, staffing, parent access and the daily running of {{ school_name|title }}.</p>
+        <div class="ms-eyebrow">Office record · {{ school_name|title }}</div>
+        <h1>The school keeps its own record.</h1>
+        <p>One administrative desk for enrolment, staffing, parent access and the ordinary running of {{ school_name|title }}. Changes are written to the school's record the moment they are saved.</p>
         <ul>
           <li><span><b>Student records</b><br>Enrolment, classes, promotion and archived learners.</span></li>
           <li><span><b>Staffing</b><br>Teacher accounts, subjects and class assignments.</span></li>
@@ -41,25 +61,34 @@
     </aside>
 
     <section class="ms-auth__form">
-      <div class="ms-auth__mark">AD</div>
-      <h2>Administrator sign in</h2>
-      <p class="ms-auth__sub">{{ school_name|title }} · School management</p>
+      <div class="lg-sheet">
+        <div class="lg-index">
+          <span><b>Office</b> / administration</span>
+          <span>Access 04</span>
+        </div>
+        <h2>Sign in to the office</h2>
+        <p class="ms-auth__sub">{{ school_name|title }} · School management</p>
 
-      {% if error %}<div class="ms-alert" role="alert">{{ error }}</div>{% endif %}
+        {% if error %}<div class="ms-alert" role="alert">{{ error }}</div>{% endif %}
 
-      <form method="POST" action="/{{ school_name }}/admin/login">
-        <label class="ms-field" for="username">
-          <span>Username</span>
-          <input class="ms-input" id="username" type="text" name="username" autocomplete="username" required autofocus placeholder="Enter your username">
-        </label>
-        <label class="ms-field" for="password">
-          <span>Password</span>
-          <input class="ms-input" id="password" type="password" name="password" autocomplete="current-password" required placeholder="Enter your password">
-        </label>
-        <button class="ms-btn ms-btn--block" type="submit" style="margin-top:6px">Sign in to the school workspace</button>
-      </form>
+        <form method="POST" action="/{{ school_name }}/admin/login">
+          <label class="ms-field" for="username">
+            <span>Username</span>
+            <input class="ms-input" id="username" type="text" name="username" autocomplete="username" required autofocus placeholder="Enter your username">
+          </label>
+          <label class="ms-field" for="password">
+            <span>Password</span>
+            <input class="ms-input" id="password" type="password" name="password" autocomplete="current-password" required placeholder="Enter your password">
+          </label>
+          <button class="ms-btn" type="submit" style="margin-top:5px">Sign in to the school workspace</button>
+        </form>
 
-      <p class="ms-auth__meta">If you do not have administrator credentials, contact the system administrator responsible for {{ school_name|title }}.</p>
+        <p class="ms-auth__meta">No administrator credentials? Contact the system administrator responsible for {{ school_name|title }}.</p>
+        <div class="lg-foot">
+          <span>MYSCHOOL · School management</span>
+          <span>Office use only</span>
+        </div>
+      </div>
     </section>
   </main>
 

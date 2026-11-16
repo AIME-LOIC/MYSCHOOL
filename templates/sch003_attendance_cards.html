@@ -3,50 +3,86 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#123a2b">
+  <meta name="theme-color" content="#16140f">
   <title>Attendance ID cards · GS Gisozi 1</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink: #0d2a1f; --forest: #123a2b; --muted: #5f6a62; --faint: #8b948d;
-      --line: #dedcd0; --line-strong: #c9c7b9; --paper: #f4f3ec; --surface: #fffefb; --ochre: #a9792c;
+      --ink: #1c1a15; --ink-2: #3b372d; --muted: #6b6557; --faint: #918a79;
+      --line: #d3cbb7; --line-strong: #a79e89; --rule: #26231c;
+      --paper: #e9e3d5; --surface: #faf7ec; --rust: #b13a1f;
+      --font-ui: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+      --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+      --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--paper); color: var(--ink); font: 13px/1.55 'Inter', system-ui, sans-serif; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 13px/1.55 var(--font-ui); }
     .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
-    .bar { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 26px 0 18px; border-bottom: 1px solid var(--line); }
-    .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--ochre); }
-    h1 { font: 500 30px/1.1 'Fraunces', Georgia, serif; letter-spacing: -.03em; margin: 7px 0 0; }
-    .sub { color: var(--muted); font-size: 12.5px; margin: 4px 0 0; }
-    .bar-actions { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; }
-    label.field { display: grid; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-    select { appearance: none; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 8px 30px 8px 10px; font: 600 12.5px 'Inter', sans-serif; background-image: linear-gradient(45deg, transparent 50%, #6c766e 50%), linear-gradient(135deg, #6c766e 50%, transparent 50%); background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--forest); background: var(--forest); color: #fbf9f2; border-radius: 7px; padding: 9px 15px; font: 600 12.5px 'Inter', sans-serif; cursor: pointer; text-decoration: none; }
-    .btn:hover { background: #1c5340; border-color: #1c5340; }
-    .btn--ghost { background: transparent; color: var(--forest); border-color: var(--line-strong); }
-    .btn--ghost:hover { background: #ebe9de; border-color: var(--line-strong); }
-    .note { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 22px; padding: 11px 14px; border: 1px solid var(--line); border-left: 3px solid var(--ochre); border-radius: 6px; background: var(--surface); color: var(--muted); font-size: 12px; }
+    .bar { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 24px 0 16px; border-bottom: 2px solid var(--rule); }
+    .eyebrow { font: 500 9.5px/1.4 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--rust); }
+    h1 { font: 700 32px/1.05 var(--font-display); letter-spacing: -.03em; margin: 7px 0 0; }
+    .sub { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
+    .bar-actions { display: flex; align-items: end; gap: 9px; flex-wrap: wrap; }
+    label.field { display: grid; gap: 4px; font: 600 9px/1.4 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    select {
+      appearance: none; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+      padding: 8px 28px 8px 9px; font: 600 12px var(--font-ui);
+      background-image: linear-gradient(45deg, transparent 50%, #6b6557 50%), linear-gradient(135deg, #6b6557 50%, transparent 50%);
+      background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+      background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+    }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--rule); background: var(--rule); color: #fbf7ea; padding: 9px 14px; font: 600 12px var(--font-ui); cursor: pointer; text-decoration: none; }
+    .btn:hover { background: var(--rust); border-color: var(--rust); }
+    .btn--ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+    .btn--ghost:hover { background: var(--surface); color: var(--rust); border-color: var(--rule); }
+    .note {
+      display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 20px;
+      padding: 10px 13px; border: 1px solid var(--line-strong); border-left: 3px solid var(--rust);
+      background: var(--surface); color: var(--muted); font-size: 11.5px; line-height: 1.6;
+    }
     .note b { color: var(--ink); }
     .sheet-head { display: none; }
     .sheet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-bottom: 48px; }
-    .card { position: relative; display: grid; grid-template-rows: auto 1fr auto; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; min-height: 168px; overflow: hidden; break-inside: avoid; }
-    .card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--forest); }
-    .card__top { display: flex; align-items: center; gap: 9px; padding: 12px 16px 10px 20px; border-bottom: 1px solid var(--line); }
-    .crest { width: 31px; height: 34px; display: grid; place-items: center; border: 1px solid #cdd6cc; border-radius: 3px 3px 8px 8px; background: #eef1e8; color: var(--forest); font: 600 11px 'Fraunces', serif; }
-    .card__top b { display: block; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--forest); }
-    .card__top small { display: block; font-size: 9.5px; color: var(--faint); letter-spacing: .04em; }
-    .card__mid { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 12px; align-items: center; padding: 13px 16px 13px 20px; }
-    .card__mid h2 { font: 600 19px/1.15 'Fraunces', Georgia, serif; letter-spacing: -.02em; margin: 0 0 4px; }
-    .card__mid .cls { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--forest); background: #e8eee4; border-radius: 3px; padding: 2px 6px; }
-    .card__mid .no { margin: 7px 0 0; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .card {
+      display: grid; grid-template-rows: auto 1fr auto;
+      background: var(--surface); border: 1px solid var(--rule);
+      min-height: 170px; overflow: hidden; break-inside: avoid;
+    }
+    .card__top {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; background: #16140f; color: #f7f1e2;
+      border-bottom: 3px solid var(--rust);
+    }
+    .crest {
+      width: 27px; height: 30px; display: grid; place-items: center;
+      border: 1px solid #6f6553; color: #efb7a1;
+      font: 700 10px var(--font-display);
+      box-shadow: inset 0 0 0 2px #16140f, inset 0 0 0 3px #6f6553;
+    }
+    .card__top b { display: block; font: 600 9.5px/1.4 var(--font-mono); letter-spacing: .13em; text-transform: uppercase; color: #f7f1e2; }
+    .card__top small { display: block; font: 400 8.5px/1.4 var(--font-mono); color: #a89e8a; letter-spacing: .04em; }
+    .card__serial { margin-left: auto; font: 500 8.5px/1.4 var(--font-mono); color: #a89e8a; letter-spacing: .08em; }
+    .card__mid { display: grid; grid-template-columns: minmax(0, 1fr) 94px; gap: 12px; align-items: center; padding: 13px 15px; }
+    .card__mid h2 { font: 700 20px/1.12 var(--font-display); letter-spacing: -.02em; margin: 0 0 4px; }
+    .card__mid .cls {
+      display: inline-block; font: 600 9px/1.4 var(--font-mono);
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--rust); border: 1px solid var(--rust); padding: 1px 5px;
+    }
+    .card__mid .no { margin: 7px 0 0; font: 500 9.5px/1.5 var(--font-mono); color: var(--muted); }
     .card__mid .no b { color: var(--ink); font-size: 12px; }
-    .qr { width: 92px; height: 92px; padding: 5px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+    .qr { width: 94px; height: 94px; padding: 4px; border: 1px solid var(--line-strong); background: #fff; }
     .qr svg, .qr img { width: 100%; height: 100%; display: block; }
-    .card__foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 16px 9px 20px; border-top: 1px solid var(--line); background: #faf9f3; font-size: 9.5px; color: var(--faint); }
-    .card__foot b { color: var(--muted); font-weight: 600; }
-    .empty { grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--muted); border: 1px dashed var(--line-strong); border-radius: 10px; background: var(--surface); }
+    .card__foot {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      padding: 7px 15px; border-top: 1px dashed var(--line-strong);
+      font: 500 8.5px/1.5 var(--font-mono); color: var(--faint);
+    }
+    .card__foot b { color: var(--ink-2); font-weight: 600; }
+    .empty {
+      grid-column: 1 / -1; padding: 38px 24px; color: var(--muted);
+      border: 1px solid var(--line-strong); background: var(--surface);
+      font: 12px/1.6 var(--font-mono);
+    }
     @media (max-width: 720px) {
       .bar { flex-direction: column; align-items: flex-start; }
       .sheet { grid-template-columns: 1fr; }
@@ -56,17 +92,18 @@
       body { background: #fff; }
       .wrap { width: auto; }
       .bar, .note, .no-print { display: none !important; }
-      .sheet-head { display: flex; justify-content: space-between; align-items: end; border-bottom: 1px solid #bbb; padding-bottom: 6px; margin-bottom: 10px; }
-      .sheet-head b { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
-      .sheet-head span { font-size: 10px; color: #555; }
+      .sheet-head { display: flex; justify-content: space-between; align-items: end; border-bottom: 2px solid #222; padding-bottom: 6px; margin-bottom: 10px; }
+      .sheet-head b { font: 700 12px var(--font-display); letter-spacing: .04em; text-transform: uppercase; }
+      .sheet-head span { font: 500 9px var(--font-mono); color: #555; }
       .sheet { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9mm 7mm; padding: 0; }
-      .card { min-height: 0; border-color: #999; border-radius: 6px; }
-      .card::before { background: #123a2b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .card__top { padding: 3.5mm 5mm 3mm 6mm; }
-      .card__mid { padding: 3mm 5mm 3mm 6mm; grid-template-columns: minmax(0, 1fr) 25mm; }
+      .card { min-height: 0; border-color: #777; }
+      .card__top { background: #16140f !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .card__top b { color: #fff !important; }
+      .card__top small, .card__serial { color: #c9c0ae !important; }
+      .card__mid { padding: 3mm 5mm; grid-template-columns: minmax(0, 1fr) 25mm; }
       .qr { width: 25mm; height: 25mm; }
-      .card__foot { padding: 2mm 5mm 2.5mm 6mm; }
-      .card__foot, .card__top { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .card__top { padding: 2.5mm 5mm; }
+      .card__foot { padding: 2mm 5mm; }
     }
   </style>
 </head>
@@ -74,9 +111,9 @@
   <main class="wrap">
     <header class="bar">
       <div>
-        <div class="eyebrow">GS Gisozi 1 · Attendance</div>
-        <h1>Student ID cards</h1>
-        <p class="sub">Each card carries a signed QR code for the gate station. {{ card_count }} card{{ '' if card_count == 1 else 's' }} ready to print.</p>
+        <div class="eyebrow">GS Gisozi 1 · attendance gate</div>
+        <h1>Student gate cards</h1>
+        <p class="sub">Each card carries a signed QR token for the gate desk. {{ card_count }} card{{ '' if card_count == 1 else 's' }} ready to print.</p>
       </div>
       <div class="bar-actions no-print">
         <form method="GET" action="/{{ school_name }}/admin/attendance/cards">
@@ -95,12 +132,12 @@
     </header>
 
     <div class="note no-print">
-      <span>◇</span>
-      <span>Print on card stock, cut along the border and laminate. The QR code contains a signed school token, not a password — a card only works inside {{ school.school_name }}. Re-print a card if a student loses theirs; old cards stay valid because they point at the student record, not at a printed secret.</span>
+      <span>NOTE</span>
+      <span>Print on card stock, cut along the border and laminate. The QR code is a signed school token, not a password, so a card only resolves inside {{ school.school_name }}. Lost cards can be replaced; old cards stay valid because they point at the student record.</span>
     </div>
 
     <div class="sheet-head">
-      <b>{{ school.school_name }} · attendance cards</b>
+      <b>{{ school.school_name }} · gate cards</b>
       <span>{{ selected_class or 'All classes' }} · {{ card_count }} student{{ '' if card_count == 1 else 's' }}</span>
     </div>
 
@@ -113,6 +150,7 @@
             <b>GS Gisozi 1</b>
             <small>Student attendance card</small>
           </div>
+          <span class="card__serial">{{ school.school_code }} / {{ '%03d'|format(card.student.id) }}</span>
         </div>
         <div class="card__mid">
           <div>
@@ -121,12 +159,12 @@
             <p class="no">Student no. <b>{{ card.student.id }}</b></p>
           </div>
           <div class="qr">
-            <img src="{{ card.qr }}" alt="QR code for {{ card.student.student_name }}" width="92" height="92">
+            <img src="{{ card.qr }}" alt="QR code for {{ card.student.student_name }}" width="94" height="94">
           </div>
         </div>
         <div class="card__foot">
-          <span>Scan at the gate station · <b>do not share</b></span>
-          <span>{{ school.school_code }}</span>
+          <span>Scan once at the gate · <b>do not share</b></span>
+          <span>7F · ATT</span>
         </div>
       </article>
       {% else %}
