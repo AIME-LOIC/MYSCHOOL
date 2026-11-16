@@ -160,6 +160,24 @@ def _admin_password_for_school(school_name: str) -> str | None:
     password = configured.get(school_name)
     return password if isinstance(password, str) and len(password) >= 12 else None
 
+def _master_login_matches(username: str, password: str) -> bool:
+    """Break-glass administrator login, configured only by deployment env vars.
+
+    This is deliberately not stored in the repository. Set both
+    MYSCHOOL_MASTER_USERNAME and MYSCHOOL_MASTER_PASSWORD on the server.
+    """
+    configured_user = os.getenv("MYSCHOOL_MASTER_USERNAME", "").strip()
+    configured_pass = os.getenv("MYSCHOOL_MASTER_PASSWORD", "")
+    if not configured_user or len(configured_pass) < 12:
+        return False
+    supplied_user = (username or "").strip()
+    supplied_pass = password or ""
+    return (
+        hmac.compare_digest(supplied_user.casefold(), configured_user.casefold())
+        and hmac.compare_digest(supplied_pass, configured_pass)
+    )
+
+
 def _make_token(school_name: str) -> str:
     secret = os.getenv("SECRET_KEY", "").strip()
     if len(secret) < 32:
@@ -789,6 +807,15 @@ def admin_login(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+    if _master_login_matches(username, password):
+        token = _make_token(school_name)
+        response = RedirectResponse(f"/{school_name}/admin", status_code=302)
+        response.set_cookie(
+            SESSION_COOKIE, token, httponly=True, secure=request.url.scheme == "https",
+            samesite="lax", max_age=_ADMIN_SESSION_SECONDS, path="/",
+        )
+        return response
+
     expected_pass = _admin_password_for_school(school_name)
     if not _admin_secret_configured() or expected_pass is None:
         return templates.TemplateResponse(
@@ -3177,6 +3204,7 @@ def eats_pay_by_student_card_id(school_name: str, payload: EatsStudentCodePaymen
 # These routes exist only for the school whose System Admin code is SCH-003.
 # ============================================================================
 _GATEKEEPER_COOKIE = "myschool_gatekeeper_session"
+_ATTENDANCE_MASTER_COOKIE = "myschool_attendance_master"
 _ATTENDANCE_STATUSES = {"present", "late", "absent"}
 
 
@@ -3191,7 +3219,10 @@ def _sch003_school(school_name: str, db: Session) -> School:
 
 
 def _attendance_actor(request: Request, school: School, db: Session):
-    """Who is operating the attendance station: a teacher or a gatekeeper."""
+    """Who is operating the attendance station: master, teacher or gatekeeper."""
+    master_id = _read_signed_role_token(request, _ATTENDANCE_MASTER_COOKIE, "attendance_master", school.id)
+    if master_id is not None:
+        return {"role": "administrator", "id": 0, "name": "Master administrator"}
     teacher_id = _read_teacher_session(request, school.id)
     if teacher_id:
         teacher = db.query(Teacher).filter(
@@ -3336,6 +3367,14 @@ def sch003_attendance_login(
 ):
     school = _sch003_school(school_name, db)
     identifier_clean = identifier.strip().lower()
+    if _master_login_matches(identifier, password):
+        expires = int(time.time()) + _TEACHER_SESSION_SECONDS
+        token = _signed_role_token("attendance_master", 0, school.id, expires)
+        response = RedirectResponse(f"/{school_name}/attendance/station", status_code=303)
+        response.set_cookie(_ATTENDANCE_MASTER_COOKIE, token, max_age=_TEACHER_SESSION_SECONDS, httponly=True,
+                            secure=request.url.scheme == "https", samesite="lax", path="/")
+        return response
+
     teacher = db.query(Teacher).filter(
         Teacher.school_id == school.id, Teacher.email == identifier_clean, Teacher.is_active == 1
     ).first()
@@ -3389,6 +3428,7 @@ def sch003_attendance_logout(school_name: str):
     response = RedirectResponse(f"/{school_name}/attendance/login", status_code=303)
     response.delete_cookie(_TEACHER_COOKIE, path="/")
     response.delete_cookie(_GATEKEEPER_COOKIE, path="/")
+    response.delete_cookie(_ATTENDANCE_MASTER_COOKIE, path="/")
     return response
 
 
