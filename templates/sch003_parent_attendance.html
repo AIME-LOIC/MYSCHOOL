@@ -20,6 +20,54 @@
     .pa-side .ms-panel__body p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
     .pa-side .ms-panel__body p + p { margin-top: 11px; }
     .pa-login { max-width: 400px; }
+    /* SCH-003 sign-in follows the 1percent Learn authentication layout. */
+    body.s3-parent:has(.auth-layout) { background:#f5f7f6; color:#102b1e; }
+    body.s3-parent:has(.auth-layout) .ms-top { display:none; }
+    body.s3-parent:has(.auth-layout) main.ms-shell { width:100%; max-width:none; margin:0; padding:0; }
+    body.s3-parent:has(.auth-layout) .s3-strip,
+    body.s3-parent:has(.auth-layout) .ms-foot { display:none; }
+    .auth-layout { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
+    .auth-hero { position:relative; display:flex; flex-direction:column; justify-content:center; padding:clamp(42px,6vw,76px); color:#fff; background:radial-gradient(circle at top right,rgba(127,220,175,.14),transparent 45%),linear-gradient(160deg,#0e2b1d 0%,#0a4c2c 48%,#0d6e3f 100%); overflow:hidden; }
+    .auth-hero:before { content:""; position:absolute; inset:0; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px); background-size:22px 22px; }
+    .auth-hero-inner { position:relative; max-width:560px; }
+    .auth-hero h1 { font:800 clamp(30px,3.2vw,44px)/1.12 'Plus Jakarta Sans',Inter,sans-serif; letter-spacing:-1px; margin:0 0 18px; }
+    .auth-hero h1 em { color:#7fdcaf; font-style:normal; }
+    .auth-hero-lead { max-width:460px; margin:0 0 34px; color:rgba(255,255,255,.8); font-size:16px; line-height:1.7; }
+    .auth-checks { display:grid; gap:16px; }
+    .auth-check { display:flex; align-items:center; gap:12px; font-size:15px; font-weight:600; }
+    .auth-check i { width:26px; height:26px; display:grid; place-items:center; border-radius:50%; background:#7fdcaf; color:#0e2b1d; font-style:normal; }
+    .auth-hero-foot { position:absolute; bottom:30px; left:clamp(42px,6vw,76px); color:rgba(255,255,255,.6); font-size:13px; }
+    .auth-form-col { display:flex; flex-direction:column; justify-content:center; background:#fff; min-height:100vh; }
+    .auth-back { align-self:flex-start; margin:24px 0 0 24px; color:#64748b; text-decoration:none; font-size:14px; font-weight:600; }
+    .auth-form-wrap { width:100%; max-width:420px; margin:auto; padding:32px 24px 40px; }
+    .auth-brand { display:flex; align-items:center; gap:10px; margin-bottom:36px; }
+    .auth-brand-mark { width:40px; height:40px; display:grid; place-items:center; border-radius:8px; background:#0d6e3f; color:white; font:800 16px 'JetBrains Mono',monospace; }
+    .auth-brand-name { display:flex; flex-direction:column; line-height:1.2; }
+    .auth-brand-name b { color:#102b1e; font-size:15px; font-weight:800; }
+    .auth-brand-name span { color:#84918a; font-size:12px; }
+    .auth-heading { margin:0 0 8px; color:#102b1e; font:800 clamp(26px,3vw,32px)/1.15 'Plus Jakarta Sans',Inter,sans-serif; letter-spacing:-.5px; }
+    .auth-subtext { margin:0 0 28px; color:#64746b; font-size:15px; line-height:1.6; }
+    .auth-field { margin-bottom:18px; }
+    .auth-label { display:block; margin-bottom:6px; color:#102b1e; font-size:13px; font-weight:600; }
+    .auth-input { width:100%; height:48px; padding:0 14px; border:1px solid #d9e2dc; border-radius:8px; background:#fff; color:#102b1e; font-size:15px; box-sizing:border-box; }
+    .auth-input:focus { outline:none; border-color:#0d6e3f; box-shadow:0 0 0 3px rgba(13,110,63,.15); }
+    .auth-password-wrap { position:relative; }
+    .auth-password-wrap .auth-input { padding-right:48px; }
+    .auth-eye { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:32px; height:32px; border:0; border-radius:6px; background:transparent; color:#84918a; cursor:pointer; }
+    .auth-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 20px; color:#33483c; font-size:14px; }
+    .auth-checkbox { display:flex; align-items:center; gap:8px; }
+    .auth-checkbox input { accent-color:#0d6e3f; }
+    .auth-btn { width:100%; height:48px; border:0; border-radius:8px; background:#0d6e3f; color:#fff; font-size:15px; font-weight:700; cursor:pointer; }
+    .auth-btn:hover { background:#0a5c34; }
+    .auth-alert { margin:0 0 18px; padding:12px 14px; border:1px solid #fca5a5; border-radius:8px; background:#fef2f2; color:#991b1b; font-size:13.5px; line-height:1.5; }
+    .auth-help { margin-top:18px; color:#64746b; font-size:13px; line-height:1.6; }
+    .auth-back-link { display:block; margin-top:18px; color:#0d6e3f; font-size:13px; font-weight:600; text-decoration:none; }
+    @media (max-width: 800px) {
+      .auth-layout { grid-template-columns:1fr; }
+      .auth-hero { display:none; }
+      .auth-form-col { min-height:100vh; }
+      .auth-form-wrap { padding:24px 24px 40px; }
+    }
     @media (max-width: 980px) {
       .pa-grid { grid-template-columns: 1fr; }
       .pa-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -55,52 +103,63 @@
       <span>School code {{ school.school_code }} · {{ 'linked account' if parent else 'parent sign-in' }}</span>
     </div>
     {% if not parent %}
-    <section class="pa-hero">
-      <div>
-        <div class="ms-eyebrow">Parent &amp; guardian access</div>
-        <h1>Know how the school day <em>started.</em></h1>
-        <p>Sign in with the parent account issued by GS Gisozi 1 to see your child's validated attendance record.</p>
-      </div>
-    </section>
-
-    <section class="ms-section">
-      <div class="ms-split">
-        <div class="pa-login">
-          {% if error %}<div class="ms-alert" role="alert">{{ error }}</div>{% endif %}
-          <form method="POST" action="/{{ school_name }}/attendance/parent/login">
-            <label class="ms-field" for="parent-email">
-              <span>Parent email</span>
-              <input class="ms-input" id="parent-email" name="email" type="email" required autofocus
-                     autocomplete="username" placeholder="you@example.com">
-            </label>
-            <label class="ms-field" for="parent-password">
-              <span>Password</span>
-              <input class="ms-input" id="parent-password" name="password" type="password" required
-                     autocomplete="current-password" placeholder="Enter your password">
-            </label>
-            <button class="ms-btn ms-btn--block" type="submit">View attendance record</button>
-          </form>
-          <p class="ms-hint" style="margin-top:14px">
-            No parent account yet? Ask the GS Gisozi 1 administration office to create one and link it to your child.
-          </p>
+    <div class="auth-layout">
+      <section class="auth-hero" aria-hidden="true">
+        <div class="auth-hero-inner">
+          <h1>Stay connected to your child's <em>school journey.</em></h1>
+          <p class="auth-hero-lead">A secure family space for GS Gisozi 1 parents to follow attendance and stay informed about the school day.</p>
+          <div class="auth-checks">
+            <div class="auth-check"><i>✓</i><span>Validated daily attendance records</span></div>
+            <div class="auth-check"><i>✓</i><span>See who recorded each attendance entry</span></div>
+            <div class="auth-check"><i>✓</i><span>Monthly present, late and absent summaries</span></div>
+          </div>
         </div>
-        <aside class="pa-side">
-          <div class="ms-panel">
-            <div class="ms-panel__head"><h2 class="ms-h3">What you will see</h2></div>
-            <div class="ms-panel__body">
-              <p>A daily record validated at the school gate or by a teacher, not a self-reported register.</p>
-              <p>The name of the staff member who recorded each entry, with the time it was saved.</p>
-              <p>This month's totals for present, late and absent days, alongside the latest 40 records.</p>
+        <div class="auth-hero-foot">© 2026 GS Gisozi 1 · Powered by 1percent Rwanda</div>
+      </section>
+      <main class="auth-form-col">
+        <a class="auth-back" href="/{{ school_name }}/portals">← Back to school workspace</a>
+        <div class="auth-form-wrap">
+          <div class="auth-brand">
+            <span class="auth-brand-mark">1%</span>
+            <span class="auth-brand-name"><b>GS Gisozi 1</b><span>Parent &amp; guardian portal</span></span>
+          </div>
+          <h1 class="auth-heading">Welcome back</h1>
+          <p class="auth-subtext">Sign in to continue to your child's attendance record.</p>
+          {% if error %}<div class="auth-alert" role="alert">{{ error }}</div>{% endif %}
+          <form method="POST" action="/{{ school_name }}/attendance/parent/login">
+            <div class="auth-field">
+              <label class="auth-label" for="parent-email">Email<span style="color:#dc2626">*</span></label>
+              <input class="auth-input" id="parent-email" name="email" type="email" required autofocus autocomplete="username" placeholder="you@example.com">
             </div>
-          </div>
-          <div class="ms-paper-block">
-            <p class="ms-small" style="margin:0;color:var(--muted);line-height:1.7">
-              If a record looks wrong, contact the school office. Parents cannot change attendance entries.
-            </p>
-          </div>
-        </aside>
-      </div>
-    </section>
+            <div class="auth-field">
+              <label class="auth-label" for="parent-password">Password<span style="color:#dc2626">*</span></label>
+              <div class="auth-password-wrap">
+                <input class="auth-input" id="parent-password" name="password" type="password" required autocomplete="current-password" placeholder="Enter your password">
+                <button class="auth-eye" type="button" aria-label="Show password" aria-pressed="false" onclick="toggleParentPassword()">◉</button>
+              </div>
+            </div>
+            <div class="auth-row">
+              <label class="auth-checkbox"><input type="checkbox" name="remember" checked> Remember me</label>
+              <span style="color:#84918a;font-size:12px">Secure parent access</span>
+            </div>
+            <button class="auth-btn" type="submit">Log In</button>
+          </form>
+          <p class="auth-help">Parent accounts are created and linked to students by the GS Gisozi 1 administration. If you need access, please contact the school office.</p>
+          <a class="auth-back-link" href="/{{ school_name }}/portals">← Return to school roles</a>
+        </div>
+      </main>
+    </div>
+    <script>
+      function toggleParentPassword() {
+        const input = document.getElementById('parent-password');
+        const button = document.querySelector('.auth-eye');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        button.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        button.setAttribute('aria-pressed', String(show));
+        input.focus();
+      }
+    </script>
     {% else %}
     <section class="pa-hero">
       <div>
