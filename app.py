@@ -2111,14 +2111,15 @@ def parent_login_page(school_name: str, request: Request, db: Session = Depends(
         ((Student.school_id == school.id) | (Student.school_id.is_(None))),
     ).first() if account else None
     if _is_gs_gisozi1(school):
+        if account:
+            return RedirectResponse(f"/{school_name}/attendance/parent", status_code=302)
         return templates.TemplateResponse(
             "sch003_parent_attendance.html",
             {
                 "request": request, "school": school, "school_name": school_name,
-                "parent": account, "student": student, "records": [], "summary": None,
+                "parent": None, "student": None, "records": [], "summary": None,
                 "month_label": datetime.now().strftime("%B %Y"),
                 "error": request.query_params.get("error", ""),
-                "today_slots": [], "current_subject": None, "current_period": None,
             },
         )
     return templates.TemplateResponse(
