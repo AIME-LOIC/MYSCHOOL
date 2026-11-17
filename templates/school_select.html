@@ -287,7 +287,7 @@
 
       shown.forEach(s => {
         const name = String(s.school_name || 'School');
-        const parentUrl = '/' + encodeURIComponent(name) + '/parentportal';
+        const parentUrl = '/' + encodeURIComponent(name) + '/login';
         const card = el('a', 'school-card');
         card.href = parentUrl;
         card.setAttribute('aria-label', 'Open the Parent Portal for ' + name);
