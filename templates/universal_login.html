@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · {{ school.school_name }} | MYSCHOOL</title>
+  <style>
+    :root{color-scheme:light;--blue:#1677d2;--navy:#12345b;--muted:#64748b;--line:#dbe7f4}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#17324f;background:linear-gradient(145deg,#f7fbff,#eaf4ff 58%,#f8fbff);display:grid;place-items:center;padding:28px}
+    .shell{width:min(100%,960px);display:grid;grid-template-columns:1fr 430px;background:#fff;border:1px solid #e2edf8;border-radius:28px;overflow:hidden;box-shadow:0 24px 70px #1c4c7a18}
+    .intro{padding:56px;background:linear-gradient(155deg,#0d4f91,#1677d2);color:#fff;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;min-height:590px}
+    .intro:before,.intro:after{content:"";position:absolute;border:1px solid #ffffff25;border-radius:50%;width:430px;height:430px;right:-180px;bottom:-230px}.intro:after{width:320px;height:320px;right:-90px;bottom:-175px}
+    .brand{font-weight:850;letter-spacing:.14em;font-size:17px}.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:11px;font-weight:750;color:#cce5ff}
+    h1{font-size:clamp(34px,5vw,48px);line-height:1.08;letter-spacing:-.04em;margin:18px 0}.intro p{color:#e0efff;line-height:1.75;max-width:360px}.secure{font-size:13px;color:#d4eaff;position:relative;z-index:1}
+    .panel{padding:54px 42px;display:flex;flex-direction:column;justify-content:center}.school{font-size:13px;color:var(--blue);font-weight:750;margin-bottom:10px}.panel h2{font-size:28px;letter-spacing:-.03em;margin:0 0 8px;color:var(--navy)}.sub{color:var(--muted);font-size:14px;margin:0 0 30px}
+    label{display:block;font-size:13px;font-weight:700;margin:17px 0 8px;color:#294765}input,select{width:100%;height:49px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font:inherit;color:#17324f;background:#fbfdff;outline:none}input:focus,select:focus{border-color:#5ba5ed;box-shadow:0 0 0 4px #1677d218}
+    button{width:100%;height:50px;border:0;border-radius:12px;background:var(--blue);color:white;font-weight:750;font-size:15px;margin-top:25px;cursor:pointer;box-shadow:0 8px 18px #1677d22b}button:hover{background:#0e63b6}.error{padding:12px 14px;background:#fff1f1;border:1px solid #ffd6d6;border-radius:10px;color:#b42318;font-size:13px;line-height:1.5;margin:0 0 14px}.back{display:inline-block;text-align:center;margin-top:20px;color:#4b6b8c;text-decoration:none;font-size:13px}.back:hover{color:var(--blue)}
+    @media(max-width:760px){body{padding:14px}.shell{grid-template-columns:1fr;max-width:470px}.intro{min-height:210px;padding:28px}.intro h1{font-size:30px;margin:12px 0}.intro p{margin:0}.secure{display:none}.panel{padding:32px 26px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="intro">
+      <div class="brand">MYSCHOOL</div>
+      <div><div class="eyebrow">One secure school account</div><h1>Your school.<br>One sign-in.</h1><p>Access the right workspace with one login. MYSCHOOL checks your account and takes you to the correct portal.</p></div>
+      <div class="secure">Secure access · Role-based destinations</div>
+    </section>
+    <section class="panel">
+      <div class="school">{{ school.school_name }}</div>
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in with the details provided by your school.</p>
+      {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+      <form method="post" action="/{{ school_name }}/login" autocomplete="on">
+        <label for="identifier">Username, email or student ID</label>
+        <input id="identifier" name="identifier" required autocomplete="username" placeholder="Enter your login details">
+        <label for="password">Password</label>
+        <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
+        <label for="account_type">Account type</label>
+        <select id="account_type" name="account_type">
+          <option value="auto">Automatically detect my account</option>
+          <option value="parent">Parent / Guardian</option>
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+          <option value="administrator">School administrator</option>
+          <option value="gatekeeper">Gatekeeper / Attendance</option>
+          <option value="canteen">Canteen staff</option>
+        </select>
+        <button type="submit">Sign in securely</button>
+      </form>
+      <a class="back" href="/">← Back to school directory</a>
+    </section>
+  </main>
+</body>
+</html>
