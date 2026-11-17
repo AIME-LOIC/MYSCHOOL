@@ -3942,3 +3942,166 @@ def sch003_admin_workspace(school_name: str, request: Request, db: Session = Dep
         "classes": VALID_CLASSES,
         "today": datetime.now().strftime("%A, %d %B %Y"),
     })
+
+
+# ==================== UNIVERSAL SCHOOL LOGIN ====================
+def _universal_login_destination(request: Request, school: School, db: Session):
+    """Return the correct landing page for an already authenticated school account."""
+    school_name = school.school_name
+    if _check_admin(request, school_name):
+        return f"/{school_name}/admin"
+    parent_id = _read_parent_session(request, school.id)
+    if parent_id and db.query(ParentAccount).filter(
+        ParentAccount.id == parent_id, ParentAccount.school_id == school.id, ParentAccount.is_active == 1
+    ).first():
+        return f"/{school_name}/parent"
+    teacher_id = _read_teacher_session(request, school.id)
+    if teacher_id and db.query(Teacher).filter(
+        Teacher.id == teacher_id, Teacher.school_id == school.id, Teacher.is_active == 1
+    ).first():
+        return f"/{school_name}/teacher"
+    student_id = _read_student_session(request, school.id)
+    if student_id and db.query(Student).filter(
+        Student.id == student_id,
+        ((Student.school_id == school.id) | (Student.school_id.is_(None))),
+        Student.is_active == 1,
+    ).first():
+        return f"/{school_name}/student"
+    gatekeeper_id = _read_signed_role_token(request, _GATEKEEPER_COOKIE, "gatekeeper", school.id)
+    if gatekeeper_id and db.query(Gatekeeper).filter(
+        Gatekeeper.id == gatekeeper_id, Gatekeeper.school_id == school.id, Gatekeeper.is_active == 1
+    ).first():
+        return f"/{school_name}/attendance/station"
+    if _read_canteen_session(request, school_name):
+        return f"/{school_name}/canteen-admin"
+    return None
+
+
+@app.get("/{school_name}/login", response_class=HTMLResponse)
+def universal_login_page(school_name: str, request: Request, db: Session = Depends(get_db)):
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    destination = _universal_login_destination(request, school, db)
+    if destination:
+        return RedirectResponse(destination, status_code=303)
+    return templates.TemplateResponse("universal_login.html", {
+        "request": request, "school": school, "school_name": school_name, "error": "",
+    })
+
+
+@app.post("/{school_name}/login", response_class=HTMLResponse)
+def universal_login(
+    school_name: str,
+    request: Request,
+    identifier: str = Form(...),
+    password: str = Form(...),
+    account_type: str = Form("auto"),
+    db: Session = Depends(get_db),
+):
+    """Authenticate a selected account type (or safely detect a unique matching role)."""
+    school = db.query(School).filter(School.school_name == school_name).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    identity = identifier.strip()
+    normalized = identity.lower()
+    role = (account_type or "auto").strip().lower()
+    allowed_roles = {"auto", "parent", "student", "teacher", "administrator", "gatekeeper", "canteen"}
+    if role not in allowed_roles or not identity or not password:
+        error = "Enter your username or email, password, and a valid account type."
+        return templates.TemplateResponse("universal_login.html", {
+            "request": request, "school": school, "school_name": school_name, "error": error,
+        }, status_code=400)
+
+    matches = []
+    if role in {"auto", "administrator"}:
+        admin_user = identity
+        admin_ok = _master_login_matches(admin_user, password)
+        expected_pass = _admin_password_for_school(school_name)
+        expected_user = "sos" if " ".join(school_name.split()).casefold() == "impactful technical high school kigali" else school_name
+        if admin_ok or (_admin_secret_configured() and expected_pass is not None
+                        and hmac.compare_digest(admin_user, expected_user)
+                        and hmac.compare_digest(password, expected_pass)):
+            matches.append(("administrator", None))
+    if role in {"auto", "parent"}:
+        account = db.query(ParentAccount).filter(
+            ParentAccount.school_id == school.id, ParentAccount.email == normalized, ParentAccount.is_active == 1
+        ).first()
+        if account and _student_password_matches(password, account.password_hash):
+            matches.append(("parent", account))
+    if role in {"auto", "teacher"}:
+        teacher = db.query(Teacher).filter(
+            Teacher.school_id == school.id, Teacher.email == normalized, Teacher.is_active == 1
+        ).first()
+        if teacher and _student_password_matches(password, teacher.password_hash):
+            matches.append(("teacher", teacher))
+    if role in {"auto", "student"} and identity.isdigit():
+        student = db.query(Student).filter(
+            Student.id == int(identity),
+            ((Student.school_id == school.id) | (Student.school_id.is_(None))),
+            Student.is_active == 1,
+        ).first()
+        if student:
+            valid = _student_password_matches(password, student.password_hash) if student.password_hash else hmac.compare_digest(password, str(student.id).zfill(4))
+            if valid:
+                matches.append(("student", student))
+    if role in {"auto", "gatekeeper"}:
+        staff = db.query(Gatekeeper).filter(
+            Gatekeeper.school_id == school.id, Gatekeeper.username == normalized, Gatekeeper.is_active == 1
+        ).first()
+        if staff and _student_password_matches(password, staff.password_hash):
+            matches.append(("gatekeeper", staff))
+    if role in {"auto", "canteen"}:
+        canteen_staff = db.query(CanteenAdmin).filter(
+            CanteenAdmin.school_id == school.id, CanteenAdmin.username == normalized, CanteenAdmin.is_active == 1
+        ).first()
+        if canteen_staff and _student_password_matches(password, canteen_staff.password_hash):
+            matches.append(("canteen", canteen_staff))
+
+    if len(matches) != 1:
+        error = ("These details match more than one account. Choose your account type and try again."
+                 if len(matches) > 1 else "The username/email or password is incorrect.")
+        return templates.TemplateResponse("universal_login.html", {
+            "request": request, "school": school, "school_name": school_name, "error": error,
+        }, status_code=401)
+
+    matched_role, account = matches[0]
+    expires = int(time.time()) + (_ADMIN_SESSION_SECONDS if matched_role == "administrator" else
+                                  _STUDENT_SESSION_SECONDS if matched_role == "student" else
+                                  _PARENT_SESSION_SECONDS if matched_role in {"parent", "canteen"} else
+                                  _TEACHER_SESSION_SECONDS)
+    response = RedirectResponse(
+        f"/{school_name}/admin" if matched_role == "administrator" else
+        f"/{school_name}/parent" if matched_role == "parent" else
+        f"/{school_name}/teacher" if matched_role == "teacher" else
+        f"/{school_name}/student" if matched_role == "student" else
+        f"/{school_name}/attendance/station" if matched_role == "gatekeeper" else
+        f"/{school_name}/canteen-admin",
+        status_code=303,
+    )
+    secure_cookie = request.url.scheme == "https"
+    if matched_role == "administrator":
+        token = _make_token(school_name)
+        response.set_cookie(SESSION_COOKIE, token, max_age=_ADMIN_SESSION_SECONDS, httponly=True,
+                            secure=secure_cookie, samesite="lax", path="/")
+    elif matched_role == "parent":
+        response.set_cookie(_PARENT_COOKIE, _signed_role_token("parent", account.id, school.id, expires),
+                            max_age=_PARENT_SESSION_SECONDS, httponly=True, secure=secure_cookie, samesite="lax", path="/")
+    elif matched_role == "teacher":
+        response.set_cookie(_TEACHER_COOKIE, _signed_role_token("teacher", account.id, school.id, expires),
+                            max_age=_TEACHER_SESSION_SECONDS, httponly=True, secure=secure_cookie, samesite="lax", path="/")
+    elif matched_role == "student":
+        if not account.password_hash:
+            account.password_hash = _student_password_hash(password)
+            account.must_change_password = 1
+            db.commit()
+        response.set_cookie(_STUDENT_COOKIE, _student_session_token(account.id, school.id, expires),
+                            max_age=_STUDENT_SESSION_SECONDS, httponly=True, secure=secure_cookie, samesite="lax", path="/")
+    elif matched_role == "gatekeeper":
+        response.set_cookie(_GATEKEEPER_COOKIE, _signed_role_token("gatekeeper", account.id, school.id, expires),
+                            max_age=_TEACHER_SESSION_SECONDS, httponly=True, secure=secure_cookie, samesite="lax", path="/")
+    elif matched_role == "canteen":
+        response.set_cookie(_CANTEEN_COOKIE, _make_canteen_token(school_name, expires),
+                            max_age=_PARENT_SESSION_SECONDS, httponly=True, secure=secure_cookie, samesite="lax", path="/")
+    return response
