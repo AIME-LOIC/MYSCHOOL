@@ -1,12 +1,13 @@
-# MYSCHOOL — 1percent Eats
+# MySchool — Multi-School Management Platform
 
-A dedicated product branch for modernizing MYSCHOOL as a 1percent product and adding school-canteen card payments.
+MySchool is a multi-school web platform for managing school operations and connecting school administrators, teachers, parents, and students. It includes school-specific portals, attendance and visitor workflows, academic tools, and an optional school canteen card-payment module.
 
-## Product direction
-- Consistent 1percent identity: deep green, restrained lime accents, clear typography, responsive layouts and accessible states.
-- Canteen checkout with published menu, RWF prices, basket, NFC scan/manual UID entry and clear payment status.
-- Existing school database and student records are reused; canteen records are scoped to each school.
-- New SQLAlchemy tables are additive and created by the existing startup table initialization.
+## Platform overview
+- A public school directory with school-specific portal entry points.
+- Separate workflows for school administration, teachers, parents, and students.
+- Attendance, visitor management, academic records, and timetable features.
+- School-scoped canteen menus, card balances, and payment records.
+- PostgreSQL-backed data with environment-based configuration.
 
 ## Endpoints
 - `GET /{school_name}/eats` — canteen checkout UI.
