@@ -2004,10 +2004,70 @@ def parent_portal_page(school_name: str, request: Request, db: Session = Depends
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
     parent_id = _read_parent_session(request, school.id)
-    account = db.query(ParentAccount).filter(ParentAccount.id == parent_id, ParentAccount.school_id == school.id, ParentAccount.is_active == 1).first() if parent_id else None
-    student = db.query(Student).filter(Student.id == account.student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None)))).first() if account else None
-    marks = db.query(StudentMark).filter(StudentMark.school_id == school.id, StudentMark.student_id == student.id, StudentMark.published == 1).order_by(StudentMark.academic_year.desc(), StudentMark.term, StudentMark.subject).all() if student else []
-    return templates.TemplateResponse("parent_reports.html", {"request": request, "school": school, "parent": account, "student": student, "marks": marks})
+    account = db.query(ParentAccount).filter(
+        ParentAccount.id == parent_id, ParentAccount.school_id == school.id, ParentAccount.is_active == 1
+    ).first() if parent_id else None
+    student = db.query(Student).filter(
+        Student.id == account.student_id,
+        ((Student.school_id == school.id) | (Student.school_id.is_(None))),
+    ).first() if account else None
+
+    # GS Gisozi 1 has a dedicated family dashboard; all other schools keep
+    # the existing shared parent reports experience.
+    if _is_gs_gisozi1(school):
+        today = datetime.now().date()
+        month_start = today.replace(day=1)
+        records, monthly, summary = [], [], None
+        today_slots, current_subject, current_period = [], None, None
+        if student:
+            records = db.query(AttendanceRecord).filter(
+                AttendanceRecord.school_id == school.id,
+                AttendanceRecord.student_id == student.id,
+            ).order_by(AttendanceRecord.attendance_date.desc()).limit(40).all()
+            monthly = db.query(AttendanceRecord).filter(
+                AttendanceRecord.school_id == school.id,
+                AttendanceRecord.student_id == student.id,
+                AttendanceRecord.attendance_date >= month_start,
+            ).all()
+            summary = {
+                "present": sum(1 for row in monthly if row.status == "present"),
+                "late": sum(1 for row in monthly if row.status == "late"),
+                "absent": sum(1 for row in monthly if row.status == "absent"),
+                "days": len(monthly),
+            }
+            weekday = today.isoweekday()
+            if 1 <= weekday <= 5:
+                today_slots = db.query(TimetableSlot).filter(
+                    TimetableSlot.school_id == school.id,
+                    TimetableSlot.class_name == (student.class_name or ""),
+                    TimetableSlot.day == weekday,
+                ).order_by(TimetableSlot.period).all()
+                # SCH-003 default timetable: 8:30 start, 40 minutes per period.
+                # The timetable itself remains the source of subject/class assignments.
+                now = datetime.now()
+                minutes_from_start = now.hour * 60 + now.minute - (8 * 60 + 30)
+                if minutes_from_start >= 0:
+                    period = minutes_from_start // 40 + 1
+                    if 1 <= period <= 8:
+                        current_period = period
+                        slot = next((item for item in today_slots if item.period == period), None)
+                        current_subject = slot.subject if slot else None
+        return templates.TemplateResponse("sch003_parent_attendance.html", {
+            "request": request, "school": school, "school_name": school_name,
+            "parent": account, "student": student, "records": records,
+            "summary": summary, "month_label": datetime.now().strftime("%B %Y"),
+            "error": "", "today_slots": today_slots,
+            "current_subject": current_subject, "current_period": current_period,
+        })
+
+    marks = db.query(StudentMark).filter(
+        StudentMark.school_id == school.id, StudentMark.student_id == student.id,
+        StudentMark.published == 1,
+    ).order_by(StudentMark.academic_year.desc(), StudentMark.term, StudentMark.subject).all() if student else []
+    return templates.TemplateResponse("parent_reports.html", {
+        "request": request, "school": school, "parent": account,
+        "student": student, "marks": marks,
+    })
 
 @app.post("/{school_name}/parent/signup")
 def parent_signup(school_name: str, request: Request, student_id: int = Form(...), link_code: str = Form(...), parent_name: str = Form(...), email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
