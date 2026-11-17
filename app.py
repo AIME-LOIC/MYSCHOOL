@@ -2004,11 +2004,11 @@ def parent_portal_page(school_name: str, request: Request, db: Session = Depends
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+    if not _is_gs_gisozi1(school):
+        raise HTTPException(status_code=404, detail="Parent portal is not enabled for this school.")
     parent_id = _read_parent_session(request, school.id)
     account = db.query(ParentAccount).filter(ParentAccount.id == parent_id, ParentAccount.school_id == school.id, ParentAccount.is_active == 1).first() if parent_id else None
     student = db.query(Student).filter(Student.id == account.student_id, ((Student.school_id == school.id) | (Student.school_id.is_(None)))).first() if account else None
-    # GS Gisozi 1 has a dedicated family dashboard; all other schools keep
-    # the existing shared parent reports experience.
     if _is_gs_gisozi1(school):
         today = datetime.now().date()
         month_start = today.replace(day=1)
@@ -2069,6 +2069,9 @@ def parent_signup(school_name: str, request: Request, student_id: int = Form(...
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+    if not _is_gs_gisozi1(school):
+        raise HTTPException(status_code=404, detail="Parent accounts are not enabled for this school.")
+    raise HTTPException(status_code=404, detail="Parent accounts for SCH-003 are managed by the school administrator.")
     email_clean = email.strip().lower()
     name_clean = parent_name.strip()[:120]
     if len(password) < 8 or len(password) > 128:
@@ -2100,6 +2103,8 @@ def parent_login_page(school_name: str, request: Request, db: Session = Depends(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+    if not _is_gs_gisozi1(school):
+        raise HTTPException(status_code=404, detail="Parent login is not enabled for this school.")
     parent_id = _read_parent_session(request, school.id)
     account = db.query(ParentAccount).filter(
         ParentAccount.id == parent_id,
@@ -2122,10 +2127,7 @@ def parent_login_page(school_name: str, request: Request, db: Session = Depends(
                 "error": request.query_params.get("error", ""),
             },
         )
-    return templates.TemplateResponse(
-        "parent_reports.html",
-        {"request": request, "school": school, "parent": account, "student": student, "marks": []},
-    )
+    raise HTTPException(status_code=404, detail="Parent portal is not enabled for this school.")
 
 
 @app.post("/{school_name}/parent/login")
@@ -2133,6 +2135,8 @@ def parent_login(school_name: str, request: Request, email: str = Form(...), pas
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
+    if not _is_gs_gisozi1(school):
+        raise HTTPException(status_code=404, detail="Parent login is not enabled for this school.")
     account = db.query(ParentAccount).filter(ParentAccount.school_id == school.id, ParentAccount.email == email.strip().lower(), ParentAccount.is_active == 1).first()
     if not account or not _student_password_matches(password, account.password_hash):
         raise HTTPException(status_code=401, detail="Email or password is incorrect.")
