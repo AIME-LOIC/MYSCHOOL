@@ -1,232 +1,256 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#ece7da">
-  <title>MYSCHOOL Rwanda · School portals and student services</title>
-  <meta name="description" content="MYSCHOOL is a school portal platform for families, students, teachers, and school administrators in Rwanda. Find your school and access its online services.">
+  <meta name="theme-color" content="#ffffff">
+  <title>MYSCHOOL Rwanda · Find your school</title>
+  <meta name="description" content="Find your school on MYSCHOOL and access its Parent Portal.">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="https://myschool.1percent.rw/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MYSCHOOL">
-  <meta property="og:title" content="MYSCHOOL Rwanda · School portals and student services">
-  <meta property="og:description" content="Find your school on MYSCHOOL to access parent, student, teacher, and school services online.">
+  <meta property="og:title" content="MYSCHOOL Rwanda · Find your school">
+  <meta property="og:description" content="Search for your school and access the Parent Portal.">
   <meta property="og:url" content="https://myschool.1percent.rw/">
-  <link rel="stylesheet" href="/static/myschool-ui.css">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "MYSCHOOL",
-    "url": "https://myschool.1percent.rw/",
-    "description": "School portals and online student services for schools in Rwanda.",
-    "publisher": { "@type": "Organization", "name": "1percent", "url": "https://1percent.rw/" }
-  }
-  </script>
   <style>
-    .dir-head { padding: 34px 0 0; }
-    .dir-strip {
-      display: flex; justify-content: space-between; gap: 18px;
-      padding-bottom: 8px; border-bottom: 1px solid var(--rule);
-      font: 500 9.5px/1.4 var(--font-mono); letter-spacing: .1em;
-      text-transform: uppercase; color: var(--muted);
+    :root {
+      color-scheme: light;
+      --page: #ffffff;
+      --page-soft: #f6faff;
+      --surface: rgba(255,255,255,.92);
+      --surface-hover: #f4f8ff;
+      --ink: #10234a;
+      --ink-soft: #425779;
+      --muted: #687b9b;
+      --line: #dce6f5;
+      --line-strong: #cbdaf0;
+      --blue: #1769ed;
+      --blue-dark: #1056cb;
+      --blue-soft: #eaf2ff;
+      --shadow: 0 12px 34px rgba(30, 73, 135, .08);
+      --shadow-hover: 0 18px 38px rgba(30, 91, 180, .14);
     }
-    .dir-strip b { color: var(--ink); font-weight: 600; }
-    .dir-intro {
-      display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, .6fr);
-      gap: 54px; align-items: start; padding: 30px 0 28px;
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --page: #0b1426;
+      --page-soft: #101e35;
+      --surface: rgba(17,31,54,.94);
+      --surface-hover: #172a49;
+      --ink: #edf4ff;
+      --ink-soft: #c3d2e9;
+      --muted: #9aacc8;
+      --line: #263b5c;
+      --line-strong: #345078;
+      --blue: #6da4ff;
+      --blue-dark: #8bb6ff;
+      --blue-soft: #172e50;
+      --shadow: 0 12px 34px rgba(0,0,0,.2);
+      --shadow-hover: 0 18px 38px rgba(0,0,0,.32);
     }
-    .dir-intro .ms-display { margin-top: 12px; max-width: 13ch; }
-    .dir-intro .ms-lead { max-width: 52ch; }
-    .dir-note { border-top: 1px solid var(--line-strong); padding-top: 10px; }
-    .dir-note__label {
-      display: block; font: 600 9.5px/1.4 var(--font-mono);
-      letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--page); }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink); background: var(--page);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      transition: background .2s ease, color .2s ease;
     }
-    .dir-note ol { list-style: none; margin: 10px 0 0; padding: 0; counter-reset: step; }
-    .dir-note li {
-      display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px;
-      padding: 9px 0; border-top: 1px dotted var(--line);
-      font-size: 12px; color: var(--muted); line-height: 1.55;
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    .topbar {
+      height: 76px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(22px, 4vw, 58px); background: var(--surface);
+      border-bottom: 1px solid var(--line); position: relative; z-index: 3;
+      backdrop-filter: blur(14px);
     }
-    .dir-note li:first-child { border-top: 0; }
-    .dir-note li::before {
-      counter-increment: step; content: counter(step, decimal-leading-zero);
-      font: 500 10px/1.6 var(--font-mono); color: var(--rust);
+    .wordmark { color: var(--blue); font-size: 27px; line-height: 1; font-weight: 850; letter-spacing: -.055em; }
+    .theme-toggle {
+      width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%;
+      border: 1px solid var(--line); color: var(--ink-soft); background: var(--surface);
+      cursor: pointer; transition: background .18s, border-color .18s, transform .18s;
     }
-    .dir-note b { display: block; color: var(--ink); font-weight: 600; font-size: 12.5px; }
-    .dir-search { border-top: 2px solid var(--rule); padding: 13px 0 18px; }
-    .dir-search label {
-      display: block; font: 600 9.5px/1.4 var(--font-mono);
-      letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
-      margin-bottom: 5px;
+    .theme-toggle:hover { background: var(--blue-soft); border-color: var(--line-strong); transform: translateY(-1px); }
+    .theme-toggle svg { width: 19px; height: 19px; }
+    .hero {
+      min-height: 390px; position: relative; isolation: isolate; overflow: hidden;
+      display: flex; justify-content: center; text-align: center;
+      padding: 58px 22px 52px; background: linear-gradient(180deg, var(--page-soft), var(--page));
     }
-    .dir-search__row { display: flex; align-items: center; gap: 12px; max-width: 620px; }
-    .dir-search__row svg { color: var(--rust); flex: 0 0 auto; }
-    .dir-search input {
-      flex: 1; border: 0; border-bottom: 1px solid var(--line-strong);
-      background: transparent; outline: none; padding: 8px 0;
-      font: 400 17px/1.3 var(--font-display); color: var(--ink);
-      border-radius: 0;
+    .hero-waves { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+    .hero-content { width: min(760px, 100%); position: relative; z-index: 1; }
+    .hero h1 { margin: 0; font-size: clamp(34px, 4.1vw, 48px); line-height: 1.12; letter-spacing: -.045em; font-weight: 800; }
+    .hero p { margin: 13px 0 0; color: var(--ink-soft); font-size: clamp(15px, 1.7vw, 19px); line-height: 1.6; }
+    .search-wrap {
+      width: min(670px, 100%); margin: 36px auto 0; display: flex; align-items: center; gap: 14px;
+      padding: 0 21px; height: 70px; background: var(--surface); border: 1px solid var(--line);
+      border-radius: 20px; box-shadow: 0 9px 26px rgba(27, 66, 120, .11);
+      transition: border-color .18s, box-shadow .18s;
     }
-    .dir-search input::placeholder { color: #9b937f; }
-    .dir-search input:focus { border-bottom-color: var(--rule); }
-    .dir-count {
-      font: 10.5px/1.4 var(--font-mono); color: var(--muted);
-      padding-bottom: 4px; white-space: nowrap;
+    .search-wrap:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(23,105,237,.1), var(--shadow); }
+    .search-wrap svg { width: 22px; height: 22px; color: var(--muted); flex: 0 0 auto; }
+    .search-wrap input {
+      width: 100%; min-width: 0; border: 0; outline: 0; background: transparent;
+      color: var(--ink); font-size: 16px;
     }
-
-    .dir-list-head {
-      display: grid; grid-template-columns: 62px minmax(0, 1fr) 260px 30px;
-      gap: 18px; padding: 8px 0;
-      border-bottom: 1px solid var(--line-strong);
-      font: 600 9px/1.4 var(--font-mono); letter-spacing: .11em;
-      text-transform: uppercase; color: var(--faint);
+    .search-wrap input::placeholder { color: var(--muted); opacity: 1; }
+    .search-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .directory { width: min(1320px, calc(100% - 64px)); margin: 0 auto; padding: 8px 0 34px; }
+    .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 23px; }
+    .section-heading h2 { margin: 0; font-size: 21px; letter-spacing: -.025em; font-weight: 750; }
+    .section-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .school-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 22px; }
+    .school-card {
+      min-width: 0; min-height: 350px; padding: 27px 22px 22px; display: flex; flex-direction: column;
+      align-items: center; text-align: center; border: 1px solid var(--line); border-radius: 17px;
+      background: var(--surface); box-shadow: 0 3px 14px rgba(24,66,126,.025);
+      cursor: pointer; outline: none; transition: transform .2s, box-shadow .2s, border-color .2s, background .2s;
     }
-    .school-list { border-bottom: 1px solid var(--rule); }
-    .school-row {
-      display: grid; grid-template-columns: 62px minmax(0, 1fr) 260px 30px;
-      gap: 18px; align-items: center;
-      padding: 16px 0; border-top: 1px solid var(--line);
-      cursor: pointer; outline-offset: 2px;
-      transition: background .12s;
+    .school-card:hover, .school-card:focus-visible {
+      transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: #9fc2fa; background: var(--surface);
     }
-    .school-row:first-child { border-top: 0; }
-    .school-row:hover, .school-row:focus-visible { background: var(--surface); }
-    .school-row__no {
-      font: 500 11px/1.4 var(--font-mono); color: var(--faint);
-      align-self: start; padding-top: 4px;
+    .school-icon {
+      width: 106px; height: 106px; border-radius: 50%; display: grid; place-items: center;
+      color: var(--blue); background: var(--blue-soft); border: 1px solid var(--line);
+      margin-bottom: 19px;
     }
-    .school-row:hover .school-row__no { color: var(--rust); }
-    .school-row__id { display: flex; align-items: center; gap: 14px; min-width: 0; }
-    .school-mark {
-      width: 38px; height: 42px; flex: 0 0 38px;
-      display: grid; place-items: center;
-      background: var(--surface); border: 1px solid var(--line-strong);
-      color: var(--ink); font: 700 15px/1 var(--font-display);
-      overflow: hidden;
+    .school-icon svg { width: 52px; height: 52px; }
+    .school-name { margin: 0; font-size: 20px; line-height: 1.3; font-weight: 750; overflow-wrap: anywhere; }
+    .school-code {
+      display: inline-flex; align-items: center; margin-top: 12px; padding: 6px 13px;
+      color: var(--blue); background: var(--blue-soft); border-radius: 9px;
+      font-size: 12px; font-weight: 650; letter-spacing: .015em;
     }
-    .school-mark img { width: 100%; height: 100%; object-fit: contain; padding: 4px; background: #fff; }
-    .school-row h2 {
-      font: 700 24px/1.12 var(--font-display); letter-spacing: -.02em;
-      margin: 0 0 3px; overflow-wrap: anywhere;
+    .school-location { margin: 17px 0 22px; min-height: 20px; color: var(--muted); font-size: 13px; }
+    .school-location svg { width: 15px; height: 15px; vertical-align: -3px; margin-right: 5px; }
+    .portal-link {
+      width: 100%; min-height: 49px; margin-top: auto; padding: 13px 16px; display: flex;
+      align-items: center; justify-content: center; gap: 11px; border-radius: 9px;
+      background: var(--blue); color: #fff; font-size: 14px; font-weight: 700;
+      box-shadow: 0 5px 12px rgba(23,105,237,.16); transition: background .18s, transform .18s;
     }
-    .school-row__code {
-      font: 500 9.5px/1.4 var(--font-mono); letter-spacing: .07em;
-      text-transform: uppercase; color: var(--muted);
+    .school-card:hover .portal-link { background: var(--blue-dark); }
+    .portal-link svg { width: 17px; height: 17px; }
+    .empty-state {
+      grid-column: 1 / -1; padding: 42px 20px; text-align: center; border: 1px dashed var(--line-strong);
+      border-radius: 16px; color: var(--muted); background: var(--surface);
     }
-    .school-row__links {
-      display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center;
-      font: 600 11.5px/1.4 var(--font-ui);
+    .empty-state strong { display: block; margin-bottom: 7px; color: var(--ink); font-size: 18px; }
+    .footer {
+      width: min(1320px, calc(100% - 64px)); margin: 8px auto 28px; padding: 18px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      border-radius: 14px; background: var(--page-soft); color: var(--ink-soft);
+      font-size: 12px; line-height: 1.6;
     }
-    .school-row__links a { color: var(--ink-2); border-bottom: 1px solid transparent; padding: 2px 0; }
-    .school-row__links a:hover { color: var(--rust); border-bottom-color: var(--rust); }
-    .school-row__links .primary { color: var(--rust); }
-    .school-row__go { font: 400 18px/1 var(--font-mono); color: var(--faint); text-align: right; }
-    .school-row:hover .school-row__go { color: var(--rust); }
-    .dir-empty {
-      padding: 38px 0; border-top: 1px solid var(--line);
-      color: var(--muted); font: 12px/1.6 var(--font-mono);
-    }
-    .dir-empty b { display: block; font: 700 20px/1.3 var(--font-display); color: var(--ink); margin-bottom: 4px; }
-
+    .footer strong { color: var(--ink); }
     @media (max-width: 900px) {
-      .dir-intro { grid-template-columns: 1fr; gap: 26px; padding-bottom: 24px; }
-      .dir-note ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 18px; }
-      .dir-note li { border-top: 0; }
-      .dir-list-head { grid-template-columns: 44px minmax(0, 1fr) 200px; }
-      .dir-list-head span:last-child { display: none; }
-      .school-row { grid-template-columns: 44px minmax(0, 1fr) 200px; }
-      .school-row__go { display: none; }
+      .school-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .hero { min-height: 360px; }
     }
-    @media (max-width: 640px) {
-      .dir-note ol { grid-template-columns: 1fr; }
-      .dir-note li { border-top: 1px dotted var(--line); }
-      .dir-note li:first-child { border-top: 0; }
-      .dir-list-head { display: none; }
-      .school-row {
-        grid-template-columns: 32px minmax(0, 1fr);
-        gap: 12px; padding: 15px 0;
-      }
-      .school-row__links { grid-column: 2; margin-top: -4px; gap: 4px 14px; }
-      .school-row h2 { font-size: 21px; }
+    @media (max-width: 620px) {
+      .topbar { height: 66px; padding: 0 19px; }
+      .wordmark { font-size: 24px; }
+      .hero { min-height: 340px; padding: 52px 18px 42px; }
+      .hero h1 { font-size: 34px; }
+      .search-wrap { height: 62px; margin-top: 29px; padding: 0 15px; border-radius: 15px; }
+      .search-wrap input { font-size: 14px; }
+      .search-count { font-size: 11px; }
+      .directory, .footer { width: calc(100% - 36px); }
+      .directory { padding-top: 4px; }
+      .section-heading { align-items: start; flex-direction: column; margin-bottom: 17px; }
+      .school-grid { grid-template-columns: 1fr; gap: 15px; }
+      .school-card { min-height: 320px; }
+      .footer { flex-direction: column; align-items: flex-start; margin-bottom: 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
 <body>
-  <header class="ms-top">
-    <div class="ms-shell ms-top__inner">
-      <a class="ms-brand" href="/">
-        <span class="ms-crest">MS</span>
-        <span>
-          <span class="ms-brand__name">MYSCHOOL</span>
-          <span class="ms-brand__sub">Rwanda · School services</span>
-        </span>
-      </a>
-      <nav class="ms-top__nav" aria-label="Main">
-        <a class="ms-top__link" href="/myadmin">System administration</a>
-      </nav>
-    </div>
+  <header class="topbar">
+    <a class="wordmark" href="/" aria-label="MYSCHOOL home">MYSCHOOL</a>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle theme">
+      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path>
+      </svg>
+    </button>
   </header>
 
-  <main class="ms-shell">
-    <section class="dir-head">
-      <div class="dir-strip">
-        <span><b>Public directory</b> / registered schools</span>
-        <span>Kigali · Rwanda</span>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <svg class="hero-waves" viewBox="0 0 1440 420" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="wave-a" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#dceaff" stop-opacity=".72"></stop>
+            <stop offset="1" stop-color="#eff6ff" stop-opacity=".12"></stop>
+          </linearGradient>
+          <linearGradient id="wave-b" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#e7f0ff" stop-opacity=".2"></stop>
+            <stop offset=".5" stop-color="#d7e7ff" stop-opacity=".7"></stop>
+            <stop offset="1" stop-color="#e8f2ff" stop-opacity=".25"></stop>
+          </linearGradient>
+        </defs>
+        <path d="M0 105 C190 35 285 185 475 150 S780 35 980 88 S1250 150 1440 45 V0 H0Z" fill="url(#wave-a)"></path>
+        <path d="M0 175 C180 85 300 220 500 195 S800 85 1010 135 S1260 205 1440 105 V0 H0Z" fill="url(#wave-b)" opacity=".8"></path>
+        <path d="M0 250 C190 160 310 285 520 255 S820 155 1040 205 S1270 270 1440 180" fill="none" stroke="#d8e8ff" stroke-width="2" opacity=".7"></path>
+        <path d="M0 300 C200 210 330 330 540 300 S850 205 1070 250 S1280 315 1440 235" fill="none" stroke="#e4efff" stroke-width="2" opacity=".85"></path>
+      </svg>
+      <div class="hero-content">
+        <h1 id="hero-title">Welcome to MySchool</h1>
+        <p>Search for your school and access the Parent Portal</p>
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+          <input id="school-search" type="search" placeholder="Search by school name or code..." autocomplete="off" aria-label="Search by school name or code">
+          <span id="school-count" class="search-count" aria-live="polite">Loading…</span>
+        </div>
       </div>
+    </section>
 
-      <div class="dir-intro">
+    <section class="directory" aria-labelledby="schools-title">
+      <div class="section-heading">
         <div>
-          <div class="ms-eyebrow">One account per family</div>
-          <h1 class="ms-display">Start with the <em>school.</em></h1>
-          <p class="ms-lead">Every school on MYSCHOOL keeps its own portal. Find the school your student attends, then use the entrance that matches who you are — parent, student, teacher or staff.</p>
-        </div>
-        <aside class="dir-note" aria-label="How access works">
-          <span class="dir-note__label">How access works</span>
-          <ol>
-            <li><span><b>Find the school</b>Search the register by name or school code.</span></li>
-            <li><span><b>Choose your desk</b>Family, learner, teaching or administration.</span></li>
-            <li><span><b>Sign in</b>Each account only opens the records it is issued for.</span></li>
-          </ol>
-        </aside>
-      </div>
-
-      <div class="dir-search">
-        <label for="school-search">Find a school by name or code</label>
-        <div class="dir-search__row">
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4" stroke-linecap="round"/></svg>
-          <input id="school-search" type="search" placeholder="e.g. GS Gisozi 1 or SCH-003" autocomplete="off" aria-label="Search schools">
-          <span id="school-count" class="dir-count" aria-live="polite">Loading…</span>
+          <h2 id="schools-title">Select your school</h2>
+          <p>Choose your school to continue to the Parent Portal</p>
         </div>
       </div>
-    </section>
-
-    <section aria-labelledby="schools-title">
-      <div class="ms-section__head">
-        <h2 id="schools-title" class="ms-h2">Registered schools</h2>
-        <p>Parent and student services are available on each portal.</p>
-      </div>
-      <div class="dir-list-head" aria-hidden="true">
-        <span>No.</span><span>School</span><span>Access points</span><span></span>
-      </div>
-      <div id="school-grid" class="school-list" aria-live="polite">
-        <div class="dir-empty">Loading registered schools…</div>
+      <div id="school-grid" class="school-grid" aria-live="polite">
+        <div class="empty-state">Loading registered schools…</div>
       </div>
     </section>
-
-    <footer class="ms-foot">
-      <span>MYSCHOOL · School portals and student services · Powered by <b>1percent</b></span>
-      <span>Access depends on the account issued by your school.</span>
-    </footer>
   </main>
+
+  <footer class="footer">
+    <span><strong>Secure. Simple. Connected.</strong><br>Access school information, communicate with teachers, and stay updated.</span>
+    <span>MYSCHOOL · Powered by <strong>1percent Rwanda</strong></span>
+  </footer>
 
   <script>
     const grid = document.getElementById('school-grid');
     const search = document.getElementById('school-search');
     const count = document.getElementById('school-count');
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
     let schools = [];
+
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      const dark = theme === 'dark';
+      themeToggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+      themeIcon.innerHTML = dark
+        ? '<path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"></path>'
+        : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path>';
+      document.querySelector('meta[name="theme-color"]').content = dark ? '#0b1426' : '#ffffff';
+    }
+
+    let savedTheme = null;
+    try { savedTheme = localStorage.getItem('myschool-theme'); } catch (_) {}
+    setTheme(savedTheme === 'dark' || savedTheme === 'light' ? savedTheme :
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+    themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+      try { localStorage.setItem('myschool-theme', next); } catch (_) {}
+    });
 
     function el(tag, className, text) {
       const node = document.createElement(tag);
@@ -235,89 +259,63 @@
       return node;
     }
 
+    function makeSchoolIcon() {
+      const wrap = el('div', 'school-icon');
+      wrap.innerHTML = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 27 32 12l23 15v28H9V27Z"></path><path d="M25 55V39a7 7 0 0 1 14 0v16M17 33h5m20 0h5M17 42h3m24 0h3M32 12V6m0 0h10l-3 4 3 4H32"></path></svg>';
+      return wrap;
+    }
+
     function renderSchools() {
       const term = search.value.trim().toLowerCase();
       const shown = schools.filter(s =>
         String(s.school_name || '').toLowerCase().includes(term) ||
         String(s.school_code || '').toLowerCase().includes(term));
-      count.textContent = shown.length
-        ? shown.length + (shown.length === 1 ? ' school' : ' schools')
-        : 'No match';
+      count.textContent = shown.length ? shown.length + (shown.length === 1 ? ' school' : ' schools') : 'No match';
       grid.replaceChildren();
+
       if (!shown.length) {
-        const empty = el('div', 'dir-empty');
-        const title = el('b', null, schools.length ? 'No school matches that search.' : 'No active schools are registered yet.');
-        empty.append(title, document.createTextNode(schools.length
-          ? 'Try a shorter name or the school code, for example SCH-003.'
-          : 'Contact the system administrator to register a school.'));
+        const empty = el('div', 'empty-state');
+        empty.append(
+          el('strong', null, schools.length ? 'No school matches that search.' : 'No active schools are registered yet.'),
+          document.createTextNode(schools.length
+            ? 'Try a shorter school name or search using its school code.'
+            : 'Please contact your school administrator for assistance.')
+        );
         grid.appendChild(empty);
         return;
       }
-      shown.forEach((s, index) => {
+
+      shown.forEach(s => {
         const name = String(s.school_name || 'School');
-        const portalUrl = '/' + encodeURIComponent(name) + '/portals';
         const parentUrl = '/' + encodeURIComponent(name) + '/parentportal';
-        const studentUrl = '/' + encodeURIComponent(name) + '/student-login';
-
-        const row = el('article', 'school-row');
-        row.setAttribute('role', 'link');
-        row.setAttribute('tabindex', '0');
-        row.setAttribute('aria-label', 'Open ' + name);
-        row.addEventListener('click', event => {
-          if (event.target.closest('a')) return;
-          window.location.href = portalUrl;
-        });
-        row.addEventListener('keydown', event => {
-          if ((event.key === 'Enter' || event.key === ' ') && event.target === row) {
-            event.preventDefault();
-            window.location.href = portalUrl;
-          }
-        });
-
-        const num = el('span', 'school-row__no', String(index + 1).padStart(2, '0'));
-
-        const id = el('div', 'school-row__id');
-        const mark = el('div', 'school-mark');
-        const isSos = /\bsos\b/i.test(name) && !/impactful technical high school/i.test(name);
-        if (isSos) {
-          const logo = el('img');
-          logo.src = '/static/sos.webp';
-          logo.alt = 'SOS school logo';
-          logo.loading = 'lazy';
-          mark.appendChild(logo);
-        } else {
-          mark.textContent = name.trim().charAt(0).toUpperCase() || 'S';
-        }
-        const identity = el('div');
-        identity.append(
-          el('h2', null, name),
-          el('div', 'school-row__code', 'Code ' + (s.school_code || '—') + ' · Rwanda')
-        );
-        id.append(mark, identity);
-
-        const links = el('div', 'school-row__links');
-        const parent = el('a', null, 'Parent');
-        parent.href = parentUrl;
-        const student = el('a', null, 'Student');
-        student.href = studentUrl;
-        const portals = el('a', 'primary', 'Portals →');
-        portals.href = portalUrl;
-        links.append(parent, student, portals);
-
-        row.append(num, id, links, el('span', 'school-row__go', '→'));
-        grid.appendChild(row);
+        const card = el('a', 'school-card');
+        card.href = parentUrl;
+        card.setAttribute('aria-label', 'Open the Parent Portal for ' + name);
+        card.appendChild(makeSchoolIcon());
+        card.appendChild(el('h3', 'school-name', name));
+        card.appendChild(el('span', 'school-code', s.school_code || 'School'));
+        const location = el('p', 'school-location');
+        location.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>';
+        location.appendChild(document.createTextNode('Rwanda'));
+        card.appendChild(location);
+        const action = el('span', 'portal-link', 'Go to Parent Portal');
+        action.innerHTML += ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>';
+        card.appendChild(action);
+        grid.appendChild(card);
       });
     }
 
     search.addEventListener('input', renderSchools);
     fetch('/myadmin/schools')
-      .then(r => { if (!r.ok) throw new Error('Could not load schools'); return r.json(); })
+      .then(response => { if (!response.ok) throw new Error('Could not load schools'); return response.json(); })
       .then(data => {
         schools = (data.schools || []).filter(s => Number(s.is_active) === 1);
         renderSchools();
       })
       .catch(() => {
-        grid.innerHTML = '<div class="dir-empty"><b>Schools could not be loaded.</b>Refresh in a moment, or contact the system administrator if this continues.</div>';
+        const empty = el('div', 'empty-state');
+        empty.append(el('strong', null, 'Schools could not be loaded.'), document.createTextNode('Refresh the page in a moment and try again.'));
+        grid.replaceChildren(empty);
         count.textContent = 'Unavailable';
       });
   </script>
