@@ -778,11 +778,8 @@ def parent_choice(school_name: str, request: Request, db: Session = Depends(get_
     if blocked:
         return blocked
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "school_name": school_name,
-        "school_code": school.school_code
-    })
+    # All school users now enter through one role-aware authentication page.
+    return RedirectResponse(f"/{school_name}/login", status_code=303)
 
 
 # Admin login — NOT guarded (admin must always be able to log in)
