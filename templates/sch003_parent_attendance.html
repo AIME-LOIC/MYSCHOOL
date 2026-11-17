@@ -38,7 +38,7 @@
       </a>
       <nav class="ms-top__nav">
         {% if parent %}
-          <a class="ms-top__link" href="/{{ school_name }}/parentportal">Parent portal</a>
+          <a class="ms-top__link" href="/{{ school_name }}/parent">Parent portal</a>
           <form method="POST" action="/{{ school_name }}/parent/logout" style="margin:0">
             <button class="ms-btn ms-btn--quiet ms-btn--sm" type="submit">Sign out</button>
           </form>
@@ -135,6 +135,40 @@
         </div>
       </section>
       {% endif %}
+
+      <section class="ms-panel" style="margin:0 0 22px">
+        <div class="ms-panel__head">
+          <h2 class="ms-h3">Today's learning</h2>
+          <span class="ms-small ms-muted">{{ student.class_name or 'Class not assigned' }}</span>
+        </div>
+        <div class="ms-panel__body" style="display:grid;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div>
+              <div class="ms-eyebrow">Current subject</div>
+              <div style="font:700 clamp(22px,3vw,30px)/1.2 var(--font-display);color:var(--ink);margin-top:5px">
+                {% if current_subject %}{{ current_subject }}{% elif current_period %}No subject set for this period{% else %}No active class period{% endif %}
+              </div>
+              <p class="ms-small ms-muted" style="margin:6px 0 0">
+                {% if current_period %}Period {{ current_period }} · 40-minute periods starting at 8:30 AM{% else %}The current timetable period is not active.{% endif %}
+              </p>
+            </div>
+            <span class="ms-badge ms-badge--present">Live timetable</span>
+          </div>
+          {% if today_slots %}
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px">
+            {% for slot in today_slots %}
+            <div style="border:1px solid var(--line-strong);border-radius:10px;padding:10px;background:{% if slot.period == current_period %}var(--paper-2){% else %}transparent{% endif %}">
+              <div class="ms-small ms-muted">Period {{ slot.period }}</div>
+              <div style="font-weight:650;margin-top:4px">{{ slot.subject }}</div>
+              {% if slot.period == current_period %}<div class="ms-small" style="color:var(--rust);margin-top:5px">NOW</div>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="ms-small ms-muted" style="margin:0">No timetable has been published for this class today.</p>
+          {% endif %}
+        </div>
+      </section>
 
       <div class="pa-grid">
         <section class="ms-panel">
