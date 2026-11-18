@@ -1,6 +1,9 @@
-const CACHE = 'myschool-v2';
+const CACHE = 'myschool-v3';
 
 self.addEventListener('install', e => {
+    e.waitUntil(
+        caches.open(CACHE).then(cache => cache.add('/static/parent-portal.css'))
+    );
     self.skipWaiting();
 });
 
