@@ -215,8 +215,9 @@
         .toast-enter { animation: slideUp 0.35s ease-out forwards; }
         .toast-exit  { animation: slideDown 0.4s ease-out forwards; }
     </style>
+  <link rel="stylesheet" href="/static/sch003-ui.css">
 </head>
-<body class="min-h-screen text-slate-800" style="background: var(--paper)">
+<body class="min-h-screen text-slate-800{% if is_sch003 %} s3 s3-admin{% endif %}" style="background: var(--paper)">
 
     <!-- ══════════════════ SIDEBAR ══════════════════ -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 flex flex-col">
