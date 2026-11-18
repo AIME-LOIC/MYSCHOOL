@@ -12,10 +12,14 @@
     <meta property="og:title" content="MYSCHOOL | Parent &amp; Guardian Portal">
     <meta property="og:description" content="Access school parent services, record parent meetings, and manage school visit information.">
     <link id="favicon" rel="icon" href="/static/favicon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script async src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <meta name="google-site-verification" content="ZfOqpsVV7Mv1-PxcKiUDQBBONWc1SKmeTi2y2OnZ_RY" />
     <style>
+        /* Keep the portal usable when external stylesheets/CDNs are unavailable. */
+        .hidden { display: none !important; }
+        #logo-page { transition: opacity .5s ease; }
+        #logo-page.opacity-0 { opacity: 0; }
         /* Custom Keyframes and Styles */
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(10px); }
@@ -663,6 +667,7 @@
                 logoPage.classList.add('hidden');
                 mainContent.classList.remove('hidden');
                 mainContent.classList.add('animate-fade-in');
+                updateOfflineNotice();
 
                 // Background tasks must never block the visible portal.
                 Promise.resolve().then(() => prefetchStudents()).catch(error => {
@@ -674,13 +679,23 @@
             }, 500);
         }
 
+        // Keep network-dependent assets from blocking this script when offline.
+        // The portal must become visible no later than five seconds after this
+        // script starts, even if external CDNs never respond.
+        function updateOfflineNotice() {
+            const notice = document.getElementById('offline-notice');
+            if (notice) notice.classList.toggle('hidden', navigator.onLine);
+        }
+        window.addEventListener('online', updateOfflineNotice);
+        window.addEventListener('offline', updateOfflineNotice);
+
         // Start as soon as this inline script runs, with a short safety fallback.
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             setTimeout(revealPortal, 250);
         } else {
             document.addEventListener('DOMContentLoaded', revealPortal, { once: true });
         }
-        setTimeout(revealPortal, 2500);
+        setTimeout(revealPortal, 4500);
 
         function goBackToChoice() {
             // Stop the tour if running
