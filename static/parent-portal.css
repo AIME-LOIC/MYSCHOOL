@@ -26,7 +26,7 @@ img,svg{max-width:100%}
 .fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{top:0;right:0;bottom:0;left:0}.top-0{top:0}.z-50{z-index:50}.z-90{z-index:90}.z-100{z-index:100}
 .overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.cursor-pointer{cursor:pointer}.cursor-not-allowed{cursor:not-allowed}
 .opacity-0{opacity:0}.opacity-50{opacity:.5}.transition{transition:all .15s ease}.transition-opacity{transition:opacity .5s ease}.duration-500{transition-duration:.5s}
-.hover\\:bg-blue-700:hover{background:#1d4ed8}.hover\\:bg-green-700:hover{background:#15803d}.hover\\:bg-gray-300:hover{background:#d1d5db}.hover\\:underline:hover{text-decoration:underline}
+.hover\:bg-blue-700:hover{background:#1d4ed8}.hover\:bg-green-700:hover{background:#15803d}.hover\:bg-gray-300:hover{background:#d1d5db}.hover\:underline:hover{text-decoration:underline}
 button:disabled{opacity:.55;cursor:not-allowed}input,select,textarea{max-width:100%}
 #main-content{width:100%;margin-left:auto;margin-right:auto}
 #logo-page{transition:opacity .5s ease}
@@ -41,5 +41,10 @@ button:disabled{opacity:.55;cursor:not-allowed}input,select,textarea{max-width:1
 .student-item:hover{background:#eff6ff}
 @keyframes fade-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .animate-fade-in{animation:fade-in .5s ease-out both}
-@media(min-width:768px){.md\\:p-8{padding:2rem}.md\\:text-4xl{font-size:2.25rem;line-height:2.5rem}}
+@media(min-width:768px){.md\:p-8{padding:2rem}.md\:text-4xl{font-size:2.25rem;line-height:2.5rem}}
 @media(max-width:480px){#main-content{padding:1rem!important;padding-top:2rem!important}.text-4xl{font-size:2rem;line-height:2.25rem}}
+
+/* Common arbitrary-value utilities used by the portal dialogs. */
+[class~="z-[120]"]{z-index:120}[class~="z-[121]"]{z-index:121}[class~="z-[140]"]{z-index:140}[class~="z-[150]"]{z-index:150}
+[class~="bg-slate-950/60"]{background:rgba(2,6,23,.6)}[class~="bg-slate-950/65"]{background:rgba(2,6,23,.65)}
+[class~="backdrop-blur-sm"]{backdrop-filter:blur(4px)}
