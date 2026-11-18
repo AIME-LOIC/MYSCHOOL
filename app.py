@@ -817,6 +817,7 @@ def parent_choice(school_name: str, request: Request, db: Session = Depends(get_
         "request": request,
         "school": school,
         "school_name": school_name,
+        "school_code": school.school_code or "",
     })
 
 
