@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#16140f">
+  <meta name="theme-color" content="#ffffff">
   <title>{% if student %}Attendance · {{ student.student_name }}{% else %}Parent attendance{% endif %} · GS Gisozi 1</title>
   <link rel="stylesheet" href="/static/myschool-ui.css">
   <link rel="stylesheet" href="/static/sch003-ui.css">
@@ -21,52 +21,52 @@
     .pa-side .ms-panel__body p + p { margin-top: 11px; }
     .pa-login { max-width: 400px; }
     /* SCH-003 sign-in follows the 1percent Learn authentication layout. */
-    body.s3-parent:has(.auth-layout) { background:#f5f7f6; color:#102b1e; }
+    body.s3-parent:has(.auth-layout) { background:#f5f8ff; color:#17365f; }
     body.s3-parent:has(.auth-layout) .ms-top { display:none; }
     body.s3-parent:has(.auth-layout) main.ms-shell { width:100%; max-width:none; margin:0; padding:0; }
     body.s3-parent:has(.auth-layout) .s3-strip,
     body.s3-parent:has(.auth-layout) .ms-foot { display:none; }
     .auth-layout { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
-    .auth-hero { position:relative; display:flex; flex-direction:column; justify-content:center; padding:clamp(42px,6vw,76px); color:#fff; background:radial-gradient(circle at top right,rgba(127,220,175,.14),transparent 45%),linear-gradient(160deg,#0e2b1d 0%,#0a4c2c 48%,#0d6e3f 100%); overflow:hidden; }
+    .auth-hero { position:relative; display:flex; flex-direction:column; justify-content:center; padding:clamp(42px,6vw,76px); color:#fff; background:radial-gradient(circle at top right,rgba(147,197,253,.18),transparent 45%),linear-gradient(160deg,#102a56 0%,#174a91 52%,#2563eb 100%); overflow:hidden; }
     .auth-hero:before { content:""; position:absolute; inset:0; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px); background-size:22px 22px; }
     .auth-hero-inner { position:relative; max-width:560px; }
     .auth-hero h1 { font:800 clamp(30px,3.2vw,44px)/1.12 'Plus Jakarta Sans',Inter,sans-serif; letter-spacing:-1px; margin:0 0 18px; }
-    .auth-hero h1 em { color:#7fdcaf; font-style:normal; }
+    .auth-hero h1 em { color:#bfdbfe; font-style:normal; }
     .auth-hero-lead { max-width:460px; margin:0 0 34px; color:rgba(255,255,255,.8); font-size:16px; line-height:1.7; }
     .auth-checks { display:grid; gap:16px; }
     .auth-check { display:flex; align-items:center; gap:12px; font-size:15px; font-weight:600; }
-    .auth-check i { width:26px; height:26px; display:grid; place-items:center; border-radius:50%; background:#7fdcaf; color:#0e2b1d; font-style:normal; }
+    .auth-check i { width:26px; height:26px; display:grid; place-items:center; border-radius:50%; background:#bfdbfe; color:#17365f; font-style:normal; }
     .auth-hero-foot { position:absolute; bottom:30px; left:clamp(42px,6vw,76px); color:rgba(255,255,255,.6); font-size:13px; }
-    .auth-form-col { display:flex; flex-direction:column; justify-content:center; background:#fff; min-height:100vh; }
-    .auth-back { align-self:flex-start; margin:24px 0 0 24px; color:#64748b; text-decoration:none; font-size:14px; font-weight:600; }
-    .auth-form-wrap { width:100%; max-width:420px; margin:auto; padding:32px 24px 40px; }
+    .auth-form-col { display:flex; flex-direction:column; justify-content:flex-start; align-items:flex-start; background:#fff; min-height:100vh; }
+     .auth-back { display:none; }
+    .auth-form-wrap { width:100%; max-width:420px; margin:clamp(54px,10vh,100px) 0 40px clamp(32px,7vw,100px); padding:24px; }
     .auth-brand { display:flex; align-items:center; gap:10px; margin-bottom:36px; }
-    .auth-brand-mark { width:40px; height:40px; display:grid; place-items:center; border-radius:8px; background:#0d6e3f; color:white; font:800 16px 'JetBrains Mono',monospace; }
+    .auth-brand-mark { width:40px; height:40px; display:grid; place-items:center; border-radius:8px; background:#2563eb; color:white; font:800 16px 'JetBrains Mono',monospace; }
     .auth-brand-name { display:flex; flex-direction:column; line-height:1.2; }
-    .auth-brand-name b { color:#102b1e; font-size:15px; font-weight:800; }
-    .auth-brand-name span { color:#84918a; font-size:12px; }
-    .auth-heading { margin:0 0 8px; color:#102b1e; font:800 clamp(26px,3vw,32px)/1.15 'Plus Jakarta Sans',Inter,sans-serif; letter-spacing:-.5px; }
-    .auth-subtext { margin:0 0 28px; color:#64746b; font-size:15px; line-height:1.6; }
+    .auth-brand-name b { color:#17365f; font-size:15px; font-weight:800; }
+    .auth-brand-name span { color:#7b8ba5; font-size:12px; }
+    .auth-heading { margin:0 0 8px; color:#17365f; font:800 clamp(26px,3vw,32px)/1.15 'Plus Jakarta Sans',Inter,sans-serif; letter-spacing:-.5px; }
+    .auth-subtext { margin:0 0 28px; color:#64748b; font-size:15px; line-height:1.6; }
     .auth-field { margin-bottom:18px; }
-    .auth-label { display:block; margin-bottom:6px; color:#102b1e; font-size:13px; font-weight:600; }
-    .auth-input { width:100%; height:48px; padding:0 14px; border:1px solid #d9e2dc; border-radius:8px; background:#fff; color:#102b1e; font-size:15px; box-sizing:border-box; }
-    .auth-input:focus { outline:none; border-color:#0d6e3f; box-shadow:0 0 0 3px rgba(13,110,63,.15); }
+    .auth-label { display:block; margin-bottom:6px; color:#17365f; font-size:13px; font-weight:600; }
+    .auth-input { width:100%; height:48px; padding:0 14px; border:1px solid #dbe5f5; border-radius:8px; background:#fff; color:#17365f; font-size:15px; box-sizing:border-box; }
+    .auth-input:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
     .auth-password-wrap { position:relative; }
     .auth-password-wrap .auth-input { padding-right:48px; }
-    .auth-eye { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:32px; height:32px; border:0; border-radius:6px; background:transparent; color:#84918a; cursor:pointer; }
-    .auth-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 20px; color:#33483c; font-size:14px; }
+    .auth-eye { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:32px; height:32px; border:0; border-radius:6px; background:transparent; color:#7b8ba5; cursor:pointer; }
+    .auth-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 20px; color:#334b70; font-size:14px; }
     .auth-checkbox { display:flex; align-items:center; gap:8px; }
-    .auth-checkbox input { accent-color:#0d6e3f; }
-    .auth-btn { width:100%; height:48px; border:0; border-radius:8px; background:#0d6e3f; color:#fff; font-size:15px; font-weight:700; cursor:pointer; }
-    .auth-btn:hover { background:#0a5c34; }
+    .auth-checkbox input { accent-color:#2563eb; }
+    .auth-btn { width:100%; height:48px; border:0; border-radius:8px; background:#2563eb; color:#fff; font-size:15px; font-weight:700; cursor:pointer; }
+    .auth-btn:hover { background:#1d4ed8; }
     .auth-alert { margin:0 0 18px; padding:12px 14px; border:1px solid #fca5a5; border-radius:8px; background:#fef2f2; color:#991b1b; font-size:13.5px; line-height:1.5; }
-    .auth-help { margin-top:18px; color:#64746b; font-size:13px; line-height:1.6; }
-    .auth-back-link { display:block; margin-top:18px; color:#0d6e3f; font-size:13px; font-weight:600; text-decoration:none; }
+    .auth-help { margin-top:18px; color:#64748b; font-size:13px; line-height:1.6; }
+    .auth-back-link { display:none; }
     @media (max-width: 800px) {
       .auth-layout { grid-template-columns:1fr; }
       .auth-hero { display:none; }
       .auth-form-col { min-height:100vh; }
-      .auth-form-wrap { padding:24px 24px 40px; }
+      .auth-form-wrap { margin:40px 0 32px; padding:24px; }
     }
     @media (max-width: 980px) {
       .pa-grid { grid-template-columns: 1fr; }
@@ -117,7 +117,6 @@
         <div class="auth-hero-foot">© 2026 GS Gisozi 1 · Powered by 1percent Rwanda</div>
       </section>
       <main class="auth-form-col">
-        <a class="auth-back" href="/{{ school_name }}/portals">← Back to school workspace</a>
         <div class="auth-form-wrap">
           <div class="auth-brand">
             <span class="auth-brand-mark">1%</span>
@@ -140,12 +139,11 @@
             </div>
             <div class="auth-row">
               <label class="auth-checkbox"><input type="checkbox" name="remember" checked> Remember me</label>
-              <span style="color:#84918a;font-size:12px">Secure parent access</span>
+              <span style="color:#7b8ba5;font-size:12px">Secure parent access</span>
             </div>
             <button class="auth-btn" type="submit">Log In</button>
           </form>
           <p class="auth-help">Parent accounts are created and linked to students by the GS Gisozi 1 administration. If you need access, please contact the school office.</p>
-          <a class="auth-back-link" href="/{{ school_name }}/portals">← Return to school roles</a>
         </div>
       </main>
     </div>

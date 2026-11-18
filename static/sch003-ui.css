@@ -82,3 +82,83 @@ body.s3 .ms-auth__story .ms-eyebrow::before { color: #e0a48e; }
 @media print {
   .ms-top, .ms-foot, .s3-strip { display: none !important; }
 }
+
+
+/* SCH-003: clean white + blue school workspace. Scoped to this school only. */
+body.s3 {
+  color-scheme:light;
+  --paper:#fff;--paper-2:#f8fafc;--surface:#fff;--surface-2:#f8fafc;
+  --ink:#172b4d;--ink-2:#344563;--muted:#64748b;--faint:#94a3b8;
+  --line:#e2e8f0;--line-strong:#cbd5e1;--rule:#dbe3ef;
+  --rust:#2563eb;--rust-dark:#1d4ed8;--rust-soft:#eff6ff;
+  --forest:#1e40af;--forest-2:#2563eb;--forest-ink:#17365f;
+  --green:#2563eb;--green-soft:#eff6ff;--amber:#a16207;--red:#b91c1c;
+  --radius:10px;--shadow:0 1px 3px rgba(15,23,42,.06);
+  background:#fff!important;color:var(--ink)!important;
+}
+body.s3 .ms-top{background:#fff!important;color:var(--ink)!important;border-bottom:1px solid var(--line)!important;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+body.s3 .ms-brand__name,body.s3 .ms-top__link{color:var(--ink)!important}
+body.s3 .ms-brand__sub,body.s3 .ms-top .ms-live,body.s3 .ms-top .st-live{color:var(--muted)!important}
+body.s3 .ms-crest{background:#eff6ff!important;color:#2563eb!important;border:1px solid #bfdbfe!important;box-shadow:none!important}
+body.s3 .ms-top__link:hover{color:#1d4ed8!important;border-bottom-color:#2563eb!important}
+body.s3 .ms-top .ms-btn--quiet,body.s3 .ms-top .ms-btn--ghost{color:#1e40af!important;border-color:#bfdbfe!important}
+body.s3 .ms-top .ms-badge{background:#eff6ff!important;color:#1e40af!important;border-color:#bfdbfe!important}
+body.s3 .ms-shell,body.s3 .ms-shell--narrow,body.s3 .ws-wrap,body.s3 .st-wrap,body.s3 .g1-wrap,body.s3 main.ms-shell{
+ width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;
+ padding-left:clamp(16px,2.5vw,38px)!important;padding-right:clamp(16px,2.5vw,38px)!important
+}
+body.s3 .ms-main{padding-top:24px}
+body.s3 .ms-panel,body.s3 .st-card,body.s3 .ms-paper-block,body.s3 .s3-slip{
+ background:#fff!important;border:1px solid var(--line)!important;border-radius:12px!important;box-shadow:0 1px 3px rgba(15,23,42,.04)
+}
+body.s3 .ms-panel__head,body.s3 .st-card__head{border-bottom:1px solid var(--line)!important}
+body.s3 .ms-panel__foot{background:#f8fafc!important;border-top:1px solid var(--line)!important}
+body.s3 .ms-display,body.s3 .ms-h2,body.s3 .ms-h3,body.s3 .ws-head h1,body.s3 .st-head h1,body.s3 .pa-hero h1{color:var(--ink)!important}
+body.s3 .ms-display em,body.s3 .pa-hero h1 em{color:#2563eb!important}
+body.s3 .ms-eyebrow,body.s3 .ms-eyebrow::before,body.s3 .s3-strip b{color:#2563eb!important}
+body.s3 .ms-btn,body.s3 button.ms-btn{background:#2563eb!important;border:1px solid #2563eb!important;color:#fff!important;border-radius:8px!important;box-shadow:none!important}
+body.s3 .ms-btn:hover{background:#1d4ed8!important;border-color:#1d4ed8!important}
+body.s3 .ms-btn--ghost,body.s3 .ms-btn--quiet{background:#fff!important;color:#1e40af!important;border-color:#cbd5e1!important}
+body.s3 .ms-input,body.s3 .ms-select,body.s3 .ms-textarea{background:#fff!important;color:#172b4d!important;border:1px solid #cbd5e1!important;border-radius:8px!important;box-shadow:none}
+body.s3 .ms-input:focus,body.s3 .ms-select:focus,body.s3 .ms-textarea:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.12)!important}
+body.s3 .ms-badge{border-radius:999px}
+body.s3 .ms-table th{background:#f8fafc;color:#64748b}
+body.s3 .ms-table td,body.s3 .ms-table th{border-color:#e2e8f0}
+body.s3 .s3-strip{border-color:#e2e8f0;color:#64748b}
+body.s3 .s3-rule{background:#e2e8f0}
+body.s3 .ws-grid-4,body.s3 .st-stats{border-color:#e2e8f0}
+body.s3 .ws-cols,body.s3 .st-grid,body.s3 .pa-grid{gap:16px}
+body.s3 .st-card{border-top:1px solid #e2e8f0!important}
+body.s3 .st-table tbody tr.is-selected{background:#eff6ff!important;box-shadow:inset 3px 0 #2563eb!important}
+body.s3 .st-mark:hover{background:#eff6ff!important}
+body.s3 .st-saved{background:#eff6ff!important;border-color:#bfdbfe!important;color:#1e40af!important}
+body.s3 .st-live i{background:#2563eb!important}
+body.s3 .ms-auth__form{align-items:flex-start!important;justify-content:flex-start!important}
+body.s3 .lg-sheet{width:min(100%,620px)!important;max-width:620px!important;margin:clamp(28px,5vh,64px) 0!important}
+body.s3 .ms-auth__body{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.s3 .ms-auth__form{padding-left:clamp(24px,5vw,72px)!important}
+body.s3:has(.auth-layout){background:#fff!important}
+body.s3 .auth-form-wrap{margin-left:clamp(20px,4vw,64px)!important;margin-right:0!important}
+body.s3 .auth-form-col{align-items:flex-start!important;justify-content:flex-start!important}
+body.s3 .auth-hero{background:linear-gradient(145deg,#12346b,#2563eb)!important}
+body.s3 .auth-brand-mark{background:#2563eb!important}
+body.s3 .auth-heading,body.s3 .auth-brand-name b{color:#17365f!important}
+body.s3 .auth-input:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.12)!important}
+body.s3 .auth-submit{background:#2563eb!important}
+body.s3.s3-student main{width:100%!important;max-width:none!important;margin:0!important;padding:clamp(20px,3vw,40px) clamp(16px,2.5vw,38px)!important}
+body.s3.s3-student .card{width:100%;max-width:none!important;margin:0!important;border-radius:12px!important;box-shadow:0 1px 3px rgba(15,23,42,.05)!important}
+body.s3.s3-teacher main,body.s3.s3-admin main{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
+body.s3.s3-teacher .max-w-7xl,body.s3.s3-admin .max-w-7xl,body.s3.s3-teacher .max-w-6xl,body.s3.s3-admin .max-w-6xl,body.s3.s3-teacher .max-w-5xl,body.s3.s3-admin .max-w-5xl{max-width:none!important;width:100%!important}
+body.s3.s3-teacher .mx-auto,body.s3.s3-admin .mx-auto{margin-left:0!important;margin-right:0!important}
+body.s3.s3-teacher .bg-slate-50,body.s3.s3-admin .bg-slate-50{background:#fff!important}
+body.s3.s3-teacher .bg-white,body.s3.s3-admin .bg-white{background:#fff!important}
+body.s3.s3-teacher button,body.s3.s3-admin button{border-radius:8px}
+@media(max-width:760px){
+ body.s3 .ws-cols,body.s3 .st-grid,body.s3 .pa-grid{grid-template-columns:1fr!important}
+ body.s3 .ws-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body.s3 .st-stats,body.s3 .pa-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body.s3 .auth-layout{grid-template-columns:1fr!important}
+ body.s3 .auth-hero{min-height:280px}
+ body.s3 .auth-form-wrap{margin:0!important;padding:32px 24px!important}
+}
+@media print{body.s3{background:#fff!important}}
