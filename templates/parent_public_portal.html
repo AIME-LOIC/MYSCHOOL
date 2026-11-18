@@ -651,26 +651,36 @@
         
         // --- Portal Logic ---
 
-        window.onload = function() {
-            // Show the portal after the single loading screen. The old second splash
-            // screen was removed from the HTML, so do not access poweredByPage here.
+        // Reveal the portal independently of external CDN/font loading. The old
+        // window.onload handler could leave the full-screen spinner visible forever
+        // when a third-party asset stalled.
+        let portalRevealed = false;
+        function revealPortal() {
+            if (portalRevealed) return;
+            portalRevealed = true;
+            logoPage.classList.add('opacity-0');
             setTimeout(() => {
-                logoPage.classList.add('opacity-0');
-                setTimeout(() => {
-                    logoPage.classList.add('hidden');
-                    mainContent.classList.remove('hidden');
-                    mainContent.classList.add('animate-fade-in');
+                logoPage.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                mainContent.classList.add('animate-fade-in');
 
-                    // These background tasks must not prevent the portal from appearing.
-                    Promise.resolve().then(() => prefetchStudents()).catch(error => {
-                        console.warn('Student prefetch failed:', error);
-                    });
-                    Promise.resolve().then(() => flushVisitQueue()).catch(error => {
-                        console.warn('Visit queue sync failed:', error);
-                    });
-                }, 500);
-            }, 1000);
-        };
+                // Background tasks must never block the visible portal.
+                Promise.resolve().then(() => prefetchStudents()).catch(error => {
+                    console.warn('Student prefetch failed:', error);
+                });
+                Promise.resolve().then(() => flushVisitQueue()).catch(error => {
+                    console.warn('Visit queue sync failed:', error);
+                });
+            }, 500);
+        }
+
+        // Start as soon as this inline script runs, with a short safety fallback.
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(revealPortal, 250);
+        } else {
+            document.addEventListener('DOMContentLoaded', revealPortal, { once: true });
+        }
+        setTimeout(revealPortal, 2500);
 
         function goBackToChoice() {
             // Stop the tour if running
