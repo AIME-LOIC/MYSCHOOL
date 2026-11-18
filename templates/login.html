@@ -26,8 +26,9 @@
       display: flex; justify-content: space-between; gap: 12px;
     }
   </style>
+  <link rel="stylesheet" href="/static/sch003-ui.css">
 </head>
-<body>
+<body class="{% if is_sch003 %}s3 s3-admin-login{% endif %}">
 <div class="ms-auth">
   <header class="ms-top">
     <div class="ms-shell ms-top__inner">
