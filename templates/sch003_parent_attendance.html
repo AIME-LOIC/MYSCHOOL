@@ -26,7 +26,7 @@
     body.s3-parent:has(.auth-layout) main.ms-shell { width:100%; max-width:none; margin:0; padding:0; }
     body.s3-parent:has(.auth-layout) .s3-strip,
     body.s3-parent:has(.auth-layout) .ms-foot { display:none; }
-    .auth-layout { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
+    .auth-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); width:100vw; max-width:none; min-height:100vh; margin-left:calc(50% - 50vw); position:relative; left:0; }
     .auth-hero { position:relative; display:flex; flex-direction:column; justify-content:center; padding:clamp(42px,6vw,76px); color:#fff; background:radial-gradient(circle at top right,rgba(147,197,253,.18),transparent 45%),linear-gradient(160deg,#102a56 0%,#174a91 52%,#2563eb 100%); overflow:hidden; }
     .auth-hero:before { content:""; position:absolute; inset:0; pointer-events:none; background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px); background-size:22px 22px; }
     .auth-hero-inner { position:relative; max-width:560px; }
