@@ -765,6 +765,35 @@ def school_portal_hub(school_name: str, request: Request, db: Session = Depends(
     })
 
 
+# Universal login entry point. SCH-003 currently uses the protected parent sign-in.
+@app.get("/login")
+def universal_login(request: Request, school_code: str | None = Query(None), db: Session = Depends(get_db)):
+    if not school_code:
+        return templates.TemplateResponse("universal_login.html", {
+            "request": request, "error": "Open the parent portal from your school page to continue."
+        })
+    school = db.query(School).filter(School.school_code == school_code).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    if not _is_gs_gisozi1(school):
+        return RedirectResponse(f"/{school.school_name}/parentportal", status_code=302)
+
+    parent_id = _read_parent_session(request, school.id)
+    account = db.query(ParentAccount).filter(
+        ParentAccount.id == parent_id,
+        ParentAccount.school_id == school.id,
+        ParentAccount.is_active == 1,
+    ).first() if parent_id else None
+    if account:
+        return RedirectResponse(f"/{school.school_name}/attendance/parent", status_code=302)
+    return templates.TemplateResponse("sch003_parent_attendance.html", {
+        "request": request, "school": school, "school_name": school.school_name,
+        "parent": None, "student": None, "records": [], "summary": None,
+        "month_label": datetime.now().strftime("%B %Y"),
+        "error": request.query_params.get("error", ""),
+    })
+
+
 # Parent portal — GUARDED
 @app.get("/{school_name}/parentportal")
 def parent_choice(school_name: str, request: Request, db: Session = Depends(get_db)):
@@ -778,9 +807,17 @@ def parent_choice(school_name: str, request: Request, db: Session = Depends(get_
     if blocked:
         return blocked
 
-    # Parent access always starts with the school-scoped sign-in/create-account page.
-    # The authenticated dashboard is selected by the school code in parent_portal_page.
-    return RedirectResponse(f"/{school_name}/parent/login", status_code=302)
+    # SCH-003 keeps its protected parent attendance portal and uses the
+    # universal login entry point. Other schools get a public information hub
+    # only; no student-specific records are exposed from this route.
+    if _is_gs_gisozi1(school):
+        return RedirectResponse(f"/login?school_code={school.school_code}", status_code=302)
+
+    return templates.TemplateResponse("parent_public_portal.html", {
+        "request": request,
+        "school": school,
+        "school_name": school_name,
+    })
 
 
 # Admin login — NOT guarded (admin must always be able to log in)
