@@ -1,27 +1,997 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f1fbf5">
-<title>MYSCHOOL | {{ school.school_name }} Parent Portal</title>
-<link rel="icon" href="/static/favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<style>
-:root{--green:#087f5b;--deep:#064e3b;--mint:#e8f7ef;--ink:#132b25;--muted:#62756f;--line:#e3eee8}
-*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font-family:'DM Sans',sans-serif}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,92%);margin:auto}
-header{height:82px;border-bottom:1px solid var(--line);display:flex;align-items:center;background:#ffffffed}.nav{display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:11px;font-family:Manrope,sans-serif;font-weight:800;font-size:21px;color:var(--deep)}.brand-icon{width:44px;height:44px;border-radius:14px;background:var(--mint);display:grid;place-items:center;color:var(--green);font-size:23px}.brand small{display:block;font:500 12px 'DM Sans';color:var(--muted);margin-top:1px}.navlinks{display:flex;gap:30px;color:#52665f;font-size:14px}.navlinks a:first-child{color:var(--green);font-weight:700}.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:13px 19px;border-radius:12px;font-weight:700;font-size:14px;border:1px solid transparent;transition:.2s}.btn-primary{background:var(--green);color:#fff;box-shadow:0 7px 16px #087f5b24}.btn-primary:hover{background:var(--deep);transform:translateY(-1px)}.btn-outline{border-color:#b9d7ca;background:#fff;color:var(--deep)}.hero{background:linear-gradient(115deg,#f1fbf5 0%,#fff 58%,#e6f7ed 100%);overflow:hidden}.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:36px;padding:65px 0 62px}.eyebrow{display:inline-flex;align-items:center;gap:8px;background:#d9f4e4;color:var(--deep);border-radius:99px;padding:8px 13px;font-size:12px;font-weight:700;letter-spacing:.04em}.hero h1{font:800 clamp(38px,4.4vw,58px)/1.08 Manrope,sans-serif;letter-spacing:-2px;margin:20px 0 18px;max-width:650px}.hero h1 span{color:var(--green)}.hero p{font-size:16px;line-height:1.8;color:#5c7169;max-width:590px;margin:0 0 25px}.hero-actions{display:flex;gap:12px;flex-wrap:wrap}.hero-art{position:relative;min-height:345px;display:grid;place-items:center}.art-panel{width:100%;max-width:475px;height:320px;border-radius:34px;background:linear-gradient(145deg,#d3f2df,#f7fffa);position:relative;overflow:hidden;display:grid;place-items:center}.art-circle{position:absolute;width:250px;height:250px;border-radius:50%;background:#a8e4bf;right:15px;top:24px}.family-icon{position:relative;z-index:1;text-align:center;color:var(--deep)}.family-icon .fa-people-roof{font-size:115px;color:var(--green);filter:drop-shadow(0 10px 7px #064e3b16)}.family-icon strong{display:block;font:700 17px Manrope;margin-top:15px}.floating-note{position:absolute;bottom:8px;left:-5px;background:white;border:1px solid var(--line);border-radius:16px;padding:15px 18px;box-shadow:0 14px 40px #064e3b12;font-size:13px;color:var(--muted)}.floating-note b{display:block;color:var(--deep);margin-bottom:4px}.access-card{position:absolute;right:-8px;top:8px;background:#fff;padding:16px;border-radius:17px;box-shadow:0 14px 40px #064e3b16;border:1px solid var(--line);width:190px;font-size:12px}.access-card i{color:var(--green);font-size:19px}.access-card strong{display:block;margin:8px 0 4px;font-size:14px}.access-card span{color:var(--muted);line-height:1.5}.section{padding:56px 0}.section-top{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:26px}.kicker{font-size:12px;color:var(--green);font-weight:800;letter-spacing:.12em;text-transform:uppercase}.section h2{font:800 clamp(26px,3vw,36px) Manrope,sans-serif;letter-spacing:-1px;margin:9px 0 0}.section-top p{max-width:390px;color:var(--muted);font-size:14px;line-height:1.7;margin:0}.services{display:grid;grid-template-columns:repeat(3,1fr);gap:17px}.service{border:1px solid var(--line);border-radius:18px;padding:24px 21px;min-height:220px;box-shadow:0 5px 20px #0c3b2a06;transition:.2s}.service:hover{transform:translateY(-4px);box-shadow:0 14px 28px #0c3b2a0e}.service-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:var(--mint);color:var(--green);font-size:20px}.service h3{font:700 17px Manrope;margin:18px 0 9px}.service p{font-size:13px;line-height:1.65;color:var(--muted);margin:0 0 17px}.service a{font-size:13px;color:var(--green);font-weight:700}.service a i{margin-left:5px}.support{padding:0 0 48px}.support-box{background:var(--deep);color:white;border-radius:23px;padding:30px 34px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden}.support-box:after{content:'';position:absolute;width:260px;height:260px;border:1px solid #ffffff18;border-radius:50%;right:20%;top:-160px}.support-copy{display:flex;align-items:center;gap:18px;position:relative;z-index:1}.support-icon{width:54px;height:54px;border-radius:17px;background:#ffffff19;display:grid;place-items:center;font-size:24px}.support h3{font:700 20px Manrope;margin:0 0 7px}.support p{margin:0;color:#d2e9df;font-size:13px;line-height:1.6}.support .btn{background:white;color:var(--deep);position:relative;z-index:1;white-space:nowrap}footer{border-top:1px solid var(--line);padding:23px 0;color:var(--muted);font-size:12px}.foot{display:flex;justify-content:space-between;gap:20px;align-items:center}.foot-links{display:flex;gap:20px}.foot-brand{font-weight:800;color:var(--deep);font-family:Manrope,sans-serif}
-@media(max-width:900px){.navlinks{display:none}.hero-grid{grid-template-columns:1fr;padding:48px 0}.hero-art{min-height:300px}.art-panel{height:280px}.services{grid-template-columns:repeat(2,1fr)}.section-top{align-items:start;flex-direction:column}.access-card{right:0}}@media(max-width:560px){header{height:70px}.brand{font-size:18px}.hero h1{letter-spacing:-1.3px}.hero-grid{padding:38px 0}.hero-art{min-height:260px}.art-panel{height:240px}.family-icon .fa-people-roof{font-size:82px}.access-card{width:150px;right:-4px;top:0;padding:12px}.floating-note{left:0;bottom:0}.services{grid-template-columns:1fr}.service{min-height:0}.section{padding:42px 0}.support-box,.support-copy{align-items:flex-start;flex-direction:column}.support-box{padding:24px}.foot{align-items:flex-start;flex-direction:column}.foot-links{flex-wrap:wrap}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MYSCHOOL | Parent &amp; Guardian Portal</title>
+    <meta name="description" content="MYSCHOOL parent and guardian portal for school visits, parent meetings, and communication with your school.">
+    <meta name="robots" content="noindex, follow">
+    <meta name="theme-color" content="#176b45">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="MYSCHOOL">
+    <meta property="og:title" content="MYSCHOOL | Parent &amp; Guardian Portal">
+    <meta property="og:description" content="Access school parent services, record parent meetings, and manage school visit information.">
+    <link id="favicon" rel="icon" href="/static/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <meta name="google-site-verification" content="ZfOqpsVV7Mv1-PxcKiUDQBBONWc1SKmeTi2y2OnZ_RY" />
+    <style>
+        /* Custom Keyframes and Styles */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+        .powered-logo {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #15803d;
+            letter-spacing: 0;
+        }
+        .portal-logo-text {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1f2937; /* Gray-800 */
+            letter-spacing: -1px;
+        }
+
+        /* NEW TOUR GUIDE STYLES: Blur the background */
+        #tour-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4); 
+            /* THE BLUR EFFECT: BLURS EVERYTHING BELOW THE OVERLAY */
+            backdrop-filter: blur(4px); 
+            z-index: 90;
+            pointer-events: none; 
+        }
+
+        #tour-popup {
+            position: fixed;
+            /* No need for fixed center position here, will be calculated by JS */
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            max-width: 400px; 
+            text-align: left; 
+        }
+        
+        /* Class to draw attention to the current guided element */
+        .tour-highlight {
+            position: relative;
+            z-index: 95; /* Above the overlay */
+            /* Add a temporary transparent background to prevent the element from being blurred */
+            background: white; 
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.8), 0 0 0 6px #f59e0b; 
+            transition: box-shadow 0.3s ease-in-out;
+            /* Ensures border radius is consistent with the element */
+            border-radius: 0.5rem; 
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) translateX(-50%); }
+            to { opacity: 1; transform: translateY(0) translateX(-50%); }
+        }
+        @keyframes slideDown {
+            from { opacity: 1; transform: translateY(0) translateX(-50%); }
+            to { opacity: 0; transform: translateY(20px) translateX(-50%); }
+        }
+        .toast-enter { animation: slideUp 0.35s ease-out forwards; }
+        .toast-exit { animation: slideDown 0.35s ease-out forwards; }
+        @keyframes ticket-ring-spin { to { transform: rotate(360deg); } }
+        @keyframes ticket-pop-in { 0% { opacity: 0; transform: scale(.72); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
+        .ticket-ring { animation: ticket-ring-spin 1.15s linear infinite; }
+        .ticket-icon-pop { animation: ticket-pop-in .45s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .ticket-ring { animation-duration: 4s; } .ticket-icon-pop { animation: none; } }
+                /* Logo image sizing */
+                .logo-img { height: 4rem; width: auto; }
+                @media (min-width: 768px) { .logo-img { height: 6rem; } }
+    @media print {
+  body { display: none !important; }
+}
+     
+    
+    </style>
 </head>
-<body>
-<header><div class="wrap nav"><a class="brand" href="/{{ school_name }}/parentportal"><span class="brand-icon"><i class="fa-solid fa-book-open-reader"></i></span><span>MYSCHOOL<small>{{ school.school_name }} · Parent Portal</small></span></a><nav class="navlinks"><a href="#home">Home</a><a href="#services">Parent Services</a><a href="#support">Help & Support</a></nav><a class="btn btn-outline" href="/{{ school_name }}/portals"><i class="fa-solid fa-school"></i> School Portal</a></div></header>
-<main id="home"><section class="hero"><div class="wrap hero-grid"><div><span class="eyebrow"><i class="fa-solid fa-users"></i> WELCOME TO YOUR SCHOOL COMMUNITY</span><h1>Every step in your child's journey, <span>together.</span></h1><p>Stay connected with {{ school.school_name }} through school announcements, parent meetings, visiting-day arrangements and canteen updates — all in one simple place.</p><div class="hero-actions"><a class="btn btn-primary" href="#services">Explore Parent Services <i class="fa-solid fa-arrow-right"></i></a><a class="btn btn-outline" href="#support">Get School Support</a></div></div><div class="hero-art"><div class="art-panel"><div class="art-circle"></div><div class="family-icon"><i class="fa-solid fa-people-roof"></i><strong>Stronger families. Brighter futures.</strong></div></div><div class="access-card"><i class="fa-solid fa-bullhorn"></i><strong>School information in one place</strong><span>Find public notices and guidance shared by your school.</span></div><div class="floating-note"><b><i class="fa-solid fa-heart" style="color:#087f5b"></i> Connected with care</b>Working together for every learner.</div></div></div></section>
-<section class="section wrap" id="services"><div class="section-top"><div><div class="kicker">PARENT SERVICES</div><h2>Stay connected with your school</h2></div><p>Explore public information and updates for parents and guardians. Details will appear here when published by the school.</p></div><div class="services">
-<article class="service"><div class="service-icon"><i class="fa-solid fa-people-group"></i></div><h3>Parent Meetings</h3><p>Stay informed about parent meetings, schedules and opportunities to connect with teachers.</p><a href="/{{ school_name }}/">School information <i class="fa-solid fa-arrow-right"></i></a></article>
-<article class="service"><div class="service-icon"><i class="fa-regular fa-calendar-check"></i></div><h3>Visiting Days</h3><p>Find visiting-day announcements, dates and guidance before coming to the school.</p><a href="/{{ school_name }}/">Visiting information <i class="fa-solid fa-arrow-right"></i></a></article>
-<article class="service"><div class="service-icon"><i class="fa-solid fa-utensils"></i></div><h3>Canteen</h3><p>Check general canteen notices, meal-service information and updates shared by the school.</p><a href="/{{ school_name }}/">Canteen information <i class="fa-solid fa-arrow-right"></i></a></article>
-</div></section>
-<section class="support wrap" id="support"><div class="support-box"><div class="support-copy"><div class="support-icon"><i class="fa-solid fa-headset"></i></div><div><h3>Need help or more information?</h3><p>Contact the school administration or visit the school portal for public information and support.</p></div></div><div class="hero-actions"><a class="btn" href="/{{ school_name }}/portals"><i class="fa-solid fa-school"></i> School Portal</a><a class="btn" href="/{{ school_name }}/"><i class="fa-solid fa-circle-info"></i> School Information</a></div></div></section></main>
-<footer><div class="wrap foot"><div><div class="foot-brand"><i class="fa-solid fa-book-open-reader"></i> MYSCHOOL <span style="font-weight:500;color:#62756f">Parent Portal</span></div><div style="margin-top:6px">A stronger partnership between school and family.</div></div><div class="foot-links"><a href="#services">Parent Services</a><a href="#support">Support</a><a href="/{{ school_name }}/portals">School Portal</a></div><div>© 2026 MYSCHOOL</div></div></footer>
-</body></html>
+<body class="bg-gray-50 min-h-screen">
+
+    <div id="logo-page" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-50 transition-opacity duration-500">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-green-700 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" role="status" aria-label="Loading">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l2.647-2.647z"></path>
+            </svg>
+            <p class="text-gray-600 text-lg font-medium">MURAKAZA NEZA</p>
+        </div>
+        <p class="absolute bottom-6 text-sm text-gray-500"><a href="https://1percent.rw/" target="_blank" rel="noopener noreferrer" class="hover:text-green-700 hover:underline focus:outline-none focus:ring-2 focus:ring-green-600 rounded">MYSCHOOL <span class="mx-1">·</span> powered by <span class="powered-logo">1percent</span></a></p>
+    </div>
+
+    <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg hidden">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">MYSCHOOL</h1>
+            <p class="mt-2 text-sm font-medium text-green-700">Parent Portal <span class="mx-1 text-gray-300">·</span> <a href="https://1percent.rw/" target="_blank" rel="noopener noreferrer" class="hover:underline focus:outline-none focus:ring-2 focus:ring-green-600 rounded">powered by <span class="font-bold">1percent</span></a></p>
+        </header>
+
+        <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+            <h3 class="text-xl font-semibold mb-5 text-gray-700">Select Interaction Type:</h3>
+            <div id="choice-buttons" class="flex flex-col space-y-4">
+                <button id="btn-visit-day" onclick="selectType('visit_day')" class="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-calendar-alt mr-2"></i> Visit Day
+                </button>
+                <button id="btn-parent-meeting" onclick="selectType('parent_meeting')" class="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-handshake mr-2"></i> INAMA Y'ABABYEYI
+                </button>
+                <button id="btn-support" onclick="openDonationModal()" class="w-full py-3 px-6 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-heart mr-2"></i> GUFASHA ICF
+                </button>
+                <button onclick="openProductsModal()" class="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-shopping-bag mr-2"></i> IBICIRO MURI CATINE
+                </button>
+            </div>
+        </div>
+        
+        <div id="tour-guide-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hidden">
+            <button onclick="goBackToChoice()" 
+                    class="mb-4 flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition duration-150">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Return to Selection
+            </button>
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">School Tour Guide</h3>
+            <p class="text-gray-600 mb-4">Welcome! Here are key locations for your visit:</p>
+            <ul class="list-disc list-inside space-y-2 text-sm text-gray-700">
+                <li>**Main Office:** Check-in and visitor badges. (Building A, Ground Floor)</li>
+                <li>**Parent Meeting Room:** For scheduled consultations. (Library Annex, 2nd Floor)</li>
+                <li>**Student Drop-off/Pickup:** Designated zone C, accessible via North Gate.</li>
+                <li>**Canteen/Cafeteria:** Located near the Gymnasium.</li>
+            </ul>
+            <p class="mt-4 text-sm text-blue-600 font-medium">Please ask at the Main Office for a printed map.</p>
+        </div>
+
+        <div id="form-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hidden">
+            
+            <button id="btn-back-to-choice" onclick="goBackToChoice()" 
+                    class="mb-4 flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition duration-150">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                SUBIRA INYUMA
+            </button>
+            
+            <h3 id="form-title" class="text-xl font-semibold mb-4 text-gray-700"></h3>
+
+            <input type="text" id="search-input" placeholder="ANDIKA AMAZINA Y'UMWANA..." oninput="searchStudents()"
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4 transition duration-150 ease-in-out">
+
+            <div id="student-results" class="student-list hidden max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4"></div>
+            <div id="parent-meeting-section" class="hidden border border-green-100 bg-green-50 rounded-lg p-4 mb-4 space-y-3">
+                <p class="font-semibold text-gray-700">Parent / Guardian details</p>
+                <input id="parent-name" type="text" maxlength="120" autocomplete="name" required oninput="validateSubmitState()" placeholder="Parent full name" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <select id="parent-relationship" required onchange="validateSubmitState()" class="w-full border rounded-lg px-3 py-2 bg-white">
+                    <option value="">Select relationship</option><option value="father">Father</option><option value="mother">Mother</option><option value="brother">Brother</option><option value="sister">Sister</option><option value="other">Other</option>
+                </select>
+                <label for="parent-phone" class="block text-sm font-medium text-gray-700">Phone number <span class="text-red-600" aria-hidden="true">*</span></label>
+                <input id="parent-phone" type="tel" maxlength="30" autocomplete="tel" required aria-required="true" oninput="validateSubmitState()" placeholder="Enter phone number (required)" class="w-full border rounded-lg px-3 py-2 bg-white">
+            </div>
+            <div id="movement-section" class="hidden border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
+                <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">UFITE IKINYABIZIGA</label>
+                <select id="movement-method" onchange="onMovementMethodChange()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">HITAMO</option>
+                    <option value="with_car">YEGO</option>
+                    <option value="without_car">HOYA</option>
+                </select>
+                <div id="plate-number-wrap" class="hidden mt-3">
+                    <label for="plate-number" class="block text-sm font-semibold text-gray-700 mb-1">ANDIKA PURAKE YACYO</label>
+                    <input type="text" id="plate-number" oninput="validateSubmitState()" placeholder="e.g. RAE 123A" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <p id="plate-error" class="hidden text-sm text-red-600 mt-1"></p>
+                </div>
+            </div>
+
+            <button id="submit-btn" onclick="submitVisit()" disabled
+                    class="w-full py-3 px-6 bg-gray-400 text-white font-medium rounded-lg transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                </button>
+
+            <p id="feedback" class="mt-4 text-sm text-center font-medium"></p>
+        </div>
+    </div>
+
+    <div id="parent-meeting-code-modal" class="hidden fixed inset-0 z-[140] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="parent-code-title">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeParentMeetingCodeModal()"></div>
+        <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700"><i class="fas fa-lock text-xl"></i></div>
+            <h3 id="parent-code-title" class="text-center text-xl font-bold text-gray-900">INAMA Y'ABABYEYI</h3>
+            <p class="mt-2 text-center text-sm text-gray-600">Enter the 4-digit project access code to continue.</p>
+            <form id="parent-meeting-code-form" class="mt-5" onsubmit="unlockParentMeeting(event)">
+                <label for="parent-meeting-code" class="mb-2 block text-sm font-semibold text-gray-700">4-digit access code</label>
+                <input id="parent-meeting-code" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required aria-describedby="parent-meeting-code-error" placeholder="••••" class="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-2xl tracking-[0.6em] focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100">
+                <p id="parent-meeting-code-error" class="mt-2 min-h-5 text-sm text-red-600" role="alert"></p>
+                <button id="parent-meeting-code-submit" type="submit" class="mt-3 w-full rounded-xl bg-green-600 px-4 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-wait disabled:opacity-60">Continue</button>
+                <button type="button" onclick="closeParentMeetingCodeModal()" class="mt-2 w-full rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="tour-overlay" class="hidden"></div>
+    <div id="tour-popup" class="hidden">
+        <p id="tour-text" class="text-gray-700 mb-4 font-medium"></p>
+        <div class="flex justify-end space-x-2">
+            <button id="tour-end-btn" onclick="endTour()" class="py-2 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg text-sm transition duration-150 ease-in-out">
+                End Tour
+            </button>
+            <button id="tour-next-btn" onclick="nextTourStep()" class="py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg text-sm transition duration-150 ease-in-out">
+                Next
+            </button>
+        </div>
+    </div>
+
+    <div id="student-ticket-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center p-4" role="status" aria-live="polite" aria-labelledby="student-ticket-name">
+        <div class="absolute inset-0 bg-slate-950/65 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-sm rounded-3xl bg-white px-7 py-8 text-center shadow-2xl">
+            <div class="relative mx-auto mb-6 flex h-32 w-32 items-center justify-center">
+                <div class="ticket-ring absolute inset-0 rounded-full border-[5px] border-emerald-100 border-t-emerald-600 border-r-emerald-400"></div>
+                <div class="ticket-icon-pop flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <i class="fas fa-ticket-alt text-4xl" aria-hidden="true"></i>
+                </div>
+            </div>
+            <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">MYSCHOOL · Ticket</p>
+            <h2 id="student-ticket-name" class="mt-3 break-words text-2xl font-extrabold text-slate-900"></h2>
+            <p class="mt-2 text-sm text-slate-500">Your request has been recorded.</p>
+        </div>
+    </div>
+
+    <div id="donation-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" onclick="closeDonationModal()"></div>
+        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Murakoze gukoresha system ya MYSCHOOL</h3>
+            <p class="text-sm text-gray-700 leading-6">
+                IHFO NI UMURYANGO UFASHA ABANA BATISHOBOYE UBISHYURIRA AMAFARANGA Y'ISHURI NIBINDI BAKENEYE .
+            </p>
+            <p class="text-sm text-gray-700 leading-6"><a href="https://iteme-charity-family.vercel.app/" class="text-blue-700 font-semibold underline">Menya benshi kw'iteme</a></p>
+            <p class="text-sm text-gray-700 leading-6 mt-2">
+                USHAKA GUTANGA UMUSANZU MUTO KANDI UKABA WAFASHA ABANA GUKOMEZE KWIGA, KANDA LINK IRIMUTSI
+            </p>
+
+            <div class="mt-4">
+                <a href="javascript:void(0)" onclick="openSupportPopup()" class="text-blue-700 font-semibold underline">SHYIGIKIRA UMURYANGO</a>
+            </div> <br><br>
+             <button onclick="openProductsModal()" class="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition duration-150 ease-in-out shadow-md hover:shadow-lg">
+                    <i class="fas fa-shopping-bag mr-2"></i> IBICIRO MURI CATINE
+                </button>
+
+            <div class="mt-5 flex gap-3">
+                <button onclick="closeDonationModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="support-popup" class="hidden fixed inset-0 z-[121] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" onclick="closeSupportPopup()"></div>
+        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-3">GUFASHA</h3>
+            <div class="mt-2">
+                <label for="donation-amount" class="block text-sm font-semibold text-gray-700 mb-1">AMAFARANGA WIFUZA GUTANGA</label>
+                <input id="donation-amount" type="number" min="1" step="1" placeholder="Enter amount" oninput="updateDonationLinkPreview()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div class="mt-3">
+                <label for="donation-company" class="block text-sm font-semibold text-gray-700 mb-1">UMURONGO</label>
+                <select id="donation-company" onchange="updateDonationLinkPreview()" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="airtel">Airtel</option>
+                    <option value="mtn">MTN</option>
+                </select>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-700">NIMERO Y'ITEME : 0795802380</p>
+                <p class="text-sm text-gray-700">IBARUYE KURI: Mudasubwa  Isimbi Leilla</p>
+                <button onclick="copyPhoneNumber()" class="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm">KOPIYA NIMERO</button>
+                 <!-- <a id="donation-ussd-link" href="javascript:void(0)" class="text-blue-600 font-medium mt-2 block"></a> -->
+            </div>
+            <p id="donation-ussd-preview" class="mt-3 text-xs text-gray-500"></p>
+
+            <div class="mt-5 flex gap-3">
+                <button onclick="startDonationUSSD()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">OHEREZA</button>
+                <button onclick="closeSupportPopup()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-8 left-1/2 hidden z-[130] px-5 py-3 rounded-lg shadow-2xl font-semibold text-white whitespace-nowrap"></div>
+
+    <!-- Products Modal -->
+    <div id="products-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" onclick="closeProductsModal()"></div>
+        <div class="relative w-full max-w-md rounded-2xl bg-white shadow-2xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Products</h3>
+            <div id="products-list" class="space-y-2 max-h-72 overflow-y-auto">
+                <p class="text-gray-400 text-sm">Loading...</p>
+            </div>
+            <button onclick="closeProductsModal()" class="mt-5 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Service Worker registration for offline sync
+        // ── IndexedDB helpers ──────────────────────────────────────────
+        const DB_NAME = 'myschool_offline';
+        let _db = null;
+
+        function openDB() {
+            if (_db) return Promise.resolve(_db);
+            return new Promise((res, rej) => {
+                const req = indexedDB.open(DB_NAME, 2);
+                req.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('students'))
+                        db.createObjectStore('students', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('visit_queue'))
+                        db.createObjectStore('visit_queue', { autoIncrement: true });
+                    if (!db.objectStoreNames.contains('products'))
+                        db.createObjectStore('products', { keyPath: 'product_id' });
+                };
+                req.onsuccess = e => { _db = e.target.result; res(_db); };
+                req.onerror  = () => rej(req.error);
+            });
+        }
+
+        async function saveStudentsToDB(students) {
+            const db = await openDB();
+            const tx = db.transaction('students', 'readwrite');
+            const store = tx.objectStore('students');
+            store.clear();
+            students.forEach(s => store.put(s));
+        }
+
+        async function searchStudentsFromDB(query) {
+            const db = await openDB();
+            return new Promise(res => {
+                const results = [];
+                const tx = db.transaction('students', 'readonly');
+                tx.objectStore('students').openCursor().onsuccess = e => {
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        if (cursor.value.student_name.toLowerCase().includes(query.toLowerCase()))
+                            results.push(cursor.value);
+                        cursor.continue();
+                    } else res(results);
+                };
+            });
+        }
+
+        async function queueVisit(payload) {
+            const db = await openDB();
+            const tx = db.transaction('visit_queue', 'readwrite');
+            tx.objectStore('visit_queue').add(payload);
+        }
+
+        async function getVisitQueue() {
+            const db = await openDB();
+            return new Promise(res => {
+                const items = [];
+                const tx = db.transaction('visit_queue', 'readonly');
+                tx.objectStore('visit_queue').openCursor().onsuccess = e => {
+                    const cursor = e.target.result;
+                    if (cursor) { items.push({ key: cursor.key, value: cursor.value }); cursor.continue(); }
+                    else res(items);
+                };
+            });
+        }
+
+        async function removeFromQueue(key) {
+            const db = await openDB();
+            const tx = db.transaction('visit_queue', 'readwrite');
+            tx.objectStore('visit_queue').delete(key);
+        }
+
+        async function prefetchStudents() {
+            try {
+                const res = await fetch(`/${schoolname}/admin/students`);
+                const data = await res.json();
+                if (data.status === 'success') await saveStudentsToDB(data.students);
+            } catch { /* offline on first load */ }
+        }
+
+        async function flushVisitQueue() {
+            const queue = await getVisitQueue();
+            if (!queue.length) return;
+            for (const { key, value } of queue) {
+                try {
+                    const fd = new FormData();
+                    Object.entries(value).forEach(([k, v]) => fd.append(k, v));
+                    const res = await fetch(`/${schoolname}/visits/add`, { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.status === 'success' || data.message === 'Already recorded today')
+                        await removeFromQueue(key);
+                } catch { break; }
+            }
+            const remaining = await getVisitQueue();
+            if (remaining.length < queue.length)
+                showToast(`Synced ${queue.length - remaining.length} queued visit(s).`, 'success');
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(() => {
+                    navigator.serviceWorker.addEventListener('message', e => {
+                        if (e.data && e.data.type === 'flush-visit-queue') flushVisitQueue();
+                    });
+                }).catch(() => {});
+        }
+
+        window.addEventListener('online', flushVisitQueue);
+
+        async function openProductsModal() {
+            document.getElementById('products-modal').classList.remove('hidden');
+            const list = document.getElementById('products-list');
+            list.innerHTML = '<p class="text-gray-400 text-sm">Loading...</p>';
+            const db = await openDB();
+
+            // Read cached products
+            const cached = await new Promise(res => {
+                const items = [];
+                const tx = db.transaction('products', 'readonly');
+                tx.objectStore('products').openCursor().onsuccess = e => {
+                    const cursor = e.target.result;
+                    if (cursor) { items.push(cursor.value); cursor.continue(); }
+                    else res(items);
+                };
+            });
+            if (cached.length) renderProducts(cached, list);
+
+            try {
+                const res = await fetch(`/${schoolname}/products`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    // Save fresh data in a new transaction
+                    await new Promise(res => {
+                        const tx = db.transaction('products', 'readwrite');
+                        const store = tx.objectStore('products');
+                        store.clear();
+                        data.products.forEach(p => store.put(p));
+                        tx.oncomplete = res;
+                    });
+                    renderProducts(data.products, list);
+                }
+            } catch {
+                if (!cached.length) list.innerHTML = '<p class="text-red-500 text-sm">Offline. No cached products.</p>';
+            }
+        }
+
+        function renderProducts(products, list) {
+            if (!products.length) { list.innerHTML = '<p class="text-gray-400 text-sm">No products available.</p>'; return; }
+            list.innerHTML = products.map(p =>
+                `<div class="flex justify-between items-center border-b py-2">
+                    <span class="font-medium text-gray-800">${p.product_name}</span>
+                    <span class="text-indigo-600 font-bold">${p.product_price} RWF</span>
+                </div>`
+            ).join('');
+        }
+
+        function closeProductsModal() {
+            document.getElementById('products-modal').classList.add('hidden');
+        }
+    </script>
+
+    <script>
+        let selectedStudentId = null;
+        let tourStep = 0; // 0: Tour is inactive, 1+: Current step of the tour
+        let toastTimeout = null;
+        let schoolname = "{{ school_name }}";
+        let schoolCode = "{{ school_code }}";
+        const isImpactfulSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('impactful technical high school');
+        const isTargetImpactfulSchool = (schoolname || '').trim().replace(/\\s+/g, ' ').toLowerCase() === 'impactful technical high school kigali';
+        let selectedStudentName = '';
+        const donationUSSDTemplates = {
+            airtel: "*182*8*1*0795802380*{amount}#",
+            mtn: "*182*8*1*0795802380*{amount}#"
+        };
+
+        // --- DOM Elements ---
+        const mainContent = document.getElementById('main-content');
+        const logoPage = document.getElementById('logo-page');
+        const poweredByPage = document.getElementById('powered-by-page');
+        const choiceStep = document.getElementById('choice-step');
+        const formStep = document.getElementById('form-step');
+        const tourGuideStep = document.getElementById('tour-guide-step');
+        
+        const tourOverlay = document.getElementById('tour-overlay');
+        const tourPopup = document.getElementById('tour-popup');
+        const tourText = document.getElementById('tour-text');
+        const tourNextBtn = document.getElementById('tour-next-btn');
+        const tourEndBtn = document.getElementById('tour-end-btn');
+        // if(isImpactfulSchool) {
+        //     let favicon_link = document.querySelector("link[rel~='icon']");
+        //     favicon_link.href = "./static/sos.webp";
+        // }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.remove('hidden', 'toast-exit', 'bg-red-500', 'bg-green-600');
+            toast.classList.add(type === 'error' ? 'bg-red-500' : 'bg-green-600', 'toast-enter');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.classList.add('hidden'), 350);
+            }, 3000);
+        }
+
+        // --- Tour Guide Steps Definition ---
+        const tourSteps = [
+            { id: 'btn-start-tour', text: "Welcome to the Parent Portal! We will guide you through the process.", placement: 'right' }, 
+            { id: 'btn-visit-day', text: "Step 1: Choose 'Visit Day' if you need to announce a future visit and check your child out.", placement: 'right' }, 
+            { id: 'btn-parent-meeting', text: "Step 2: Choose 'Parent Meeting' to confirm attendance for a scheduled consultation with a teacher.", placement: 'right' }, 
+            { id: 'btn-tour-guide', text: "Step 3: This option displays useful campus location information, like the Main Office.", placement: 'right' }, 
+            { id: 'btn-visit-day', text: "Let's try creating a Visit Day request. Click the 'Visit Day' button now.", placement: 'right', action: 'click' }, 
+            { id: 'search-input', text: "Step 5: Type your child's name here. The system will search your registered students.", placement: 'bottom', action: 'input' }, 
+            { id: 'btn-back-to-choice', text: "Step 6: Use 'Return to Selection' to go back and change your choice or start over.", placement: 'bottom', action: 'final' } 
+        ];
+
+        function highlightElement(id) {
+            // Remove highlight from all elements
+            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+            
+            // Add highlight to the specific element
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('tour-highlight');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        function movePopupToElement(id, placement = 'right') {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            const rect = el.getBoundingClientRect();
+            const popupWidth = tourPopup.offsetWidth;
+            const popupHeight = tourPopup.offsetHeight;
+            const padding = 20; // Space between element and popup
+
+            let popupX;
+            let popupY;
+
+            if (placement === 'right') {
+                popupX = rect.right + padding + popupWidth / 2;
+                popupY = rect.top + rect.height / 2;
+            } else if (placement === 'bottom') {
+                popupX = rect.left + rect.width / 2;
+                popupY = rect.bottom + padding + popupHeight / 2;
+            } else if (placement === 'top') {
+                popupX = rect.left + rect.width / 2;
+                popupY = rect.top - padding - popupHeight / 2;
+            } else {
+                popupX = rect.left + rect.width / 2;
+                popupY = rect.top + rect.height / 2;
+            }
+            
+            // Clamp X position to screen bounds 
+            popupX = Math.max(popupWidth / 2 + 10, Math.min(window.innerWidth - popupWidth / 2 - 10, popupX));
+            // Clamp Y position to screen bounds
+            popupY = Math.max(popupHeight / 2 + 10, Math.min(window.innerHeight - popupHeight / 2 - 10, popupY));
+
+
+            // Apply the new position
+            tourPopup.style.left = `${popupX}px`;
+            tourPopup.style.top = `${popupY}px`;
+            tourPopup.style.transform = `translate(-50%, -50%)`;
+        }
+
+        function startTour() {
+            tourStep = 1;
+            choiceStep.classList.remove('hidden'); 
+            formStep.classList.add('hidden');
+            tourGuideStep.classList.add('hidden');
+            
+            tourOverlay.classList.remove('hidden');
+            tourPopup.classList.remove('hidden');
+            
+            nextTourStep(); // Start the first step
+        }
+        
+        function endTour() {
+            tourStep = 0;
+            tourOverlay.classList.add('hidden');
+            tourPopup.classList.add('hidden');
+            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+            
+            // If user left the form incomplete, return to the start screen
+            goBackToChoice();
+        }
+
+        function nextTourStep() {
+            if (tourStep >= tourSteps.length) {
+                tourText.innerText = "Tour complete! You now know how to navigate the portal.";
+                tourNextBtn.classList.add('hidden');
+                highlightElement(null); // Clear highlight
+                tourStep++;
+                return;
+            }
+            
+            const currentStep = tourSteps[tourStep];
+            
+            // 1. Update text and button state
+            tourText.innerText = currentStep.text;
+            tourNextBtn.classList.remove('hidden');
+            
+            // 2. Handle highlighting and positioning
+            highlightElement(currentStep.id);
+            // Must wait a tick for the popup width/height to be correct for positioning
+            setTimeout(() => movePopupToElement(currentStep.id, currentStep.placement), 50); 
+            
+            // 3. Handle action/user interaction
+            if (currentStep.action === 'click') {
+                tourNextBtn.classList.add('hidden');
+                const targetEl = document.getElementById(currentStep.id);
+                
+                // Temporarily overwrite the click handler to advance the tour
+                const originalOnclick = targetEl.onclick;
+                targetEl.onclick = function() {
+                    selectType(targetEl.id === 'btn-visit-day' ? 'visit_day' : 'parent_meeting');
+                    setTimeout(() => nextTourStep(), 100); 
+                    // Restore original function logic after the click
+                    targetEl.onclick = originalOnclick;
+                };
+            } else if (currentStep.action === 'input') {
+                tourNextBtn.classList.add('hidden');
+                tourText.innerHTML += "<p class='mt-2 text-sm text-red-600 font-bold'>(Please type 'Jane Doe' and click one of the search results to continue.)</p>";
+                
+                // Allow the user to continue after selecting a student (handled by selectStudent)
+            } else if (currentStep.action === 'final') {
+                tourNextBtn.innerText = "Finish";
+                tourStep++; // Go past the last step to trigger completion text on next click
+            } else {
+                // Regular progression
+                tourStep++;
+            }
+        }
+        
+        // --- Portal Logic ---
+
+        window.onload = function() {
+            // Show the portal after the single loading screen. The old second splash
+            // screen was removed from the HTML, so do not access poweredByPage here.
+            setTimeout(() => {
+                logoPage.classList.add('opacity-0');
+                setTimeout(() => {
+                    logoPage.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    mainContent.classList.add('animate-fade-in');
+
+                    // These background tasks must not prevent the portal from appearing.
+                    Promise.resolve().then(() => prefetchStudents()).catch(error => {
+                        console.warn('Student prefetch failed:', error);
+                    });
+                    Promise.resolve().then(() => flushVisitQueue()).catch(error => {
+                        console.warn('Visit queue sync failed:', error);
+                    });
+                }, 500);
+            }, 1000);
+        };
+
+        function goBackToChoice() {
+            // Stop the tour if running
+            if (tourStep > 0) endTour(); 
+
+            // Hide all sub-steps
+            formStep.classList.add('hidden');
+            tourGuideStep.classList.add('hidden');
+            
+            // Show the main selection step
+            choiceStep.classList.remove('hidden');
+
+            // Reset form state (cleanup)
+            selectedType = '';
+            selectedStudentId = null;
+            document.getElementById('search-input').value = '';
+            document.getElementById('student-results').innerHTML = '';
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('movement-method').value = '';
+            document.getElementById('plate-number').value = '';
+            document.getElementById('plate-number-wrap').classList.add('hidden');
+            document.getElementById('parent-name').value = '';
+            document.getElementById('parent-relationship').value = '';
+            document.getElementById('parent-phone').value = '';
+            document.getElementById('parent-phone').setCustomValidity('');
+            document.getElementById('parent-meeting-section').classList.add('hidden');
+            if (isImpactfulSchool) {
+                document.getElementById('movement-section').classList.remove('hidden');
+            } else {
+                document.getElementById('movement-section').classList.add('hidden');
+            }
+        }
+
+        function showTourGuide() {
+            // Stop the tour if running
+            if (tourStep > 0) endTour(); 
+            
+            choiceStep.classList.add('hidden');
+            tourGuideStep.classList.remove('hidden');
+        }
+
+        let parentMeetingUnlocked = false;
+
+        function openParentMeetingCodeModal() {
+            const modal = document.getElementById('parent-meeting-code-modal');
+            const input = document.getElementById('parent-meeting-code');
+            document.getElementById('parent-meeting-code-error').textContent = '';
+            input.value = '';
+            modal.classList.remove('hidden');
+            setTimeout(() => input.focus(), 30);
+        }
+
+        function closeParentMeetingCodeModal() {
+            document.getElementById('parent-meeting-code-modal').classList.add('hidden');
+        }
+
+        async function unlockParentMeeting(event) {
+            event.preventDefault();
+            const input = document.getElementById('parent-meeting-code');
+            const error = document.getElementById('parent-meeting-code-error');
+            const button = document.getElementById('parent-meeting-code-submit');
+            const code = input.value.trim();
+            if (!/^[0-9]{4}$/.test(code)) {
+                error.textContent = 'Enter exactly four digits.';
+                input.focus();
+                return;
+            }
+            button.disabled = true;
+            button.textContent = 'Checking…';
+            error.textContent = '';
+            try {
+                const response = await fetch('/' + encodeURIComponent(schoolname) + '/parent-meeting/unlock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: new URLSearchParams({ code }),
+                    credentials: 'same-origin'
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || result.status !== 'success') {
+                    error.textContent = result.detail || 'Incorrect code. Please try again.';
+                    input.value = '';
+                    input.focus();
+                    return;
+                }
+                parentMeetingUnlocked = true;
+                closeParentMeetingCodeModal();
+                selectType('parent_meeting');
+            } catch (err) {
+                error.textContent = 'Could not verify the code. Check your connection and retry.';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Continue';
+            }
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !document.getElementById('parent-meeting-code-modal').classList.contains('hidden')) {
+                closeParentMeetingCodeModal();
+            }
+        });
+
+        function selectType(type) {
+            if (type === 'parent_meeting' && !parentMeetingUnlocked) {
+                openParentMeetingCodeModal();
+                return;
+            }
+            // If tour is running and this is not step 4, stop the tour
+            if (tourStep > 0 && tourStep !== 4) endTour();
+            
+            selectedType = type;
+            choiceStep.classList.add('hidden');
+            formStep.classList.remove('hidden');
+            
+            const formTitle = document.getElementById('form-title');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (type === 'visit_day') {
+                formTitle.innerText = "Visit Day ";
+                submitBtn.innerText = "OHEREZA";
+                submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            } else {
+                formTitle.innerText = "INAMA Y'ABABYEYI";
+                submitBtn.innerText = "OHEREZA";
+                submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+
+            document.getElementById('movement-method').value = '';
+            document.getElementById('plate-number').value = '';
+            document.getElementById('plate-number-wrap').classList.add('hidden');
+            document.getElementById('parent-name').value = '';
+            document.getElementById('parent-relationship').value = '';
+            document.getElementById('parent-phone').value = '';
+            document.getElementById('parent-meeting-section').classList.toggle('hidden', type !== 'parent_meeting');
+            if (isImpactfulSchool) {
+                document.getElementById('movement-section').classList.remove('hidden');
+            } else {
+                document.getElementById('movement-section').classList.add('hidden');
+            }
+            validateSubmitState();
+            
+            // Highlight the search input if the tour is active (Step 5)
+            if (tourStep === 5) {
+                highlightElement('search-input');
+                movePopupToElement('search-input', 'bottom');
+            }
+        }
+
+        async function searchStudents() {
+    const query = document.getElementById('search-input').value.trim();
+    const resultsDiv = document.getElementById('student-results');
+    resultsDiv.innerHTML = '';
+    selectedStudentId = null;
+    selectedStudentName = '';
+    validateSubmitState();
+
+    // Hide the results card only when the search input is empty.
+    if (!query) {
+        resultsDiv.classList.add('hidden');
+        return;
+    }
+    resultsDiv.classList.remove('hidden');
+
+    let data = [];
+    let isOffline = false;
+    try {
+        const res = await fetch(`/${schoolname}/students/search?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error('Student search failed');
+        data = await res.json();
+        if (data.length) await saveStudentsToDB(data);
+    } catch {
+        isOffline = true;
+        data = await searchStudentsFromDB(query);
+    }
+
+    // Ignore stale results if the user has changed the query while this request was running.
+    if (document.getElementById('search-input').value.trim() !== query || selectedStudentId) return;
+
+    if (isOffline) {
+        const offlineLabel = document.createElement('p');
+        offlineLabel.className = 'px-3 pt-2 text-xs text-amber-500';
+        offlineLabel.textContent = 'Offline — showing cached results';
+        resultsDiv.appendChild(offlineLabel);
+    }
+
+    if (!data.length) {
+        const noResults = document.createElement('p');
+        noResults.className = 'p-3 text-sm text-gray-500';
+        noResults.textContent = 'No students found. Keep typing or check the spelling.';
+        resultsDiv.appendChild(noResults);
+        return;
+    }
+
+    data.forEach(student => {
+        const div = document.createElement('div');
+        div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
+        div.setAttribute('data-student-id', student.id);
+        const name = document.createElement('span');
+        name.className = 'font-medium';
+        name.textContent = student.student_name || '';
+        const className = document.createElement('span');
+        className.className = 'text-sm text-gray-500';
+        className.textContent = ` (${student.class_name || ''})`;
+        const studentId = document.createElement('span');
+        studentId.className = 'ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800';
+        studentId.textContent = `Student ID: ${student.id}`;
+        div.append(name, className, studentId);
+        div.onclick = () => selectStudent(student.id, div);
+        resultsDiv.appendChild(div);
+    });
+}
+
+        function selectStudent(id, element) {
+            selectedStudentId = id;
+            selectedStudentName = element.querySelector('.font-medium')?.textContent?.trim() || '';
+
+            // Replace the search query with the chosen student's full name.
+            const searchInput = document.getElementById('search-input');
+            searchInput.value = selectedStudentName;
+            searchInput.setAttribute('aria-label', 'Selected student: ' + selectedStudentName);
+
+            // Close the results list so only the selected student remains shown in the input.
+            const resultsDiv = document.getElementById('student-results');
+            resultsDiv.innerHTML = '';
+            resultsDiv.classList.add('hidden');
+
+            validateSubmitState();
+            if (tourStep === 5) { tourStep++; nextTourStep(); }
+        }
+
+        async function submitVisit() {
+    if(!selectedStudentId || !selectedType) return;
+
+    const feedbackEl = document.getElementById('feedback');
+    const submitBtn = document.getElementById('submit-btn');
+    const originalText = submitBtn.innerText;
+
+    submitBtn.innerText = 'Processing...';
+    submitBtn.disabled = true;
+    submitBtn.classList.add('animate-pulse');
+    feedbackEl.innerText = '';
+
+    const payload = { student_id: selectedStudentId, visit_type: selectedType };
+    if (selectedType === 'parent_meeting') {
+        payload.parent_name = document.getElementById('parent-name').value.trim();
+        payload.parent_relationship = document.getElementById('parent-relationship').value;
+        payload.parent_phone = document.getElementById('parent-phone').value.trim();
+        if (!payload.parent_name || !payload.parent_relationship || !payload.parent_phone) {
+            feedbackEl.innerText = 'Enter the parent name, select their relationship, and provide a phone number.';
+            feedbackEl.classList.remove('text-green-600'); feedbackEl.classList.add('text-red-500');
+            submitBtn.innerText = originalText; submitBtn.disabled = false; submitBtn.classList.remove('animate-pulse'); return;
+        }
+    }
+    if (isImpactfulSchool) {
+        const movementMethod = document.getElementById('movement-method').value;
+        const plateNumber = document.getElementById('plate-number').value.trim();
+        if (movementMethod === 'with_car' && plateNumber && !isValidPlateNumber(plateNumber)) {
+            feedbackEl.innerText = 'Plate number must be in the format "RAx 123A" (e.g. RAE 123A).';
+            feedbackEl.classList.remove('text-green-600');
+            feedbackEl.classList.add('text-red-500');
+            submitBtn.innerText = originalText;
+            submitBtn.classList.remove('animate-pulse');
+            submitBtn.disabled = false;
+            return;
+        }
+        payload.movement_method = movementMethod;
+        payload.plate_number = plateNumber;
+    }
+
+    let shouldShowDonationModal = false;
+    let shouldShowTicketPopup = false;
+    const ticketStudentName = selectedStudentName || document.querySelector('[data-student-id="' + selectedStudentId + '"] .font-medium')?.textContent?.trim() || '';
+    let wentOffline = false;
+    let submissionFailed = false;
+
+    try {
+        const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => fd.append(k, v));
+        const res = await fetch(`/${schoolname}/visits/add`, { method: 'POST', body: fd });
+        let data;
+        try {
+            data = await res.json();
+        } catch (parseError) {
+            throw new Error(`Server returned an invalid response (HTTP ${res.status}). Please try again or contact the administrator.`);
+        }
+
+        if (!res.ok && data.status !== 'error') {
+            throw new Error(data.detail || `Request failed with HTTP ${res.status}.`);
+        }
+
+        if (data.status === 'success' || data.message === 'Already recorded today') {
+            feedbackEl.innerText = 'Success! Your request has been recorded.';
+            feedbackEl.classList.remove('text-red-500');
+            feedbackEl.classList.add('text-green-600');
+            shouldShowDonationModal = isImpactfulSchool;
+            shouldShowTicketPopup = isTargetImpactfulSchool;
+        } else {
+            feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
+            feedbackEl.classList.remove('text-green-600');
+            feedbackEl.classList.add('text-red-500');
+        }
+    } catch (error) {
+        // Only queue on likely network/offline failures. Server/database errors must be visible,
+        // not silently queued as if the visit will sync later.
+        if (!navigator.onLine || error instanceof TypeError) {
+            await queueVisit(payload);
+            wentOffline = true;
+            feedbackEl.innerText = 'Connection unavailable. Your visit is queued and will sync when online.';
+            feedbackEl.classList.remove('text-red-500');
+            feedbackEl.classList.add('text-amber-500');
+            submitBtn.innerText = 'Sending...';
+        } else {
+            feedbackEl.innerText = error.message || 'Submission failed. Please try again.';
+            feedbackEl.classList.remove('text-green-600', 'text-amber-500');
+            feedbackEl.classList.add('text-red-500');
+            submitBtn.disabled = false;
+            // Preserve entered parent details and selected student so the user can retry.
+            submitBtn.innerText = originalText;
+            submitBtn.classList.remove('animate-pulse');
+            submissionFailed = true;
+        }
+    } finally {
