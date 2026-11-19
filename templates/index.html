@@ -89,7 +89,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
 
-    <div id="logo-page" class="fixed inset-0 flex items-center justify-center bg-white z-50 transition-opacity duration-500">
+    <div id="logo-page" class="hidden fixed inset-0 flex items-center justify-center bg-white z-50 transition-opacity duration-500">
         <h1 class="portal-logo-text">
             <span class="text-blue-600">SOS</span> &nbsp; | &nbsp;
              <span class="text-blue-600" style="text-transform:uppercase ;">iteme charity family</span>
@@ -107,7 +107,7 @@
         <p class="absolute bottom-6 text-sm text-gray-500">MYSCHOOL <span class="mx-1">·</span> powered by <span class="powered-logo">1percent</span></p>
     </div>
 
-    <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg hidden">
+    <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg">
         <header class="mb-8 text-center">
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">MYSCHOOL</h1>
             <p class="mt-2 text-sm font-medium text-green-700">Parent Portal <span class="mx-1 text-gray-300">·</span> powered by <span class="font-bold">1percent</span></p>
@@ -621,34 +621,16 @@
         
         // --- Portal Logic ---
 
-        window.onload = function() {
-            const logoDuration = 1000; 
-            const poweredByDuration = 1000; 
+        // The portal is rendered immediately. Do not gate it behind window.onload,
+        // external CDN requests, or timed splash-screen transitions.
+        // Optional background prefetch runs after the page is already usable.
+        try {
+            if (typeof prefetchStudents === 'function') prefetchStudents();
+            if (typeof flushVisitQueue === 'function') flushVisitQueue();
+        } catch (error) {
+            console.warn('Background startup tasks could not run:', error);
+        }
 
-            // Simulating app loading sequence with splash screens
-            setTimeout(() => {
-                logoPage.classList.add('opacity-0');
-                setTimeout(() => {
-                    logoPage.classList.add('hidden');
-                    poweredByPage.classList.remove('hidden');
-                    setTimeout(() => {
-                        poweredByPage.classList.remove('opacity-0');
-                    }, 10); 
-                    
-                    setTimeout(() => {
-                        poweredByPage.classList.add('opacity-0');
-                        
-                        setTimeout(() => {
-                            poweredByPage.classList.add('hidden');
-                            mainContent.classList.remove('hidden');
-                            mainContent.classList.add('animate-fade-in');
-                            prefetchStudents();
-                            flushVisitQueue();
-                        }, 500); 
-                    }, poweredByDuration); 
-                }, 500); 
-            }, logoDuration); 
-        };
 
         function goBackToChoice() {
             // Stop the tour if running
