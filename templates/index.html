@@ -12,7 +12,8 @@
     <meta property="og:title" content="MYSCHOOL | Parent &amp; Guardian Portal">
     <meta property="og:description" content="Access school parent services, record parent meetings, and manage school visit information.">
     <link id="favicon" rel="icon" href="/static/favicon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/parent-portal.css?v=4">
+    <!-- The portal uses local styles; no third-party CSS/JS is required to render it. -->
     <!-- Non-blocking: this is a third-party CDN, so a stalled request here must not
          hold up rendering or the portal's own scripts. -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
@@ -405,12 +406,18 @@
         }
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js')
-                .then(() => {
+            navigator.serviceWorker.register('/static/sw.js', { updateViaCache: 'none' })
+                .then(registration => {
+                    // Check for a new worker on every visit so clients leave obsolete
+                    // cached portal shells behind without requiring a manual cache clear.
+                    registration.update().catch(() => {});
                     navigator.serviceWorker.addEventListener('message', e => {
                         if (e.data && e.data.type === 'flush-visit-queue') flushVisitQueue();
                     });
-                }).catch(() => {});
+                }).catch(error => {
+                    // Service-worker failure must never block the visible portal.
+                    console.warn('Offline support unavailable:', error);
+                });
         }
 
         window.addEventListener('online', flushVisitQueue);
