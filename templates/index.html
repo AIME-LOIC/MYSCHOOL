@@ -3,22 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MYSCHOOL | Parent &amp; Guardian Portal</title>
-    <meta name="description" content="MYSCHOOL parent and guardian portal for school visits, parent meetings, and communication with your school.">
-    <meta name="robots" content="noindex, follow">
-    <meta name="theme-color" content="#176b45">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="MYSCHOOL">
-    <meta property="og:title" content="MYSCHOOL | Parent &amp; Guardian Portal">
-    <meta property="og:description" content="Access school parent services, record parent meetings, and manage school visit information.">
+    <title>MYSCHOOL | Parent Portal</title>
     <link id="favicon" rel="icon" href="/static/favicon.png">
-    <link rel="stylesheet" href="/static/parent-portal.css?v=4">
-    <!-- The portal uses local styles; no third-party CSS/JS is required to render it. -->
-    <!-- Non-blocking: this is a third-party CDN, so a stalled request here must not
-         hold up rendering or the portal's own scripts. -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
-          media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></noscript>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <meta name="google-site-verification" content="ZfOqpsVV7Mv1-PxcKiUDQBBONWc1SKmeTi2y2OnZ_RY" />
     <style>
         /* Custom Keyframes and Styles */
@@ -89,11 +77,6 @@
         }
         .toast-enter { animation: slideUp 0.35s ease-out forwards; }
         .toast-exit { animation: slideDown 0.35s ease-out forwards; }
-        @keyframes ticket-ring-spin { to { transform: rotate(360deg); } }
-        @keyframes ticket-pop-in { 0% { opacity: 0; transform: scale(.72); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
-        .ticket-ring { animation: ticket-ring-spin 1.15s linear infinite; }
-        .ticket-icon-pop { animation: ticket-pop-in .45s ease-out both; }
-        @media (prefers-reduced-motion: reduce) { .ticket-ring { animation-duration: 4s; } .ticket-icon-pop { animation: none; } }
                 /* Logo image sizing */
                 .logo-img { height: 4rem; width: auto; }
                 @media (min-width: 768px) { .logo-img { height: 6rem; } }
@@ -106,10 +89,28 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
 
-    <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg animate-fade-in">
+    <div id="logo-page" class="fixed inset-0 flex items-center justify-center bg-white z-50 transition-opacity duration-500">
+        <h1 class="portal-logo-text">
+            <span class="text-blue-600">SOS</span> &nbsp; | &nbsp;
+             <span class="text-blue-600" style="text-transform:uppercase ;">iteme charity family</span>
+        </h1>
+    </div>
+
+    <div id="powered-by-page" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-40 transition-opacity duration-500 hidden opacity-0">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600 text-lg">MURAKAZA NEZA</p>
+        </div>
+        <p class="absolute bottom-6 text-sm text-gray-500">MYSCHOOL <span class="mx-1">·</span> powered by <span class="powered-logo">1percent</span></p>
+    </div>
+
+    <div id="main-content" class="container mx-auto p-4 md:p-8 pt-12 max-w-lg hidden">
         <header class="mb-8 text-center">
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">MYSCHOOL</h1>
-            <p class="mt-2 text-sm font-medium text-green-700">Parent Portal <span class="mx-1 text-gray-300">·</span> <a href="https://1percent.rw/" target="_blank" rel="noopener noreferrer" class="hover:underline focus:outline-none focus:ring-2 focus:ring-green-600 rounded">powered by <span class="font-bold">1percent</span></a></p>
+            <p class="mt-2 text-sm font-medium text-green-700">Parent Portal <span class="mx-1 text-gray-300">·</span> powered by <span class="font-bold">1percent</span></p>
         </header>
 
         <div id="choice-step" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
@@ -160,15 +161,17 @@
             <input type="text" id="search-input" placeholder="ANDIKA AMAZINA Y'UMWANA..." oninput="searchStudents()"
                     class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4 transition duration-150 ease-in-out">
 
-            <div id="student-results" class="student-list hidden max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4"></div>
+            <div id="student-results" class="student-list max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4">
+                <p id="search-prompt" class="p-3 text-gray-400 italic text-sm">KANDA KU  AMAZINA Y'UMWANA</p>
+            </div>
+
             <div id="parent-meeting-section" class="hidden border border-green-100 bg-green-50 rounded-lg p-4 mb-4 space-y-3">
                 <p class="font-semibold text-gray-700">Parent / Guardian details</p>
-                <input id="parent-name" type="text" maxlength="120" autocomplete="name" required oninput="validateSubmitState()" placeholder="Parent full name" class="w-full border rounded-lg px-3 py-2 bg-white">
-                <select id="parent-relationship" required onchange="validateSubmitState()" class="w-full border rounded-lg px-3 py-2 bg-white">
-                    <option value="">Select relationship</option><option value="father">Father</option><option value="mother">Mother</option><option value="brother">Brother</option><option value="sister">Sister</option><option value="other">Other</option>
+                <input id="parent-name" type="text" maxlength="120" autocomplete="name" placeholder="Parent full name" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <select id="parent-relationship" class="w-full border rounded-lg px-3 py-2 bg-white">
+                    <option value="">Select relationship</option><option value="father">Father</option><option value="mother">Mother</option><option value="other">Other</option>
                 </select>
-                <label for="parent-phone" class="block text-sm font-medium text-gray-700">Phone number <span class="text-red-600" aria-hidden="true">*</span></label>
-                <input id="parent-phone" type="tel" maxlength="30" autocomplete="tel" required aria-required="true" oninput="validateSubmitState()" placeholder="Enter phone number (required)" class="w-full border rounded-lg px-3 py-2 bg-white">
+                <input id="parent-phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Phone number (optional)" class="w-full border rounded-lg px-3 py-2 bg-white">
             </div>
             <div id="movement-section" class="hidden border border-blue-100 bg-blue-50 rounded-lg p-4 mb-4">
                 <label for="movement-method" class="block text-sm font-semibold text-gray-700 mb-2">UFITE IKINYABIZIGA</label>
@@ -192,22 +195,6 @@
         </div>
     </div>
 
-    <div id="parent-meeting-code-modal" class="hidden fixed inset-0 z-[140] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="parent-code-title">
-        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeParentMeetingCodeModal()"></div>
-        <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700"><i class="fas fa-lock text-xl"></i></div>
-            <h3 id="parent-code-title" class="text-center text-xl font-bold text-gray-900">INAMA Y'ABABYEYI</h3>
-            <p class="mt-2 text-center text-sm text-gray-600">Enter the 4-digit project access code to continue.</p>
-            <form id="parent-meeting-code-form" class="mt-5" onsubmit="unlockParentMeeting(event)">
-                <label for="parent-meeting-code" class="mb-2 block text-sm font-semibold text-gray-700">4-digit access code</label>
-                <input id="parent-meeting-code" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required aria-describedby="parent-meeting-code-error" placeholder="••••" class="w-full rounded-xl border border-gray-300 px-4 py-3 text-center text-2xl tracking-[0.6em] focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-100">
-                <p id="parent-meeting-code-error" class="mt-2 min-h-5 text-sm text-red-600" role="alert"></p>
-                <button id="parent-meeting-code-submit" type="submit" class="mt-3 w-full rounded-xl bg-green-600 px-4 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-wait disabled:opacity-60">Continue</button>
-                <button type="button" onclick="closeParentMeetingCodeModal()" class="mt-2 w-full rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200">Cancel</button>
-            </form>
-        </div>
-    </div>
-
     <div id="tour-overlay" class="hidden"></div>
     <div id="tour-popup" class="hidden">
         <p id="tour-text" class="text-gray-700 mb-4 font-medium"></p>
@@ -221,25 +208,10 @@
         </div>
     </div>
 
-    <div id="student-ticket-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center p-4" role="status" aria-live="polite" aria-labelledby="student-ticket-name">
-        <div class="absolute inset-0 bg-slate-950/65 backdrop-blur-sm"></div>
-        <div class="relative w-full max-w-sm rounded-3xl bg-white px-7 py-8 text-center shadow-2xl">
-            <div class="relative mx-auto mb-6 flex h-32 w-32 items-center justify-center">
-                <div class="ticket-ring absolute inset-0 rounded-full border-[5px] border-emerald-100 border-t-emerald-600 border-r-emerald-400"></div>
-                <div class="ticket-icon-pop flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                    <i class="fas fa-ticket-alt text-4xl" aria-hidden="true"></i>
-                </div>
-            </div>
-            <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">MYSCHOOL · Ticket</p>
-            <h2 id="student-ticket-name" class="mt-3 break-words text-2xl font-extrabold text-slate-900"></h2>
-            <p class="mt-2 text-sm text-slate-500">Your request has been recorded.</p>
-        </div>
-    </div>
-
     <div id="donation-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/50" onclick="closeDonationModal()"></div>
         <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-3">Murakoze gukoresha system ya MYSCHOOL</h3>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Murakoze gukoresha system ya MYSCHOOL-SOS</h3>
             <p class="text-sm text-gray-700 leading-6">
                 IHFO NI UMURYANGO UFASHA ABANA BATISHOBOYE UBISHYURIRA AMAFARANGA Y'ISHURI NIBINDI BAKENEYE .
             </p>
@@ -406,18 +378,12 @@
         }
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js', { updateViaCache: 'none' })
-                .then(registration => {
-                    // Check for a new worker on every visit so clients leave obsolete
-                    // cached portal shells behind without requiring a manual cache clear.
-                    registration.update().catch(() => {});
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(() => {
                     navigator.serviceWorker.addEventListener('message', e => {
                         if (e.data && e.data.type === 'flush-visit-queue') flushVisitQueue();
                     });
-                }).catch(error => {
-                    // Service-worker failure must never block the visible portal.
-                    console.warn('Offline support unavailable:', error);
-                });
+                }).catch(() => {});
         }
 
         window.addEventListener('online', flushVisitQueue);
@@ -480,15 +446,22 @@
         let toastTimeout = null;
         let schoolname = "{{ school_name }}";
         let schoolCode = "{{ school_code }}";
-        const isImpactfulSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('impactful technical high school');
-        const isTargetImpactfulSchool = (schoolname || '').trim().replace(/\\s+/g, ' ').toLowerCase() === 'impactful technical high school kigali';
-        let selectedStudentName = '';
+        const isSOSSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('sos');
         const donationUSSDTemplates = {
             airtel: "*182*8*1*0795802380*{amount}#",
             mtn: "*182*8*1*0795802380*{amount}#"
         };
 
+        // If this is SOS, use the SOS image as the favicon (no on-page branding)
+        if (isSOSSchool) {
+            const fav = document.getElementById('favicon');
+            try { if (fav) fav.href = '/static/sos.webp'; } catch (e) {}
+        }
+
         // --- DOM Elements ---
+        const mainContent = document.getElementById('main-content');
+        const logoPage = document.getElementById('logo-page');
+        const poweredByPage = document.getElementById('powered-by-page');
         const choiceStep = document.getElementById('choice-step');
         const formStep = document.getElementById('form-step');
         const tourGuideStep = document.getElementById('tour-guide-step');
@@ -498,7 +471,7 @@
         const tourText = document.getElementById('tour-text');
         const tourNextBtn = document.getElementById('tour-next-btn');
         const tourEndBtn = document.getElementById('tour-end-btn');
-        // if(isImpactfulSchool) {
+        // if(isSOSSchool) {
         //     let favicon_link = document.querySelector("link[rel~='icon']");
         //     favicon_link.href = "./static/sos.webp";
         // }
@@ -647,23 +620,35 @@
         }
         
         // --- Portal Logic ---
-        // The page content is rendered straight away (no loading splash), so the
-        // portal can never sit on a spinner waiting for window.onload or for a
-        // third-party CDN. These background tasks are purely best-effort.
-        function startBackgroundSync() {
-            Promise.resolve().then(() => prefetchStudents()).catch(error => {
-                console.warn('Student prefetch failed:', error);
-            });
-            Promise.resolve().then(() => flushVisitQueue()).catch(error => {
-                console.warn('Visit queue sync failed:', error);
-            });
-        }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startBackgroundSync, { once: true });
-        } else {
-            startBackgroundSync();
-        }
+        window.onload = function() {
+            const logoDuration = 1000; 
+            const poweredByDuration = 1000; 
+
+            // Simulating app loading sequence with splash screens
+            setTimeout(() => {
+                logoPage.classList.add('opacity-0');
+                setTimeout(() => {
+                    logoPage.classList.add('hidden');
+                    poweredByPage.classList.remove('hidden');
+                    setTimeout(() => {
+                        poweredByPage.classList.remove('opacity-0');
+                    }, 10); 
+                    
+                    setTimeout(() => {
+                        poweredByPage.classList.add('opacity-0');
+                        
+                        setTimeout(() => {
+                            poweredByPage.classList.add('hidden');
+                            mainContent.classList.remove('hidden');
+                            mainContent.classList.add('animate-fade-in');
+                            prefetchStudents();
+                            flushVisitQueue();
+                        }, 500); 
+                    }, poweredByDuration); 
+                }, 500); 
+            }, logoDuration); 
+        };
 
         function goBackToChoice() {
             // Stop the tour if running
@@ -680,7 +665,7 @@
             selectedType = '';
             selectedStudentId = null;
             document.getElementById('search-input').value = '';
-            document.getElementById('student-results').innerHTML = '';
+            document.getElementById('student-results').innerHTML = '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('feedback').innerText = '';
             document.getElementById('movement-method').value = '';
@@ -689,9 +674,8 @@
             document.getElementById('parent-name').value = '';
             document.getElementById('parent-relationship').value = '';
             document.getElementById('parent-phone').value = '';
-            document.getElementById('parent-phone').setCustomValidity('');
             document.getElementById('parent-meeting-section').classList.add('hidden');
-            if (isImpactfulSchool) {
+            if (isSOSSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
             } else {
                 document.getElementById('movement-section').classList.add('hidden');
@@ -706,71 +690,7 @@
             tourGuideStep.classList.remove('hidden');
         }
 
-        let parentMeetingUnlocked = false;
-
-        function openParentMeetingCodeModal() {
-            const modal = document.getElementById('parent-meeting-code-modal');
-            const input = document.getElementById('parent-meeting-code');
-            document.getElementById('parent-meeting-code-error').textContent = '';
-            input.value = '';
-            modal.classList.remove('hidden');
-            setTimeout(() => input.focus(), 30);
-        }
-
-        function closeParentMeetingCodeModal() {
-            document.getElementById('parent-meeting-code-modal').classList.add('hidden');
-        }
-
-        async function unlockParentMeeting(event) {
-            event.preventDefault();
-            const input = document.getElementById('parent-meeting-code');
-            const error = document.getElementById('parent-meeting-code-error');
-            const button = document.getElementById('parent-meeting-code-submit');
-            const code = input.value.trim();
-            if (!/^[0-9]{4}$/.test(code)) {
-                error.textContent = 'Enter exactly four digits.';
-                input.focus();
-                return;
-            }
-            button.disabled = true;
-            button.textContent = 'Checking…';
-            error.textContent = '';
-            try {
-                const response = await fetch('/' + encodeURIComponent(schoolname) + '/parent-meeting/unlock', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                    body: new URLSearchParams({ code }),
-                    credentials: 'same-origin'
-                });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok || result.status !== 'success') {
-                    error.textContent = result.detail || 'Incorrect code. Please try again.';
-                    input.value = '';
-                    input.focus();
-                    return;
-                }
-                parentMeetingUnlocked = true;
-                closeParentMeetingCodeModal();
-                selectType('parent_meeting');
-            } catch (err) {
-                error.textContent = 'Could not verify the code. Check your connection and retry.';
-            } finally {
-                button.disabled = false;
-                button.textContent = 'Continue';
-            }
-        }
-
-        document.addEventListener('keydown', event => {
-            if (event.key === 'Escape' && !document.getElementById('parent-meeting-code-modal').classList.contains('hidden')) {
-                closeParentMeetingCodeModal();
-            }
-        });
-
         function selectType(type) {
-            if (type === 'parent_meeting' && !parentMeetingUnlocked) {
-                openParentMeetingCodeModal();
-                return;
-            }
             // If tour is running and this is not step 4, stop the tour
             if (tourStep > 0 && tourStep !== 4) endTour();
             
@@ -800,7 +720,7 @@
             document.getElementById('parent-relationship').value = '';
             document.getElementById('parent-phone').value = '';
             document.getElementById('parent-meeting-section').classList.toggle('hidden', type !== 'parent_meeting');
-            if (isImpactfulSchool) {
+            if (isSOSSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
             } else {
                 document.getElementById('movement-section').classList.add('hidden');
@@ -817,83 +737,68 @@
         async function searchStudents() {
     const query = document.getElementById('search-input').value.trim();
     const resultsDiv = document.getElementById('student-results');
+
     resultsDiv.innerHTML = '';
     selectedStudentId = null;
-    selectedStudentName = '';
     validateSubmitState();
 
-    // Hide the results card only when the search input is empty.
-    if (!query) {
-        resultsDiv.classList.add('hidden');
+    if (query.length < 2) {
+        resultsDiv.innerHTML = '<p class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
         return;
     }
-    resultsDiv.classList.remove('hidden');
+
+    resultsDiv.innerHTML = '<p class="p-3 text-center text-blue-500 animate-pulse">Searching...</p>';
 
     let data = [];
-    let isOffline = false;
     try {
         const res = await fetch(`/${schoolname}/students/search?q=${encodeURIComponent(query)}`);
-        if (!res.ok) throw new Error('Student search failed');
         data = await res.json();
+        // Update local DB with fresh results
         if (data.length) await saveStudentsToDB(data);
     } catch {
-        isOffline = true;
+        // Offline: search IndexedDB
         data = await searchStudentsFromDB(query);
-    }
-
-    // Ignore stale results if the user has changed the query while this request was running.
-    if (document.getElementById('search-input').value.trim() !== query || selectedStudentId) return;
-
-    if (isOffline) {
-        const offlineLabel = document.createElement('p');
-        offlineLabel.className = 'px-3 pt-2 text-xs text-amber-500';
-        offlineLabel.textContent = 'Offline — showing cached results';
-        resultsDiv.appendChild(offlineLabel);
+        if (data.length) {
+            resultsDiv.innerHTML = '<p class="px-3 pt-2 text-xs text-amber-500">Offline — showing cached results</p>';
+        }
     }
 
     if (!data.length) {
-        const noResults = document.createElement('p');
-        noResults.className = 'p-3 text-sm text-gray-500';
-        noResults.textContent = 'No students found. Keep typing or check the spelling.';
-        resultsDiv.appendChild(noResults);
+        resultsDiv.innerHTML = '<p class="p-3 text-red-500 italic text-sm">No students found matching your query.</p>';
         return;
     }
 
+    const existing = resultsDiv.querySelector('p.text-amber-500');
+    if (!existing) resultsDiv.innerHTML = '';
     data.forEach(student => {
         const div = document.createElement('div');
         div.className = 'student-item p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 transition duration-150 ease-in-out text-gray-700';
         div.setAttribute('data-student-id', student.id);
-        const name = document.createElement('span');
-        name.className = 'font-medium';
-        name.textContent = student.student_name || '';
-        const className = document.createElement('span');
-        className.className = 'text-sm text-gray-500';
-        className.textContent = ` (${student.class_name || ''})`;
-        const studentId = document.createElement('span');
-        studentId.className = 'ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800';
-        studentId.textContent = `Student ID: ${student.id}`;
-        div.append(name, className, studentId);
+        div.innerHTML = `<span class="font-medium">${student.student_name}</span> <span class="text-sm text-gray-500">(${student.class_name})</span> <span class="ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800">Student ID: ${student.id}</span>`;
         div.onclick = () => selectStudent(student.id, div);
         resultsDiv.appendChild(div);
     });
 }
 
+
         function selectStudent(id, element) {
             selectedStudentId = id;
-            selectedStudentName = element.querySelector('.font-medium')?.textContent?.trim() || '';
-
-            // Replace the search query with the chosen student's full name.
-            const searchInput = document.getElementById('search-input');
-            searchInput.value = selectedStudentName;
-            searchInput.setAttribute('aria-label', 'Selected student: ' + selectedStudentName);
-
-            // Close the results list so only the selected student remains shown in the input.
-            const resultsDiv = document.getElementById('student-results');
-            resultsDiv.innerHTML = '';
-            resultsDiv.classList.add('hidden');
+            
+            document.querySelectorAll('.student-item').forEach(el => {
+                el.classList.remove('bg-blue-200', 'border-blue-400', 'font-semibold');
+                el.classList.add('hover:bg-blue-50', 'bg-white');
+            });
+            element.classList.remove('hover:bg-blue-50', 'bg-white');
+            element.classList.add('bg-blue-200', 'border-blue-400', 'font-semibold');
 
             validateSubmitState();
-            if (tourStep === 5) { tourStep++; nextTourStep(); }
+            
+            // If tour is active and we are on the search step, advance the tour
+            if (tourStep === 5) {
+                // If user correctly clicked a student after searching, advance
+                tourStep++; 
+                nextTourStep(); 
+            }
         }
 
         async function submitVisit() {
@@ -913,13 +818,13 @@
         payload.parent_name = document.getElementById('parent-name').value.trim();
         payload.parent_relationship = document.getElementById('parent-relationship').value;
         payload.parent_phone = document.getElementById('parent-phone').value.trim();
-        if (!payload.parent_name || !payload.parent_relationship || !payload.parent_phone) {
-            feedbackEl.innerText = 'Enter the parent name, select their relationship, and provide a phone number.';
+        if (!payload.parent_name || !payload.parent_relationship) {
+            feedbackEl.innerText = 'Enter the parent name and select their relationship.';
             feedbackEl.classList.remove('text-green-600'); feedbackEl.classList.add('text-red-500');
             submitBtn.innerText = originalText; submitBtn.disabled = false; submitBtn.classList.remove('animate-pulse'); return;
         }
     }
-    if (isImpactfulSchool) {
+    if (isSOSSchool) {
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
         if (movementMethod === 'with_car' && plateNumber && !isValidPlateNumber(plateNumber)) {
@@ -936,63 +841,33 @@
     }
 
     let shouldShowDonationModal = false;
-    let shouldShowTicketPopup = false;
-    const ticketStudentName = selectedStudentName || document.querySelector('[data-student-id="' + selectedStudentId + '"] .font-medium')?.textContent?.trim() || '';
     let wentOffline = false;
-    let submissionFailed = false;
 
     try {
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => fd.append(k, v));
         const res = await fetch(`/${schoolname}/visits/add`, { method: 'POST', body: fd });
-        let data;
-        try {
-            data = await res.json();
-        } catch (parseError) {
-            throw new Error(`Server returned an invalid response (HTTP ${res.status}). Please try again or contact the administrator.`);
-        }
-
-        if (!res.ok && data.status !== 'error') {
-            throw new Error(data.detail || `Request failed with HTTP ${res.status}.`);
-        }
+        const data = await res.json();
 
         if (data.status === 'success' || data.message === 'Already recorded today') {
             feedbackEl.innerText = 'Success! Your request has been recorded.';
             feedbackEl.classList.remove('text-red-500');
             feedbackEl.classList.add('text-green-600');
-            shouldShowDonationModal = isImpactfulSchool;
-            shouldShowTicketPopup = isTargetImpactfulSchool;
+            shouldShowDonationModal = isSOSSchool;
         } else {
             feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
             feedbackEl.classList.remove('text-green-600');
             feedbackEl.classList.add('text-red-500');
         }
-    } catch (error) {
-        // Only queue on likely network/offline failures. Server/database errors must be visible,
-        // not silently queued as if the visit will sync later.
-        if (!navigator.onLine || error instanceof TypeError) {
-            await queueVisit(payload);
-            wentOffline = true;
-            feedbackEl.innerText = 'Connection unavailable. Your visit is queued and will sync when online.';
-            feedbackEl.classList.remove('text-red-500');
-            feedbackEl.classList.add('text-amber-500');
-            submitBtn.innerText = 'Sending...';
-        } else {
-            feedbackEl.innerText = error.message || 'Submission failed. Please try again.';
-            feedbackEl.classList.remove('text-green-600', 'text-amber-500');
-            feedbackEl.classList.add('text-red-500');
-            submitBtn.disabled = false;
-            // Preserve entered parent details and selected student so the user can retry.
-            submitBtn.innerText = originalText;
-            submitBtn.classList.remove('animate-pulse');
-            submissionFailed = true;
-        }
+    } catch {
+        // Offline — queue it
+        await queueVisit(payload);
+        wentOffline = true;
+        feedbackEl.innerText = 'Sending... (will sync when online)';
+        feedbackEl.classList.remove('text-red-500');
+        feedbackEl.classList.add('text-amber-500');
+        submitBtn.innerText = 'Sending...';
     } finally {
-        if (submissionFailed) {
-            // Keep the student and parent details available for a manual retry.
-            submitBtn.disabled = false;
-            return;
-        }
         if (!wentOffline) {
             submitBtn.innerText = originalText;
             submitBtn.classList.remove('animate-pulse');
@@ -1000,7 +875,6 @@
             submitBtn.classList.remove('animate-pulse');
         }
         selectedStudentId = null;
-        selectedStudentName = '';
         document.getElementById('search-input').value = '';
         document.getElementById('movement-method').value = '';
         document.getElementById('plate-number').value = '';
@@ -1009,18 +883,10 @@
         document.getElementById('parent-relationship').value = '';
         document.getElementById('parent-phone').value = '';
         document.getElementById('parent-meeting-section').classList.add('hidden');
-        document.getElementById('student-results').innerHTML = '';
-        document.getElementById('student-results').classList.add('hidden');
+        document.getElementById('student-results').innerHTML =
+            '<p id="search-prompt" class="p-3 text-gray-400 italic text-sm">Start typing a student\'s name...</p>';
         validateSubmitState();
-        if (shouldShowTicketPopup && !wentOffline) {
-            document.getElementById('student-ticket-name').textContent = ticketStudentName || 'Student';
-            document.getElementById('student-ticket-modal').classList.remove('hidden');
-            setTimeout(() => {
-                document.getElementById('student-ticket-modal').classList.add('hidden');
-                if (shouldShowDonationModal) openDonationModal();
-                else goBackToChoice();
-            }, 2200);
-        } else if (shouldShowDonationModal) {
+        if (shouldShowDonationModal) {
             setTimeout(openDonationModal, 500);
         } else {
             setTimeout(goBackToChoice, wentOffline ? 2000 : 1500);
@@ -1102,14 +968,7 @@ function validateSubmitState() {
     const submitBtn = document.getElementById('submit-btn');
     let canSubmit = !!selectedStudentId && !!selectedType;
     const plateErrorEl = document.getElementById('plate-error');
-    if (canSubmit && selectedType === 'parent_meeting') {
-        const parentName = document.getElementById('parent-name').value.trim();
-        const parentRelationship = document.getElementById('parent-relationship').value;
-        const parentPhone = document.getElementById('parent-phone').value.trim();
-        if (!parentName || !parentRelationship || !parentPhone) canSubmit = false;
-    }
-
-    if (canSubmit && isImpactfulSchool) {
+    if (canSubmit && isSOSSchool) {
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
         if (!movementMethod) {
