@@ -279,6 +279,79 @@
     </div>
 
     <script>
+        // MySchool diagnostics: console errors plus a copyable report for support.
+        // Never capture form values, student names, query strings, cookies, or tokens.
+        (function () {
+            const entries = [];
+            const maxEntries = 80;
+            const cleanUrl = value => {
+                try { return new URL(value, location.href).pathname; }
+                catch (_) { return String(value || '').split('?')[0]; }
+            };
+            const record = (level, message, details = {}) => {
+                const item = { time: new Date().toISOString(), level, message: String(message || 'Unknown error'), path: location.pathname, details };
+                entries.push(item);
+                if (entries.length > maxEntries) entries.shift();
+                console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'info']('[MYSCHOOL]', item);
+                renderDiagnostics();
+            };
+            const report = () => ({
+                app: 'MYSCHOOL Parent Portal', capturedAt: new Date().toISOString(),
+                page: location.pathname, userAgent: navigator.userAgent, online: navigator.onLine,
+                errors: entries.slice()
+            });
+            let panel;
+            function renderDiagnostics() {
+                if (!entries.some(item => item.level === 'error')) return;
+                if (!panel) {
+                    panel = document.createElement('section');
+                    panel.id = 'myschool-diagnostics';
+                    panel.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:99999;max-width:min(420px,calc(100vw - 24px));background:#fff;border:1px solid #dc2626;border-radius:12px;padding:12px;box-shadow:0 8px 30px #0003;font:13px system-ui;color:#111';
+                    panel.innerHTML = '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><strong style="color:#b91c1c">MySchool detected an error</strong><button type="button" data-close>Close</button></div><p data-count style="margin:8px 0"></p><div style="display:flex;gap:8px"><button type="button" data-copy style="background:#1d4ed8;color:white;padding:7px 10px;border-radius:6px">Copy error report</button><button type="button" data-details>Show details</button></div><pre data-log hidden style="white-space:pre-wrap;max-height:180px;overflow:auto;margin-top:8px;font-size:11px"></pre>';
+                    document.body.appendChild(panel);
+                    panel.querySelector('[data-close]').onclick = () => { panel.remove(); panel = null; };
+                    panel.querySelector('[data-details]').onclick = () => { const pre = panel.querySelector('[data-log]'); pre.hidden = !pre.hidden; };
+                    panel.querySelector('[data-copy]').onclick = async () => {
+                        const value = JSON.stringify(report(), null, 2);
+                        try { await navigator.clipboard.writeText(value); }
+                        catch (_) { const area = document.createElement('textarea'); area.value = value; panel.appendChild(area); area.select(); document.execCommand('copy'); area.remove(); }
+                        panel.querySelector('[data-copy]').textContent = 'Copied';
+                    };
+                }
+                panel.querySelector('[data-count]').textContent = entries.filter(item => item.level === 'error').length + ' error(s) captured. Copy this report and send it to the developer.';
+                panel.querySelector('[data-log]').textContent = entries.slice(-12).map(item => item.time + ' [' + item.level + '] ' + item.message).join('\n');
+            }
+            window.addEventListener('error', event => record('error', event.message || 'Script/resource failed', {
+                source: cleanUrl(event.filename), line: event.lineno, column: event.colno,
+                stack: event.error && event.error.stack ? String(event.error.stack).slice(0, 3000) : ''
+            }), true);
+            window.addEventListener('unhandledrejection', event => {
+                const reason = event.reason;
+                record('error', 'Unhandled promise rejection', {
+                    reason: reason && reason.message ? reason.message : String(reason),
+                    stack: reason && reason.stack ? String(reason.stack).slice(0, 3000) : ''
+                });
+            });
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = async function (...args) {
+                const input = args[0];
+                const url = cleanUrl(input && input.url ? input.url : input);
+                const method = (args[1] && args[1].method) || (input && input.method) || 'GET';
+                try {
+                    const response = await originalFetch(...args);
+                    if (!response.ok) record(response.status >= 500 ? 'error' : 'warn', 'HTTP ' + response.status + ' from ' + method.toUpperCase() + ' ' + url, { status: response.status, method: method.toUpperCase(), url });
+                    return response;
+                } catch (error) {
+                    record('error', 'Network request failed: ' + method.toUpperCase() + ' ' + url, { message: error && error.message ? error.message : String(error) });
+                    throw error;
+                }
+            };
+            window.MySchoolDiagnostics = { log: record, getReport: report, getEntries: () => entries.slice() };
+            record('info', 'Diagnostics initialized');
+        })();
+    </script>
+
+    <script>
         // Service Worker registration for offline sync
         // ── IndexedDB helpers ──────────────────────────────────────────
         const DB_NAME = 'myschool_offline';

@@ -13,6 +13,7 @@ from datetime import datetime, date, timedelta
 import re
 import json
 import logging
+import uuid
 from difflib import SequenceMatcher
 from functools import lru_cache
 from openpyxl.styles import Font, PatternFill
@@ -28,6 +29,30 @@ init_db()
 logger = logging.getLogger("myschool.visits")
 
 app = FastAPI(title="School Visit Management System")
+
+# Request diagnostics for deployment logs. Do not log query strings, request bodies,
+# cookies, or authorization headers because they may contain private information.
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+request_logger = logging.getLogger("myschool.http")
+
+@app.middleware("http")
+async def request_diagnostics(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or uuid.uuid4().hex[:12]
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+        elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+        response.headers["X-Request-ID"] = request_id
+        log = request_logger.warning if response.status_code >= 400 else request_logger.info
+        log("request_complete request_id=%s method=%s path=%s status=%s duration_ms=%s",
+            request_id, request.method, request.url.path, response.status_code, elapsed_ms)
+        return response
+    except Exception:
+        elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+        request_logger.exception("request_failed request_id=%s method=%s path=%s duration_ms=%s",
+                                 request_id, request.method, request.url.path, elapsed_ms)
+        raise
+
 # Cross-origin access is opt-in. Same-origin browser requests do not require CORS.
 # Set CORS_ALLOWED_ORIGINS to a comma-separated list only when a separate trusted
 # frontend must call this API. Never combine credentialed requests with a wildcard.
