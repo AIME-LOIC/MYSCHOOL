@@ -828,14 +828,15 @@ def add_visit(
         if visit_type not in {"visit_day", "parent_meeting"}:
             return {"status": "error", "message": "Invalid visit type"}
 
-        is_sos_school = (
-            (school.school_code or "").strip().lower() == "sos"
+        is_impactful_school = (
+            (school.school_code or "").strip().lower() in {"sos", "sch-001"}
             or "sos" in (school.school_name or "").strip().lower()
+            or "impactful technical high school" in (school.school_name or "").strip().lower()
         )
 
         movement_method_clean = None
         plate_number_clean = None
-        if is_sos_school:
+        if is_impactful_school:
             movement_method_clean = (movement_method or "").strip().lower()
             if movement_method_clean not in {"with_car", "without_car"}:
                 return {"status": "error", "message": "Please select movement method"}
@@ -1304,12 +1305,13 @@ def get_car_management_data(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    is_sos_school = (
-        (school.school_code or "").strip().lower() == "sos"
+    is_impactful_school = (
+        (school.school_code or "").strip().lower() in {"sos", "sch-001"}
         or "sos" in (school.school_name or "").strip().lower()
+        or "impactful technical high school" in (school.school_name or "").strip().lower()
     )
-    if not is_sos_school:
-        return {"status": "error", "message": "Car management is available only for SOS school"}
+    if not is_impactful_school:
+        return {"status": "error", "message": "Car management is available only for Impactful Technical High School Kigali"}
 
     target_date = datetime.now().date()
     if visit_date:
@@ -1353,12 +1355,13 @@ def assign_car_plate(
     school = db.query(School).filter(School.school_name == school_name).first()
     if not school:
         raise HTTPException(status_code=404, detail="School not found")
-    is_sos_school = (
-        (school.school_code or "").strip().lower() == "sos"
+    is_impactful_school = (
+        (school.school_code or "").strip().lower() in {"sos", "sch-001"}
         or "sos" in (school.school_name or "").strip().lower()
+        or "impactful technical high school" in (school.school_name or "").strip().lower()
     )
-    if not is_sos_school:
-        return {"status": "error", "message": "Car management is available only for SOS school"}
+    if not is_impactful_school:
+        return {"status": "error", "message": "Car management is available only for Impactful Technical High School Kigali"}
 
     visit = db.query(Visit).join(Student).filter(
         Visit.id == visit_id,
