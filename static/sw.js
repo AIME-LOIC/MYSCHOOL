@@ -1,54 +1,57 @@
-const CACHE = 'myschool-v3';
+/* MySchool service worker.
+   v4 deliberately does not intercept page navigations: a stale cached HTML shell
+   must never cover the live portal or leave users on an obsolete loading screen. */
+const CACHE = 'myschool-v4';
 
-self.addEventListener('install', e => {
-    e.waitUntil(
-        caches.open(CACHE).then(cache => cache.add('/static/parent-portal.css'))
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE).then(cache => cache.add('/static/parent-portal.css?v=4'))
     );
     self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
-    e.waitUntil(caches.keys().then(keys =>
-        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ));
-    self.clients.claim();
+self.addEventListener('activate', event => {
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)));
+        await self.clients.claim();
+    })());
 });
 
-self.addEventListener('fetch', e => {
-    const url = new URL(e.request.url);
+self.addEventListener('fetch', event => {
+    const request = event.request;
+    const url = new URL(request.url);
 
-    // Cache student search and student list responses
-    if (e.request.method === 'GET' && (
-        url.pathname.includes('/students/search') ||
-        url.pathname.includes('/admin/students')
-    )) {
-        e.respondWith(
-            fetch(e.request)
-                .then(res => {
-                    const clone = res.clone();
-                    caches.open(CACHE).then(c => c.put(e.request, clone));
-                    return res;
-                })
-                .catch(() => caches.match(e.request))
-        );
+    // Never intercept document navigations. The server always supplies the current
+    // HTML, and a failed/offline page request cannot be replaced by stale cached HTML.
+    if (request.mode === 'navigate' || request.method !== 'GET' || url.origin !== self.location.origin) {
         return;
     }
 
-    // For everything else, network first, fallback to cache
-    if (e.request.method === 'GET') {
-        e.respondWith(
-            fetch(e.request).catch(() => caches.match(e.request))
-        );
+    // Cache student data only as an offline fallback. These requests never gate
+    // initial page rendering.
+    if (url.pathname.includes('/students/search') || url.pathname.includes('/admin/students')) {
+        event.respondWith((async () => {
+            try {
+                const response = await fetch(request);
+                if (response.ok) {
+                    const copy = response.clone();
+                    caches.open(CACHE).then(cache => cache.put(request, copy)).catch(() => {});
+                }
+                return response;
+            } catch (error) {
+                const cached = await caches.match(request);
+                if (cached) return cached;
+                throw error;
+            }
+        })());
     }
 });
 
-// Background sync
-self.addEventListener('sync', e => {
-    if (e.tag === 'sync-visits') {
-        e.waitUntil(
-            self.clients.matchAll().then(clients =>
-                clients.forEach(c => c.postMessage({ type: 'flush-visit-queue' }))
-            )
-        );
+self.addEventListener('sync', event => {
+    if (event.tag === 'sync-visits') {
+        event.waitUntil(self.clients.matchAll({ type: 'window' }).then(clients => {
+            clients.forEach(client => client.postMessage({ type: 'flush-visit-queue' }));
+        }));
     }
 });
