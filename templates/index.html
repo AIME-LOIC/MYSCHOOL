@@ -298,7 +298,6 @@
             const report = () => ({
                 app: 'MYSCHOOL Parent Portal', capturedAt: new Date().toISOString(),
                 page: location.pathname, userAgent: navigator.userAgent, online: navigator.onLine,
-                schoolCode: typeof schoolCode !== 'undefined' ? schoolCode : 'unknown',
                 errors: entries.slice()
             });
             let panel;
