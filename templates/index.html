@@ -91,7 +91,7 @@
 
     <div id="logo-page" class="fixed inset-0 flex items-center justify-center bg-white z-50 transition-opacity duration-500">
         <h1 class="portal-logo-text">
-            <span class="text-blue-600">SOS</span> &nbsp; | &nbsp;
+            <span class="text-blue-600">Impactful Technical High School Kigali</span> &nbsp; | &nbsp;
              <span class="text-blue-600" style="text-transform:uppercase ;">iteme charity family</span>
         </h1>
     </div>
@@ -211,7 +211,7 @@
     <div id="donation-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/50" onclick="closeDonationModal()"></div>
         <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-3">Murakoze gukoresha system ya MYSCHOOL-SOS</h3>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Murakoze gukoresha system ya MYSCHOOL</h3>
             <p class="text-sm text-gray-700 leading-6">
                 IHFO NI UMURYANGO UFASHA ABANA BATISHOBOYE UBISHYURIRA AMAFARANGA Y'ISHURI NIBINDI BAKENEYE .
             </p>
@@ -446,14 +446,14 @@
         let toastTimeout = null;
         let schoolname = "{{ school_name }}";
         let schoolCode = "{{ school_code }}";
-        const isSOSSchool = (schoolCode || '').trim().toLowerCase() === 'sos' || (schoolname || '').trim().toLowerCase().includes('sos');
+        const isImpactfulSchool = ['sos', 'sch-001'].includes((schoolCode || '').trim().toLowerCase()) || (schoolname || '').trim().toLowerCase().includes('sos') || (schoolname || '').trim().toLowerCase().includes('impactful technical high school');
         const donationUSSDTemplates = {
             airtel: "*182*8*1*0795802380*{amount}#",
             mtn: "*182*8*1*0795802380*{amount}#"
         };
 
         // If this is SOS, use the SOS image as the favicon (no on-page branding)
-        if (isSOSSchool) {
+        if (isImpactfulSchool) {
             const fav = document.getElementById('favicon');
             try { if (fav) fav.href = '/static/sos.webp'; } catch (e) {}
         }
@@ -471,7 +471,7 @@
         const tourText = document.getElementById('tour-text');
         const tourNextBtn = document.getElementById('tour-next-btn');
         const tourEndBtn = document.getElementById('tour-end-btn');
-        // if(isSOSSchool) {
+        // if(isImpactfulSchool) {
         //     let favicon_link = document.querySelector("link[rel~='icon']");
         //     favicon_link.href = "./static/sos.webp";
         // }
@@ -675,7 +675,7 @@
             document.getElementById('parent-relationship').value = '';
             document.getElementById('parent-phone').value = '';
             document.getElementById('parent-meeting-section').classList.add('hidden');
-            if (isSOSSchool) {
+            if (isImpactfulSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
             } else {
                 document.getElementById('movement-section').classList.add('hidden');
@@ -720,7 +720,7 @@
             document.getElementById('parent-relationship').value = '';
             document.getElementById('parent-phone').value = '';
             document.getElementById('parent-meeting-section').classList.toggle('hidden', type !== 'parent_meeting');
-            if (isSOSSchool) {
+            if (isImpactfulSchool) {
                 document.getElementById('movement-section').classList.remove('hidden');
             } else {
                 document.getElementById('movement-section').classList.add('hidden');
@@ -824,7 +824,7 @@
             submitBtn.innerText = originalText; submitBtn.disabled = false; submitBtn.classList.remove('animate-pulse'); return;
         }
     }
-    if (isSOSSchool) {
+    if (isImpactfulSchool) {
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
         if (movementMethod === 'with_car' && plateNumber && !isValidPlateNumber(plateNumber)) {
@@ -863,7 +863,7 @@
             feedbackEl.innerText = 'Success! Your request has been recorded.';
             feedbackEl.classList.remove('text-red-500');
             feedbackEl.classList.add('text-green-600');
-            shouldShowDonationModal = isSOSSchool;
+            shouldShowDonationModal = isImpactfulSchool;
         } else {
             feedbackEl.innerText = `Submission failed: ${data.message || 'Server error'}`;
             feedbackEl.classList.remove('text-green-600');
@@ -995,7 +995,7 @@ function validateSubmitState() {
     const submitBtn = document.getElementById('submit-btn');
     let canSubmit = !!selectedStudentId && !!selectedType;
     const plateErrorEl = document.getElementById('plate-error');
-    if (canSubmit && isSOSSchool) {
+    if (canSubmit && isImpactfulSchool) {
         const movementMethod = document.getElementById('movement-method').value;
         const plateNumber = document.getElementById('plate-number').value.trim();
         if (!movementMethod) {
